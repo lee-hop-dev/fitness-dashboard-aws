@@ -56,18 +56,38 @@ const DATA = {
   },
 
   // ── Build heatmap cells from raw activities ──
-  // renderHeatmap() expects: [{ date, level (0-5), tss }]
-  // level is derived from TSS: 0=none, 1=low … 5=high
+  // renderHeatmap() expects: [{ date, level (0-5), tss, sport }]
+  // sport drives the colour (cycling/running/rowing/other)
+  // level drives the opacity intensity
   _buildHeatmapCells(activities, days) {
-    // Build a map of date → { tss, type }
+    // Sport priority for dominant-sport calculation
+    const SPORT_PRIORITY = { VirtualRide:1, Ride:1, GravelRide:1, MountainBikeRide:1,
+                               Run:2, VirtualRun:2, TrailRun:2,
+                               Rowing:3, VirtualRow:3 };
+
+    // Build a map of date → { tss, sport (dominant) }
     const byDate = {};
     activities.forEach(a => {
       const date = a.start_date || a.date;
       if (!date) return;
       const tss = a.icu_training_load || a.tss || 0;
-      if (!byDate[date]) byDate[date] = { tss: 0, type: a.type };
+      const type = a.type || 'Other';
+      if (!byDate[date]) byDate[date] = { tss: 0, sport: type, priority: SPORT_PRIORITY[type] || 99 };
       byDate[date].tss += tss;
+      // Keep the highest-priority sport for the day
+      const p = SPORT_PRIORITY[type] || 99;
+      if (p < byDate[date].priority) { byDate[date].sport = type; byDate[date].priority = p; }
     });
+
+    // Map sport type → heatmap sport category
+    const sportCategory = (type) => {
+      if (!type) return 'other';
+      const t = type.toLowerCase();
+      if (t.includes('ride') || t.includes('cycle')) return 'cycling';
+      if (t.includes('run'))   return 'running';
+      if (t.includes('row'))   return 'rowing';
+      return 'other';
+    };
 
     // Generate all dates for the range, oldest first
     const cells = [];
@@ -78,13 +98,13 @@ const DATA = {
       const dateStr = d.toISOString().split('T')[0];
       const entry = byDate[dateStr];
       const tss = entry?.tss || 0;
-      // Level 0=rest, 1=<30, 2=30-59, 3=60-99, 4=100-149, 5=150+
+      // If there's any activity, show at least level 2 so it's clearly visible
       const level = tss === 0 ? 0
-                  : tss < 30  ? 1
-                  : tss < 60  ? 2
-                  : tss < 100 ? 3
-                  : tss < 150 ? 4 : 5;
-      cells.push({ date: dateStr, tss: Math.round(tss), level });
+                  : tss < 40  ? 2
+                  : tss < 80  ? 3
+                  : tss < 120 ? 4 : 5;
+      const sport = entry ? sportCategory(entry.sport) : 'other';
+      cells.push({ date: dateStr, tss: Math.round(tss), level, sport });
     }
     return cells;
   },

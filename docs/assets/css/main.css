@@ -947,11 +947,32 @@ body {
 }
 
 .heatmap-cell:hover { transform: scale(1.4); z-index: 10; position: relative; }
-.heatmap-cell[data-level="1"] { background: rgba(0,229,255,0.12); }
-.heatmap-cell[data-level="2"] { background: rgba(0,229,255,0.28); }
-.heatmap-cell[data-level="3"] { background: rgba(0,229,255,0.48); }
-.heatmap-cell[data-level="4"] { background: rgba(0,229,255,0.68); }
-.heatmap-cell[data-level="5"] { background: rgba(0,229,255,0.92); box-shadow: 0 0 5px rgba(0,229,255,0.5); }
+/* Cycling — cyan */
+.heatmap-cell[data-sport="cycling"][data-level="2"] { background: rgba(0,229,255,0.35); }
+.heatmap-cell[data-sport="cycling"][data-level="3"] { background: rgba(0,229,255,0.55); }
+.heatmap-cell[data-sport="cycling"][data-level="4"] { background: rgba(0,229,255,0.75); }
+.heatmap-cell[data-sport="cycling"][data-level="5"] { background: rgba(0,229,255,0.95); box-shadow: 0 0 5px rgba(0,229,255,0.5); }
+
+/* Running — green */
+.heatmap-cell[data-sport="running"][data-level="2"] { background: rgba(0,255,135,0.35); }
+.heatmap-cell[data-sport="running"][data-level="3"] { background: rgba(0,255,135,0.55); }
+.heatmap-cell[data-sport="running"][data-level="4"] { background: rgba(0,255,135,0.75); }
+.heatmap-cell[data-sport="running"][data-level="5"] { background: rgba(0,255,135,0.95); box-shadow: 0 0 5px rgba(0,255,135,0.4); }
+
+/* Rowing — purple */
+.heatmap-cell[data-sport="rowing"][data-level="2"] { background: rgba(168,85,247,0.35); }
+.heatmap-cell[data-sport="rowing"][data-level="3"] { background: rgba(168,85,247,0.55); }
+.heatmap-cell[data-sport="rowing"][data-level="4"] { background: rgba(168,85,247,0.75); }
+.heatmap-cell[data-sport="rowing"][data-level="5"] { background: rgba(168,85,247,0.95); box-shadow: 0 0 5px rgba(168,85,247,0.4); }
+
+/* Other — orange */
+.heatmap-cell[data-sport="other"][data-level="2"] { background: rgba(255,160,50,0.35); }
+.heatmap-cell[data-sport="other"][data-level="3"] { background: rgba(255,160,50,0.55); }
+.heatmap-cell[data-sport="other"][data-level="4"] { background: rgba(255,160,50,0.75); }
+.heatmap-cell[data-sport="other"][data-level="5"] { background: rgba(255,160,50,0.95); box-shadow: 0 0 5px rgba(255,160,50,0.4); }
+
+/* Fallback for level 1 (kept for backwards compat) */
+.heatmap-cell[data-level="1"] { background: rgba(0,229,255,0.15); }
 
 .heatmap-legend {
   display: flex;

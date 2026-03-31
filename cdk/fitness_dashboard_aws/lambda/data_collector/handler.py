@@ -117,6 +117,24 @@ def sync_activities(api_key: str) -> int:
     Fetch recent activities from Intervals.icu and upsert into DynamoDB.
     Uses the /athlete/{id}/activities endpoint.
     Fetches last 90 days to catch any backfill.
+
+    Field names follow the Intervals.icu OpenAPI spec exactly.
+    Key fields stored as-is from the API:
+      type                  — sport type (Ride, Run, VirtualRide, etc.)
+      icu_training_load     — TSS equivalent
+      icu_average_watts     — average power
+      icu_weighted_avg_watts— normalised power
+      icu_intensity         — intensity factor (0.0–1.0+, NOT percent)
+      icu_ftp               — FTP at time of activity
+      icu_w_prime           — W\'bal
+      icu_weight            — weight at time of activity
+      average_heartrate     — average HR (NOT average_hr)
+      max_heartrate         — max HR
+      total_elevation_gain  — elevation gain (NOT elevation_gain)
+      distance              — distance in metres
+      moving_time           — moving time in seconds
+
+    Strava stub activities (containing \'_note\' field) are skipped.
     """
     table = dynamodb.Table(ACTIVITIES_TABLE)
 
@@ -130,18 +148,24 @@ def sync_activities(api_key: str) -> int:
     )
 
     count = 0
+    skipped = 0
     with table.batch_writer() as batch:
         for activity in activities:
+            # Filter out Strava stub activities — they contain _note and no useful data
+            if "_note" in activity or not activity.get("type"):
+                skipped += 1
+                continue
+
             item = float_to_decimal(activity)
             item["athlete_id"] = ATHLETE_ID
             # activity_id from Intervals is numeric; store as string for DynamoDB sort key
             item["activity_id"] = str(activity.get("id", ""))
-            # Normalise date field for GSI sort key
+            # Normalise date field for GSI sort key (use start_date_local, truncate to date)
             item["start_date"] = str(activity.get("start_date_local", ""))[:10]
             batch.put_item(Item=item)
             count += 1
 
-    logger.info(f"Synced {count} activities")
+    logger.info(f"Synced {count} activities, skipped {skipped} Strava stubs")
     return count
 
 

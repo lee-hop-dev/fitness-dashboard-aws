@@ -128,7 +128,8 @@ def get_activities(params: dict) -> dict:
     )
 
     if sport:
-        kwargs["FilterExpression"] = Attr("sport").eq(sport)
+        # Intervals.icu uses 'type' for sport (Ride, Run, VirtualRide etc.)
+        kwargs["FilterExpression"] = Attr("type").eq(sport)
 
     items = paginate_query(activities_table, **kwargs)
     return ok({"activities": items, "count": len(items), "since": since})
@@ -264,8 +265,9 @@ def get_weekly_tss(params: dict) -> dict:
             Key("start_date").gte(since)
         ),
         ScanIndexForward=True,
-        ProjectionExpression="start_date, sport, #tss",
-        ExpressionAttributeNames={"#tss": "tss"},
+        # Intervals.icu fields: 'type' = sport, 'icu_training_load' = TSS
+        ProjectionExpression="start_date, #sport_type, icu_training_load",
+        ExpressionAttributeNames={"#sport_type": "type"},
     )
 
     # Build {week_start: {sport: tss}} mapping
@@ -280,8 +282,8 @@ def get_weekly_tss(params: dict) -> dict:
             continue
         # ISO week Monday
         week_start = (d - timedelta(days=d.weekday())).strftime("%Y-%m-%d")
-        sport = item.get("sport", "Other")
-        tss   = float(item.get("tss") or 0)
+        sport = item.get("type", "Other")                      # 'type' per Intervals.icu spec
+        tss   = float(item.get("icu_training_load") or 0)     # 'icu_training_load' per spec
         if week_start not in buckets:
             buckets[week_start] = {}
         buckets[week_start][sport] = buckets[week_start].get(sport, 0) + tss
@@ -313,15 +315,17 @@ def get_ytd(params: dict) -> dict:
             Key("start_date").between(year_from, year_to)
         ),
         ScanIndexForward=True,
+        # Intervals.icu fields: 'type' = sport, 'icu_training_load' = TSS,
+        # 'total_elevation_gain' = elevation (NOT elevation_gain)
         ProjectionExpression=(
-            "start_date, sport, #tss, moving_time, distance, elevation_gain"
+            "start_date, #sport_type, icu_training_load, moving_time, distance, total_elevation_gain"
         ),
-        ExpressionAttributeNames={"#tss": "tss"},
+        ExpressionAttributeNames={"#sport_type": "type"},
     )
 
     totals: dict[str, dict] = {}
     for item in items:
-        sport = item.get("sport", "Other")
+        sport = item.get("type", "Other")                          # 'type' per Intervals.icu spec
         if sport not in totals:
             totals[sport] = {
                 "count": 0,
@@ -331,10 +335,10 @@ def get_ytd(params: dict) -> dict:
                 "elevation_m":    0.0,
             }
         totals[sport]["count"]         += 1
-        totals[sport]["tss"]           += float(item.get("tss") or 0)
+        totals[sport]["tss"]           += float(item.get("icu_training_load") or 0)  # per spec
         totals[sport]["moving_time_s"] += int(item.get("moving_time") or 0)
         totals[sport]["distance_m"]    += float(item.get("distance") or 0)
-        totals[sport]["elevation_m"]   += float(item.get("elevation_gain") or 0)
+        totals[sport]["elevation_m"]   += float(item.get("total_elevation_gain") or 0)  # per spec
 
     return ok({"ytd": totals, "year": year, "activity_count": len(items)})
 

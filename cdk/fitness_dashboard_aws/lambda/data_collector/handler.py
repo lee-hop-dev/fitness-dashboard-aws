@@ -28,7 +28,6 @@ dynamodb = boto3.resource("dynamodb")
 secrets_client = boto3.client("secretsmanager")
 
 ATHLETE_ID = "5718022"
-INTERVALS_ATHLETE_PREFIX = f"i{ATHLETE_ID}"
 INTERVALS_BASE_URL = "https://intervals.icu/api/v1"
 
 # Table names (set via Lambda env vars)
@@ -116,7 +115,7 @@ def sync_activities(api_key: str) -> int:
     newest = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
     activities = intervals_get(
-        f"athlete/{INTERVALS_ATHLETE_PREFIX}/activities",
+        f"athlete/{ATHLETE_ID}/activities",
         api_key,
         params={"oldest": oldest, "newest": newest},
     )
@@ -150,7 +149,7 @@ def sync_wellness(api_key: str) -> int:
     newest = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
     wellness_data = intervals_get(
-        f"athlete/{INTERVALS_ATHLETE_PREFIX}/wellness",
+        f"athlete/{ATHLETE_ID}/wellness",
         api_key,
         params={"oldest": oldest, "newest": newest},
     )
@@ -179,7 +178,7 @@ def sync_power_curves(api_key: str) -> int:
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
     curves = intervals_get(
-        f"athlete/{INTERVALS_ATHLETE_PREFIX}/power-curves",
+        f"athlete/{ATHLETE_ID}/power-curves",
         api_key,
         params={"type": "Ride", "curves": "power"},
     )
@@ -206,7 +205,7 @@ def sync_athlete(api_key: str) -> dict:
     table = dynamodb.Table(WELLNESS_TABLE)
 
     athlete = intervals_get(
-        f"athlete/{INTERVALS_ATHLETE_PREFIX}",
+        f"athlete/{ATHLETE_ID}",
         api_key,
     )
 

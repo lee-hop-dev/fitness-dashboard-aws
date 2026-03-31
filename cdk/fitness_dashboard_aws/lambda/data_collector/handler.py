@@ -141,10 +141,12 @@ def sync_activities(api_key: str, days: int = 90) -> int:
     oldest = (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%d")
     newest = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
+    # limit=500 ensures we capture all activities in the date range.
+    # Intervals.icu default limit is lower and silently truncates results.
     activities = intervals_get(
         f"athlete/{ATHLETE_ID}/activities",
         api_key,
-        params={"oldest": oldest, "newest": newest},
+        params={"oldest": oldest, "newest": newest, "limit": 500},
     )
 
     count = 0

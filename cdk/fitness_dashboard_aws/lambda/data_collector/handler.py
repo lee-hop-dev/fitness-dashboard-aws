@@ -75,7 +75,16 @@ def intervals_get(path: str, api_key: str, params: dict = None) -> dict | list:
     """Make an authenticated GET request to the Intervals.icu API."""
     url = f"{INTERVALS_BASE_URL}/{path}"
     if params:
-        url += "?" + urllib.parse.urlencode(params)
+        # Handle list values correctly (e.g. curves=["90d"] -> curves=90d)
+        # urllib.parse.urlencode does not handle lists like requests does
+        parts = []
+        for k, v in params.items():
+            if isinstance(v, list):
+                for item in v:
+                    parts.append(f"{urllib.parse.quote(str(k))}={urllib.parse.quote(str(item))}")
+            else:
+                parts.append(f"{urllib.parse.quote(str(k))}={urllib.parse.quote(str(v))}")
+        url += "?" + "&".join(parts)
 
     # Intervals.icu uses Basic auth: username="API_KEY", password=<actual key>
     credentials = base64.b64encode(f"API_KEY:{api_key}".encode()).decode()

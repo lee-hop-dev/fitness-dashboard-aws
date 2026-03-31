@@ -1187,7 +1187,7 @@ function renderCalendar(activities) {
         html += `<div class="cal-day-cell ${!day.inRange?'empty':''} ${day.acts.length?'has-activity':''} ${day.isToday?'today':''}" ${bgStyle}>
           <div class="cal-date-num">${day.dayNum}</div>
           ${act?`<div class="cal-activity-mini">
-            <div class="cal-mini-name ${info?.colorClass||''}">${act.name.substring(0,16)}</div>
+            <div class="cal-mini-name ${info?.colorClass||''}">${(act.name||'Activity').substring(0,16)}</div>
             <div class="cal-mini-stats">${formatDuration(act.duration)} · ${getTSS(act) ? Math.round(getTSS(act)) + 'tss' : 'no TSS'}</div>
           </div>`:''}
           ${!act && events.length > 0 && day.ds >= today.toISOString().split('T')[0] ? events.map(event => `<div class="cal-activity-mini cal-planned">

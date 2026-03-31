@@ -450,7 +450,7 @@ If AWS migration has issues:
 |-------|----------|--------|
 | Phase 1: Foundation | Week 1 | ✅ Complete |
 | Phase 2: Core Infrastructure | Week 2 | ✅ Complete |
-| Phase 3: API Layer | Week 3 | ✅ Complete — deploy `FitnessDashboardApi` stack |
+| Phase 3: API Layer | Week 3 | ✅ Complete — 12/12 smoke tests passing |
 | Phase 4: Frontend Migration | Week 4 | Not Started |
 | Phase 5: Optimization | Week 5 | Not Started |
 
@@ -461,16 +461,14 @@ If AWS migration has issues:
 
 ## Next Immediate Steps
 
-When you return:
+Phase 3 complete. Ready to start **Phase 4: Frontend Migration**.
 
-1. Run `aws configure`
-2. Enter your IAM user credentials
-3. Test with `aws sts get-caller-identity`
-4. Install Node.js (if not already installed)
-5. Install AWS CDK globally
-6. Bootstrap CDK in your AWS account
+1. Update `docs/assets/js/data-loader.js` — replace static JSON fetches with API calls
+2. Update all dashboard pages to use API responses
+3. Handle loading states and API errors in the frontend
+4. Deploy frontend to S3 (Phase 4.4)
 
-Then we'll be ready to start Phase 2: Core Infrastructure.
+API base URL: `https://j2zxz92vd4.execute-api.eu-west-2.amazonaws.com/prod/`
 
 ---
 

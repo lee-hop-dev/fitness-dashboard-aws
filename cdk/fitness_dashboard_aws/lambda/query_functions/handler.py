@@ -35,7 +35,7 @@ dynamodb = boto3.resource("dynamodb", region_name="eu-west-2")
 ACTIVITIES_TABLE = os.environ["ACTIVITIES_TABLE"]
 WELLNESS_TABLE   = os.environ["WELLNESS_TABLE"]
 CURVES_TABLE     = os.environ["CURVES_TABLE"]
-ATHLETE_ID       = os.environ.get("ATHLETE_ID", "i5718022")
+ATHLETE_ID       = os.environ.get("ATHLETE_ID", "5718022")
 
 activities_table = dynamodb.Table(ACTIVITIES_TABLE)
 wellness_table   = dynamodb.Table(WELLNESS_TABLE)
@@ -174,24 +174,23 @@ def get_wellness(params: dict) -> dict:
 
 def get_athlete(_params: dict) -> dict:
     """
-    Return the latest athlete profile entry (FTP, W'bal, weight, etc.).
-    The athlete profile is stored in wellness with special fields;
-    we also check for a dedicated athlete_profile record in the wellness table.
-    We return the most recent wellness entry which contains the current metrics.
+    Return the athlete profile plus recent wellness trend.
+
+    The collector stores the Intervals.icu athlete profile as a wellness
+    record with the static sort key "athlete_profile".  Fetch that directly,
+    then also return the last 7 days of wellness entries for trend data.
     """
     logger.info("get_athlete: athlete=%s", ATHLETE_ID)
 
-    # Most recent wellness record has current FTP, weight etc.
-    resp = wellness_table.query(
-        KeyConditionExpression=Key("athlete_id").eq(ATHLETE_ID),
-        ScanIndexForward=False,
-        Limit=1,
+    # Fetch the static athlete_profile record written by the collector
+    resp = wellness_table.get_item(
+        Key={"athlete_id": ATHLETE_ID, "date": "athlete_profile"}
     )
-    items = resp.get("Items", [])
-    if not items:
-        return err("Athlete profile not found", 404)
+    profile = resp.get("Item")
+    if not profile:
+        return err("Athlete profile not found — run the data collector first", 404)
 
-    # Also grab the 7-day window for trend data
+    # Recent wellness entries for trend display (ISO date sort keys only)
     recent = paginate_query(
         wellness_table,
         KeyConditionExpression=(
@@ -200,10 +199,12 @@ def get_athlete(_params: dict) -> dict:
         ),
         ScanIndexForward=False,
     )
+    # Filter out the static athlete_profile key from the trend list
+    recent = [w for w in recent if w.get("date") != "athlete_profile"]
 
     return ok({
         "athlete_id": ATHLETE_ID,
-        "profile": items[0],
+        "profile": profile,
         "recent_wellness": recent,
     })
 

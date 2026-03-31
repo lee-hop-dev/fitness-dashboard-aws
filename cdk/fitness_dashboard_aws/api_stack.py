@@ -38,7 +38,7 @@ class ApiStack(Stack):
         scope: Construct,
         construct_id: str,
         dynamo_stack: DynamoDBStack,
-        athlete_id: str = "i5718022",
+        athlete_id: str = "5718022",
         **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)

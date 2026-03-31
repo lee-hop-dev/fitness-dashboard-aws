@@ -124,7 +124,7 @@ def test_404():
 
 def test_single_activity():
     """Fetch the first activity ID from /activities and hit /activities/{id}."""
-    url = BASE + "/activities?days=365&limit=1"
+    url = BASE + "/activities?days=90&limit=1"  # collector syncs 90 days
     try:
         with urllib.request.urlopen(url, timeout=15) as r:
             body = json.loads(r.read())

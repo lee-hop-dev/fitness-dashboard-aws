@@ -52,7 +52,7 @@ api_stack = ApiStack(
     app,
     "FitnessDashboardApi",
     dynamo_stack=dynamo_stack,
-    athlete_id="i5718022",
+    athlete_id="5718022",
     env=env,
     description="Fitness Dashboard - API Gateway REST API + Lambda query functions",
 )

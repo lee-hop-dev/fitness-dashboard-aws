@@ -31,7 +31,7 @@ const DATA = {
   _normaliseActivity(a) {
     return {
       ...a,
-      date:      (a.start_date_local || a.start_date || a.date || '').split('T')[0] || null,
+      date:      a.start_date || a.date || null,
       duration:  a.moving_time    || a.duration     || 0,
       avg_power: a.icu_average_watts != null ? a.icu_average_watts : (a.avg_power ?? null),
       avg_hr:    a.average_heartrate != null ? a.average_heartrate : (a.avg_hr   ?? null),
@@ -68,7 +68,7 @@ const DATA = {
     // Build a map of date → { tss, sport (dominant) }
     const byDate = {};
     activities.forEach(a => {
-      const date = (a.start_date_local || a.start_date || a.date || '').split('T')[0];
+      const date = a.start_date || a.date;
       if (!date) return;
       const tss = a.icu_training_load || a.tss || 0;
       const type = a.type || 'Other';

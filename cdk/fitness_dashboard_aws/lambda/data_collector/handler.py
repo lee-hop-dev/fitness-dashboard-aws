@@ -112,11 +112,11 @@ def float_to_decimal(obj):
 
 # ── Sync functions ────────────────────────────────────────────────────────────
 
-def sync_activities(api_key: str) -> int:
+def sync_activities(api_key: str, days: int = 90) -> int:
     """
     Fetch recent activities from Intervals.icu and upsert into DynamoDB.
     Uses the /athlete/{id}/activities endpoint.
-    Fetches last 90 days to catch any backfill.
+    Fetches last 90 days by default; pass days=400 for a one-time backfill.
 
     Field names follow the Intervals.icu OpenAPI spec exactly.
     Key fields stored as-is from the API:
@@ -138,7 +138,7 @@ def sync_activities(api_key: str) -> int:
     """
     table = dynamodb.Table(ACTIVITIES_TABLE)
 
-    oldest = (datetime.now(timezone.utc) - timedelta(days=90)).strftime("%Y-%m-%d")
+    oldest = (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%d")
     newest = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
     activities = intervals_get(
@@ -287,8 +287,13 @@ def handler(event, context):
 
     results = {}
 
+    # Support one-time backfill: invoke Lambda with {"backfill_days": 400}
+    backfill_days = int(event.get("backfill_days", 90))
+    if backfill_days != 90:
+        logger.info(f"Backfill mode: fetching {backfill_days} days of activities")
+
     try:
-        results["activities"] = sync_activities(api_key)
+        results["activities"] = sync_activities(api_key, days=backfill_days)
     except Exception as e:
         logger.error(f"Activities sync failed: {e}")
         results["activities_error"] = str(e)

@@ -26,22 +26,99 @@ const DATA = {
     return data;
   },
 
+  // ── Normalise YTD API response into the shape pages expect ───────────────
+  // API returns: { ytd: { Ride: {count,tss,moving_time_s,distance_m,elevation_m}, Run:{...}, ... } }
+  // Pages expect: { total:{distance,hours,tss}, cycling:{distance,hours,tss}, running:{distance,hours,tss}, rowing:{...} }
+  _normaliseYTD(raw) {
+    const sports = raw.ytd || {};
+
+    // Sum across all sport-type keys that belong to each category
+    const CYCLING = ['Ride','VirtualRide','EBikeRide','EMountainBikeRide','GravelRide','MountainBikeRide','TrackRide','Velomobile'];
+    const RUNNING = ['Run','VirtualRun','TrailRun'];
+    const ROWING  = ['Rowing','VirtualRow'];
+
+    const sum = (keys) => keys.reduce((acc, k) => {
+      const s = sports[k];
+      if (!s) return acc;
+      acc.distance  += s.distance_m    || 0;
+      acc.hours     += (s.moving_time_s || 0) / 3600;
+      acc.tss       += s.tss           || 0;
+      acc.count     += s.count         || 0;
+      acc.elevation += s.elevation_m   || 0;
+      return acc;
+    }, { distance: 0, hours: 0, tss: 0, count: 0, elevation: 0 });
+
+    // Round for display
+    const round = o => ({
+      distance:  Math.round(o.distance / 1000),   // metres → km
+      hours:     Math.round(o.hours * 10) / 10,
+      tss:       Math.round(o.tss),
+      count:     o.count,
+      elevation: Math.round(o.elevation),
+    });
+
+    const cycling = round(sum(CYCLING));
+    const running = round(sum(RUNNING));
+    const rowing  = round(sum(ROWING));
+
+    // Other = everything not in the above categories
+    const knownKeys = [...CYCLING, ...RUNNING, ...ROWING];
+    const otherKeys = Object.keys(sports).filter(k => !knownKeys.includes(k));
+    const other = round(sum(otherKeys));
+
+    const total = {
+      distance:  cycling.distance  + running.distance  + rowing.distance  + other.distance,
+      hours:     Math.round((cycling.hours + running.hours + rowing.hours + other.hours) * 10) / 10,
+      tss:       cycling.tss + running.tss + rowing.tss + other.tss,
+      count:     cycling.count + running.count + rowing.count + other.count,
+      elevation: cycling.elevation + running.elevation + rowing.elevation + other.elevation,
+    };
+
+    return { total, cycling, running, rowing, other, raw: sports };
+  },
+
+  // ── Normalise weeklyTSS API response into the shape charts.js expects ────
+  // API returns: [{ week, sports: { Ride:n, VirtualRide:n, Run:n, ... }, total:n }]
+  // charts.js expects: [{ week, ride, run, row, other }]
+  _normaliseWeeklyTSS(raw) {
+    const CYCLING = ['Ride','VirtualRide','EBikeRide','EMountainBikeRide','GravelRide','MountainBikeRide','TrackRide','Velomobile'];
+    const RUNNING = ['Run','VirtualRun','TrailRun'];
+    const ROWING  = ['Rowing','VirtualRow'];
+
+    return (raw || []).map(w => {
+      const s = w.sports || {};
+      const sumKeys = keys => keys.reduce((t, k) => t + (s[k] || 0), 0);
+      const knownKeys = [...CYCLING, ...RUNNING, ...ROWING];
+      const otherTSS  = Object.keys(s)
+        .filter(k => !knownKeys.includes(k))
+        .reduce((t, k) => t + (s[k] || 0), 0);
+
+      return {
+        week:  w.week,
+        ride:  Math.round(sumKeys(CYCLING)),
+        run:   Math.round(sumKeys(RUNNING)),
+        row:   Math.round(sumKeys(ROWING)),
+        other: Math.round(otherTSS),
+        total: Math.round(w.total || 0),
+      };
+    });
+  },
+
   // ── loadAll: mirrors the old static-JSON contract for all pages ──────────
   async loadAll() {
-    // Parallel fetch all endpoints — same concurrency as the old Promise.all
     const [
-      activitiesResp,      // { activities: [...], count, since }
-      wellnessResp,        // { wellness: [...], count, from, to }
-      weeklyTSSResp,       // { weekly_tss: [...], since }
-      ytdResp,             // { ytd: { Ride: {...}, Run: {...}, ... }, year, activity_count }
-      athleteResp,         // { athlete_id, profile: {...}, recent_wellness: [...] }
-      powerCurveResp,      // curve item  { athlete_id, curve_type_date, secs, watts, ... }
-      paceCurveResp,       // curve item  { athlete_id, curve_type_date, secs, ... }
-      hrCurveResp,         // curve item  { athlete_id, curve_type_date, secs, ... }
-      heatmap1yResp,       // activities for heatmap (365 days)
-      heatmap3yResp,       // activities for heatmap (1095 days)
+      activitiesResp,
+      wellnessResp,
+      weeklyTSSResp,
+      ytdResp,
+      athleteResp,
+      powerCurveResp,
+      paceCurveResp,
+      hrCurveResp,
+      heatmap1yResp,
+      heatmap3yResp,
     ] = await Promise.all([
-      this._fetch('/activities',  { days: 90,   limit: 500 }),
+      this._fetch('/activities',  { days: 90,   limit: 500  }),
       this._fetch('/wellness',    { days: 180 }),
       this._fetch('/weekly-tss',  { weeks: 52  }),
       this._fetch('/ytd'),
@@ -53,67 +130,50 @@ const DATA = {
       this._fetch('/activities',  { days: 1095, limit: 3000 }),
     ]);
 
-    // ── Normalise into the same shapes the pages expect ─────────────────────
-
-    // activities — unwrap envelope, keep array
+    // activities — unwrap envelope
     const activities = activitiesResp.activities || [];
 
-    // wellness — unwrap envelope, keep array (chronological from API)
+    // wellness — unwrap envelope (chronological from API)
     const wellness = wellnessResp.wellness || [];
 
-    // weeklyTSS — array of { week, sports: {Ride:n, Run:n,...}, total }
-    const weeklyTSS = weeklyTSSResp.weekly_tss || [];
+    // weeklyTSS — normalise sport keys to { week, ride, run, row, other }
+    const weeklyTSS = this._normaliseWeeklyTSS(weeklyTSSResp.weekly_tss);
 
-    // ytd — object keyed by sport type
-    const ytd = ytdResp.ytd || {};
+    // ytd — normalise to { total, cycling, running, rowing, other }
+    const ytd = this._normaliseYTD(ytdResp);
 
-    // heatmaps — just the activity arrays used for date/sport colouring
+    // heatmaps — activity arrays for date/sport colouring
     const heatmap1y = heatmap1yResp.activities || [];
     const heatmap3y = heatmap3yResp.activities || [];
 
-    // athlete — profile holds FTP, W'bal, weight etc.
-    // Map profile fields to the flat shape data-loader consumers expect.
-    // Intervals.icu field names (per API spec + Connections doc):
-    //   icu_ftp         -> ftp
-    //   icu_w_prime     -> w_prime
-    //   icu_weight      -> weight
+    // athlete — map Intervals.icu field names to expected keys
     const profile = athleteResp.profile || {};
     const athlete = {
-      // Pass the full profile through so pages can access any field
       ...profile,
-      // Explicit mappings for the most-used fields
-      ftp:      profile.icu_ftp      ?? profile.ftp      ?? null,
-      w_prime:  profile.icu_w_prime  ?? profile.w_prime  ?? null,
-      weight:   profile.icu_weight   ?? profile.weight   ?? null,
+      ftp:     profile.icu_ftp     || profile.ftp     || null,
+      w_prime: profile.icu_w_prime || profile.w_prime  || null,
+      weight:  profile.icu_weight  || profile.weight   || null,
     };
 
-    // meta — replaces meta.json; assembles power/pace/hr curves into one object
-    // power_curve: the watts array from the power curve endpoint (used by cycling.html)
-    // Intervals.icu power curve response shape: { secs: [...], watts: [...], ... }
-    // Normalise so meta.power_curve is always the watts array (matching old meta.json usage)
+    // meta — assemble from three curve endpoints
     const meta = {
-      // Spread the raw power curve item so all its fields are accessible
       ...powerCurveResp,
-      // Normalise power curve — old code checks meta.power_curve || meta.powerCurve etc.
-      power_curve:  powerCurveResp.watts
-                 || powerCurveResp.power_curve
-                 || powerCurveResp.powerCurve
-                 || null,
-      // Attach pace and HR curves under named keys for pages that need them
-      pace_curve: paceCurveResp,
-      hr_curve:   hrCurveResp,
-      // Convenience: secs arrays
-      power_secs: powerCurveResp.secs || null,
-      pace_secs:  paceCurveResp.secs  || null,
-      hr_secs:    hrCurveResp.secs    || null,
+      power_curve: powerCurveResp.watts
+                || powerCurveResp.power_curve
+                || powerCurveResp.powerCurve
+                || null,
+      pace_curve:  paceCurveResp,
+      hr_curve:    hrCurveResp,
+      power_secs:  powerCurveResp.secs || null,
+      pace_secs:   paceCurveResp.secs  || null,
+      hr_secs:     hrCurveResp.secs    || null,
     };
 
     return { activities, wellness, weeklyTSS, ytd, heatmap1y, heatmap3y, athlete, meta };
   },
 
-  // ── Helpers — unchanged from original ────────────────────────────────────
+  // ── Helpers ───────────────────────────────────────────────────────────────
 
-  // Latest wellness metrics (most-recent non-null value for each field)
   latestWellness(wellness) {
     const rev = [...wellness].reverse();
     return {
@@ -127,20 +187,16 @@ const DATA = {
     };
   },
 
-  // Activities in last N days
   recentActivities(activities, days = 7) {
     const cutoff = new Date(Date.now() - days * 864e5).toISOString().split('T')[0];
     return activities.filter(a => (a.start_date || a.date) >= cutoff);
   },
 
-  // Build 90-day power bests from ride data
-  // Note: prefer meta.power_curve (from Intervals.icu) over this client-side estimate
   powerBests(activities) {
     const cutoff = new Date(Date.now() - 90 * 864e5).toISOString().split('T')[0];
     const rides  = activities.filter(a =>
       (a.type === 'Ride' || a.type === 'VirtualRide') &&
       (a.start_date || a.date) >= cutoff &&
-      // Intervals.icu field: icu_average_watts (per Connections doc)
       (a.icu_average_watts || a.avg_power)
     );
     if (!rides.length) return [];
@@ -159,7 +215,6 @@ const DATA = {
     }));
   },
 
-  // Build 90-day pace bests from run data
   paceBests(activities) {
     const cutoff = new Date(Date.now() - 90 * 864e5).toISOString().split('T')[0];
     const runs   = activities.filter(a =>
@@ -169,8 +224,8 @@ const DATA = {
     );
     if (!runs.length) return [];
 
-    const bestSpeed  = Math.max(...runs.map(r => r.avg_speed));
-    const bestSecKm  = Math.round(1000 / bestSpeed);
+    const bestSpeed = Math.max(...runs.map(r => r.avg_speed));
+    const bestSecKm = Math.round(1000 / bestSpeed);
 
     const distances = [
       { label:'400m',     distM:400   },
@@ -201,10 +256,8 @@ const DATA = {
     });
   },
 
-  // PB markers for last 90 days only
   pbMarkers(activities, wellness) {
     const cutoff = new Date(Date.now() - 90 * 864e5).toISOString().split('T')[0];
-    // Intervals.icu field: icu_training_load (TSS) per Connections doc
     const tssOf  = a => a.icu_training_load || a.tss || 0;
     const recent = activities.filter(a =>
       (a.start_date || a.date) >= cutoff && tssOf(a) > 0
@@ -238,20 +291,11 @@ function formatPace(secPerKm) {
 
 function getTypeInfo(type = '') {
   const t = type.toLowerCase();
-
-  if (t.includes('ride') || t.includes('cycle')) {
-    return { label: 'Cycling', colorClass: 'cycling', dotClass: 'dot-cycling', page: 'cycling.html' };
-  }
-  if (t.includes('run')) {
-    return { label: 'Running', colorClass: 'running', dotClass: 'dot-running', page: 'running.html' };
-  }
-  if (t.includes('row') || t.includes('erg')) {
-    return { label: 'Rowing',  colorClass: 'rowing',  dotClass: 'dot-rowing',  page: 'rowing.html'  };
-  }
-  if (t.includes('strength') || t.includes('cardio') || t.includes('gym')) {
-    return { label: 'Cardio',  colorClass: 'cardio',  dotClass: 'dot-cardio',  page: 'cardio.html'  };
-  }
-  return { label: 'Other', colorClass: 'other', dotClass: 'dot-other', page: 'other.html' };
+  if (t.includes('ride') || t.includes('cycle')) return { label:'Cycling', colorClass:'cycling', dotClass:'dot-cycling', page:'cycling.html' };
+  if (t.includes('run'))                          return { label:'Running', colorClass:'running', dotClass:'dot-running', page:'running.html' };
+  if (t.includes('row') || t.includes('erg'))     return { label:'Rowing',  colorClass:'rowing',  dotClass:'dot-rowing',  page:'rowing.html'  };
+  if (t.includes('strength') || t.includes('cardio') || t.includes('gym')) return { label:'Cardio', colorClass:'cardio', dotClass:'dot-cardio', page:'cardio.html' };
+  return { label:'Other', colorClass:'other', dotClass:'dot-other', page:'other.html' };
 }
 
 function getISOWeekNum(date) {

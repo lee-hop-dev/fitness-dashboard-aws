@@ -10,6 +10,9 @@ Phase 2: Core Infrastructure
 Phase 3: API Layer
   - ApiStack       (3.1 + 3.2) - API Gateway REST API + Lambda query functions
 
+Phase 4: Frontend Migration
+  - FrontendStack  (4.1 + 4.2) - S3 static bucket + CloudFront distribution
+
 Region: eu-west-2 (London)
 Account: Lee.Hopkins.Dev
 """
@@ -20,6 +23,7 @@ from fitness_dashboard_aws.dynamodb_stack import DynamoDBStack
 from fitness_dashboard_aws.secrets_stack import SecretsStack
 from fitness_dashboard_aws.collector_stack import CollectorStack
 from fitness_dashboard_aws.api_stack import ApiStack
+from fitness_dashboard_aws.frontend_stack import FrontendStack
 
 app = cdk.App()
 
@@ -57,9 +61,17 @@ api_stack = ApiStack(
     description="Fitness Dashboard - API Gateway REST API + Lambda query functions",
 )
 
+frontend_stack = FrontendStack(
+    app,
+    "FitnessDashboardFrontend",
+    env=env,
+    description="Fitness Dashboard - S3 static hosting + CloudFront CDN (Phase 4)",
+)
+
 # Explicit dependency ordering
 collector_stack.add_dependency(dynamo_stack)
 collector_stack.add_dependency(secrets_stack)
 api_stack.add_dependency(dynamo_stack)
+# FrontendStack is independent of backend stacks — no dependency needed
 
 app.synth()

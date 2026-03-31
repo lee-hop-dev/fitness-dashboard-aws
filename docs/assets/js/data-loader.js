@@ -200,11 +200,15 @@ const DATA = {
 
     // Athlete — map Intervals.icu field names
     const profile = athleteResp.profile || {};
+    // W'bal (icu_w_prime) is per-activity, not on the athlete profile.
+    // Take the most recent non-null value across activities — same approach as original collector.
+    const wPrime = (activitiesResp.activities || [])
+      .find(a => a.icu_w_prime != null)?.icu_w_prime ?? null;
     const athlete = {
       ...profile,
-      ftp:     profile.icu_ftp     || profile.ftp     || null,
-      w_prime: profile.icu_w_prime || profile.w_prime  || null,
-      weight:  profile.icu_weight  || profile.weight   || null,
+      ftp:     profile.icu_ftp  || profile.ftp    || null,
+      w_prime: wPrime,
+      weight:  profile.icu_weight || profile.weight || null,
     };
 
     // Meta — assemble from three curve endpoints

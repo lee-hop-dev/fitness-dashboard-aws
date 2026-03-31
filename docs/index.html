@@ -1002,7 +1002,7 @@ function renderUpcomingCards() {
   const container = document.getElementById('upcoming-cards');
   
   fetch('data/upcoming_events.json')
-    .then(r => r.json())
+    .then(r => { if (!r.ok) throw new Error('no upcoming events'); return r.json(); })
     .then(events => {
       if (!events || events.length === 0) {
         container.innerHTML = '<div style="color:var(--text-muted);font-family:var(--font-mono);font-size:11px;padding:15px">No upcoming events scheduled</div>';
@@ -1096,7 +1096,7 @@ function renderCalendar(activities) {
   // Load upcoming events from Intervals.icu
   const eventsByDate = {};
   fetch('data/upcoming_events.json')
-    .then(r => r.json())
+    .then(r => { if (!r.ok) throw new Error('no upcoming events'); return r.json(); })
     .then(events => {
       events.forEach(e => {
         const date = e.start_date_local ? e.start_date_local.split('T')[0] : null;

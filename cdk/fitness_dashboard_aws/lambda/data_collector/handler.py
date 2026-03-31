@@ -167,33 +167,49 @@ def sync_wellness(api_key: str) -> int:
     return count
 
 
-def sync_power_curves(api_key: str) -> int:
+def sync_curve(api_key: str, endpoint: str, sport_type: str, curve_key: str) -> bool:
     """
-    Fetch power curves from Intervals.icu and upsert into DynamoDB.
-    Uses the /athlete/{id}/power-curves endpoint.
-    Intervals computes Critical Power — never recalculate client-side.
+    Generic curve sync: fetches from Intervals.icu and writes to DynamoDB curves table.
+    Intervals computes all curves — never recalculate client-side.
+    params format matches working collect_data.py: curves as list.
     """
     table = dynamodb.Table(CURVES_TABLE)
-
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
-    curves = intervals_get(
-        f"athlete/{ATHLETE_ID}/power-curves",
+    data = intervals_get(
+        f"athlete/{ATHLETE_ID}/{endpoint}",
         api_key,
-        params={"type": "Ride", "curves": "power"},
+        params={"type": sport_type, "curves": ["90d"]},
     )
 
-    count = 0
-    with table.batch_writer() as batch:
-        item = float_to_decimal(curves) if isinstance(curves, dict) else {}
-        item["athlete_id"] = ATHLETE_ID
-        item["curve_type_date"] = f"power#{today}"
-        item["fetched_date"] = today
-        batch.put_item(Item=item)
-        count += 1
+    if not data:
+        logger.warning(f"No data returned for {curve_key}")
+        return False
 
-    logger.info(f"Synced power curves ({count} records)")
-    return count
+    item = float_to_decimal(data) if isinstance(data, dict) else {"raw": float_to_decimal(data)}
+    item["athlete_id"] = ATHLETE_ID
+    item["curve_type_date"] = f"{curve_key}#{today}"
+    item["fetched_date"] = today
+    table.put_item(Item=item)
+    logger.info(f"Synced {curve_key} curves")
+    return True
+
+
+def sync_all_curves(api_key: str) -> dict:
+    """Sync power (Ride), pace (Run) and HR (Run) curves — matching collect_data.py."""
+    results = {}
+    curves = [
+        ("power-curves",  "Ride", "power"),
+        ("pace-curves",   "Run",  "pace"),
+        ("hr-curves",     "Run",  "hr"),
+    ]
+    for endpoint, sport, key in curves:
+        try:
+            results[key] = sync_curve(api_key, endpoint, sport, key)
+        except Exception as e:
+            logger.error(f"{key} curves sync failed: {e}")
+            results[f"{key}_error"] = str(e)
+    return results
 
 
 def sync_athlete(api_key: str) -> dict:
@@ -251,10 +267,10 @@ def handler(event, context):
         results["wellness_error"] = str(e)
 
     try:
-        results["power_curves"] = sync_power_curves(api_key)
+        results["curves"] = sync_all_curves(api_key)
     except Exception as e:
-        logger.error(f"Power curves sync failed: {e}")
-        results["power_curves_error"] = str(e)
+        logger.error(f"Curves sync failed: {e}")
+        results["curves_error"] = str(e)
 
     try:
         sync_athlete(api_key)

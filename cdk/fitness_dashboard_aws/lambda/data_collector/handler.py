@@ -44,9 +44,32 @@ INTERVALS_SECRET_NAME = os.environ.get(
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def get_intervals_api_key() -> str:
-    """Retrieve Intervals.icu API key from Secrets Manager."""
+    """
+    Retrieve Intervals.icu API key from Secrets Manager.
+    Handles both storage formats:
+      - Plain string:  "abc123"
+      - JSON object:   {"api_key": "abc123"} or any single-value dict
+    """
     response = secrets_client.get_secret_value(SecretId=INTERVALS_SECRET_NAME)
-    return response["SecretString"]
+    secret = response["SecretString"]
+
+    # If stored as JSON key/value pair, extract the actual key value
+    try:
+        parsed = json.loads(secret)
+        if isinstance(parsed, dict):
+            for key in ("api_key", "value", "key", "secret", "intervals_api_key"):
+                if key in parsed:
+                    logger.info(f"Extracted API key from JSON secret using key: '{key}'")
+                    return parsed[key]
+            first_val = next(iter(parsed.values()))
+            logger.info("Extracted API key from JSON secret (first value)")
+            return first_val
+    except (json.JSONDecodeError, StopIteration):
+        pass  # Not JSON, treat as plain string
+
+    logger.info("Using API key as plain string")
+    return secret
+
 
 
 def intervals_get(path: str, api_key: str, params: dict = None) -> dict | list:

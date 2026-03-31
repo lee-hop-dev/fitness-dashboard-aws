@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Race Stream — Training OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/main.css">
+<script src="assets/js/theme-toggle.js"></script>
+<style>
+  /* Race Stream specific styles */
+  .stream-container {
+    margin-bottom: 32px;
+  }
+
+  .live-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--red);
+    color: white;
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  .live-indicator::before {
+    content: "●";
+    font-size: 16px;
+    animation: blink 1s ease-in-out infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .video-embed {
+    position: relative;
+    width: 100%;
+    padding-bottom: 56.25%; /* 16:9 aspect ratio */
+    background: var(--bg-surface);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .video-embed iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+
+  .no-stream-message {
+    padding: 48px 24px;
+    text-align: center;
+    background: var(--bg-surface);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+  }
+
+  .no-stream-message h3 {
+    font-size: 18px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+  }
+
+  .no-stream-message p {
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+
+  .race-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
+    margin-top: 32px;
+  }
+
+  .race-card {
+    background: var(--bg-surface);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    transition: all var(--transition);
+    cursor: pointer;
+  }
+
+  .race-card:hover {
+    border-color: var(--accent-border);
+    transform: translateY(-2px);
+    box-shadow: var(--accent-glow);
+  }
+
+  .race-thumbnail {
+    position: relative;
+    width: 100%;
+    padding-bottom: 56.25%; /* 16:9 */
+    background: var(--bg-elevated);
+    overflow: hidden;
+  }
+
+  .race-thumbnail img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .race-thumbnail::after {
+    content: "▶";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 48px;
+    color: white;
+    opacity: 0;
+    transition: opacity var(--transition);
+    text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  }
+
+  .race-card:hover .race-thumbnail::after {
+    opacity: 0.9;
+  }
+
+  .race-info {
+    padding: 16px;
+  }
+
+  .race-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .race-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+  }
+
+  .race-date {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .race-duration {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+
+  .section-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .section-subtitle {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .refresh-button {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+
+  .refresh-button:hover {
+    border-color: var(--accent-border);
+    color: var(--accent);
+  }
+
+  .hidden {
+    display: none;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-initials">LH</span>
+      <span class="brand-text">Training<br>OS</span>
+    </div>
+    <ul class="nav-links">
+      <li class="nav-item"><a href="index.html"><span class="nav-icon">◈</span><span>Overview</span></a></li>
+      <li class="nav-item"><a href="cycling.html"><span class="nav-icon">🚲</span><span>Cycling</span></a></li>
+      <li class="nav-item"><a href="running.html"><span class="nav-icon">▷</span><span>Running</span></a></li>
+      <li class="nav-item"><a href="rowing.html"><span class="nav-icon">⊕</span><span>Rowing</span></a></li>
+      <li class="nav-item"><a href="cardio.html"><span class="nav-icon">◎</span><span>Cardio</span></a></li>
+      <li class="nav-item"><a href="other.html"><span class="nav-icon">○</span><span>Other</span></a></li>
+      <li class="nav-item active"><a href="race-stream.html"><span class="nav-icon">📺</span><span>Race Stream</span></a></li>
+    </ul>
+    <div class="sidebar-footer">
+      <div class="theme-toggle-nav" onclick="toggleTheme()" title="Toggle dark/light mode">
+        <span class="nav-icon theme-icon">☀️</span>
+        <span>Theme</span>
+      </div>
+      <div class="sync-status"><span class="sync-dot"></span><span class="sync-text" id="last-sync">Loading...</span></div>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div class="header-left">
+        <h1 class="page-title">Race Stream</h1>
+        <span class="page-subtitle">Live Racing · Recent Races · Zwift Content</span>
+      </div>
+      <div class="header-right">
+        <button class="refresh-button" onclick="checkLiveStream()">
+          <span>↻ Check for Live Stream</span>
+        </button>
+      </div>
+    </header>
+
+    <div id="page-content">
+      <!-- Live Stream Section -->
+      <section class="stream-container">
+        <div id="live-stream-wrapper" class="hidden">
+          <div class="live-indicator">
+            <span>Live Now</span>
+          </div>
+          <div class="video-embed">
+            <iframe id="live-stream-embed" 
+                    src="" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+            </iframe>
+          </div>
+        </div>
+
+        <div id="no-stream-message" class="no-stream-message">
+          <h3>No Live Stream</h3>
+          <p>Check back during race time for live coverage</p>
+        </div>
+      </section>
+
+      <!-- Recent Races Section -->
+      <section>
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">Recent Races</h2>
+            <p class="section-subtitle">Latest race replays and highlights</p>
+          </div>
+        </div>
+
+        <div class="race-grid" id="race-grid">
+          <!-- Race cards will be populated by JavaScript -->
+          <div class="no-stream-message">
+            <h3>Loading Recent Races...</h3>
+            <p>Fetching latest videos from YouTube</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+  // YouTube Configuration
+  const YOUTUBE_CONFIG = {
+    channelHandle: '@lh_cymru', // Your YouTube channel handle
+    apiKey: 'AIzaSyBv9PSz8Vs1kx96SBM_RPGrb9d1OHs4EDE', // YouTube Data API v3 key
+    maxRecentVideos: 6
+  };
+
+  // Parse ISO 8601 duration to readable format
+  function parseDuration(duration) {
+    const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+    const hours = parseInt(match[1] || 0);
+    const minutes = parseInt(match[2] || 0);
+    const seconds = parseInt(match[3] || 0);
+    
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  // Format date
+  function formatDate(dateString) {
+    const date = new Date(dateString);
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return date.toLocaleDateString('en-GB', options);
+  }
+
+  // Get API key from config or query param
+  function getApiKey() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const apiKeyFromUrl = urlParams.get('apiKey');
+    return apiKeyFromUrl || YOUTUBE_CONFIG.apiKey;
+  }
+
+  // Fetch channel ID from handle
+  async function getChannelId(apiKey) {
+    try {
+      const response = await fetch(
+        `https://www.googleapis.com/youtube/v3/channels?part=contentDetails&forHandle=${YOUTUBE_CONFIG.channelHandle}&key=${apiKey}`
+      );
+      const data = await response.json();
+      
+      if (data.items && data.items.length > 0) {
+        return {
+          channelId: data.items[0].id,
+          uploadsPlaylistId: data.items[0].contentDetails.relatedPlaylists.uploads
+        };
+      }
+      throw new Error('Channel not found');
+    } catch (error) {
+      console.error('Error fetching channel ID:', error);
+      return null;
+    }
+  }
+
+  // Fetch videos from uploads playlist
+  async function fetchRecentVideos(apiKey, uploadsPlaylistId) {
+    try {
+      const response = await fetch(
+        `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails&playlistId=${uploadsPlaylistId}&maxResults=${YOUTUBE_CONFIG.maxRecentVideos}&key=${apiKey}`
+      );
+      const data = await response.json();
+      
+      if (!data.items || data.items.length === 0) {
+        return [];
+      }
+
+      // Get video IDs to fetch additional details
+      const videoIds = data.items.map(item => item.contentDetails.videoId).join(',');
+      
+      // Fetch video details including duration and live status
+      const detailsResponse = await fetch(
+        `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,liveStreamingDetails&id=${videoIds}&key=${apiKey}`
+      );
+      const detailsData = await detailsResponse.json();
+      
+      return detailsData.items.map(item => ({
+        videoId: item.id,
+        title: item.snippet.title,
+        description: item.snippet.description,
+        thumbnail: item.snippet.thumbnails.maxres?.url || 
+                   item.snippet.thumbnails.high?.url || 
+                   item.snippet.thumbnails.medium?.url,
+        publishedAt: item.snippet.publishedAt,
+        duration: item.contentDetails.duration,
+        liveBroadcastContent: item.snippet.liveBroadcastContent,
+        isLive: item.snippet.liveBroadcastContent === 'live',
+        scheduledStartTime: item.liveStreamingDetails?.scheduledStartTime,
+        actualStartTime: item.liveStreamingDetails?.actualStartTime
+      }));
+    } catch (error) {
+      console.error('Error fetching videos:', error);
+      return [];
+    }
+  }
+
+  // Check for live stream and update UI
+  async function checkLiveStream() {
+    const apiKey = getApiKey();
+    const liveStreamWrapper = document.getElementById('live-stream-wrapper');
+    const noStreamMessage = document.getElementById('no-stream-message');
+
+    if (!apiKey) {
+      console.warn('No API key provided. Add ?apiKey=YOUR_KEY to URL or configure YOUTUBE_CONFIG.apiKey');
+      liveStreamWrapper.classList.add('hidden');
+      noStreamMessage.querySelector('h3').textContent = 'API Key Required';
+      noStreamMessage.querySelector('p').textContent = 'Add your YouTube API key to load live streams';
+      noStreamMessage.classList.remove('hidden');
+      return;
+    }
+
+    try {
+      const channelInfo = await getChannelId(apiKey);
+      if (!channelInfo) {
+        throw new Error('Could not fetch channel info');
+      }
+
+      const videos = await fetchRecentVideos(apiKey, channelInfo.uploadsPlaylistId);
+      
+      // Check if any video is currently live
+      const liveVideo = videos.find(video => video.isLive);
+      
+      if (liveVideo) {
+        const embedUrl = `https://www.youtube.com/embed/${liveVideo.videoId}?autoplay=1`;
+        document.getElementById('live-stream-embed').src = embedUrl;
+        liveStreamWrapper.classList.remove('hidden');
+        noStreamMessage.classList.add('hidden');
+      } else {
+        liveStreamWrapper.classList.add('hidden');
+        noStreamMessage.querySelector('h3').textContent = 'No Live Stream';
+        noStreamMessage.querySelector('p').textContent = 'Check back during race time for live coverage';
+        noStreamMessage.classList.remove('hidden');
+      }
+
+      // Load recent races (excluding live if present)
+      loadRecentRaces(videos.filter(v => !v.isLive));
+      
+    } catch (error) {
+      console.error('Error checking live stream:', error);
+      liveStreamWrapper.classList.add('hidden');
+      noStreamMessage.querySelector('h3').textContent = 'Error Loading Stream';
+      noStreamMessage.querySelector('p').textContent = error.message || 'Could not load YouTube data';
+      noStreamMessage.classList.remove('hidden');
+    }
+  }
+
+  // Load recent races into grid
+  function loadRecentRaces(videos) {
+    const raceGrid = document.getElementById('race-grid');
+    
+    if (!videos || videos.length === 0) {
+      raceGrid.innerHTML = `
+        <div class="no-stream-message">
+          <h3>No Recent Races</h3>
+          <p>Recent race videos will appear here</p>
+        </div>
+      `;
+      return;
+    }
+
+    raceGrid.innerHTML = videos.map(video => `
+      <a href="https://www.youtube.com/watch?v=${video.videoId}" 
+         target="_blank" 
+         class="race-card">
+        <div class="race-thumbnail">
+          <img src="${video.thumbnail}" 
+               alt="${video.title}"
+               loading="lazy">
+        </div>
+        <div class="race-info">
+          <h3 class="race-title">${video.title}</h3>
+          <div class="race-meta">
+            <span class="race-date">📅 ${formatDate(video.publishedAt)}</span>
+            <span class="race-duration">⏱ ${parseDuration(video.duration)}</span>
+          </div>
+        </div>
+      </a>
+    `).join('');
+  }
+
+  // Initialize on page load
+  document.addEventListener('DOMContentLoaded', () => {
+    checkLiveStream();
+    
+    // Auto-check for live stream every 5 minutes
+    setInterval(checkLiveStream, 5 * 60 * 1000);
+  });
+
+  // Update last sync time
+  fetch('data/meta.json')
+    .then(r => r.json())
+    .then(d => {
+      const lastUpdate = new Date(d.last_update);
+      const now = new Date();
+      const diffHours = Math.floor((now - lastUpdate) / (1000 * 60 * 60));
+      const diffMins = Math.floor((now - lastUpdate) / (1000 * 60)) % 60;
+      let syncText = diffHours > 0 ? `${diffHours}h ${diffMins}m ago` : `${diffMins}m ago`;
+      document.getElementById('last-sync').textContent = syncText;
+    })
+    .catch(() => {
+      document.getElementById('last-sync').textContent = 'Unknown';
+    });
+</script>
+</body>
+</html>

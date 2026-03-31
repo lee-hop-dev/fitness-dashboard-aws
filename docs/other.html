@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Other — Fitness Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/main.css">
+<script src="assets/js/theme-toggle.js"></script>
+</head>
+<body>
+<div class="app">
+  <nav class="sidebar">
+    <div class="sidebar-brand"><span class="brand-initials">LH</span><span class="brand-text">Training<br>OS</span></div>
+    <ul class="nav-links">
+      <li class="nav-item"><a href="index.html"><span class="nav-icon">◈</span><span>Overview</span></a></li>
+      <li class="nav-item"><a href="cycling.html"><span class="nav-icon">⬡</span><span>Cycling</span></a></li>
+      <li class="nav-item"><a href="running.html"><span class="nav-icon">▷</span><span>Running</span></a></li>
+      <li class="nav-item"><a href="rowing.html"><span class="nav-icon">⊕</span><span>Rowing</span></a></li>
+      <li class="nav-item"><a href="cardio.html"><span class="nav-icon">◎</span><span>Cardio</span></a></li>
+      <li class="nav-item active"><a href="other.html"><span class="nav-icon">○</span><span>Other</span></a></li>
+      <li class="nav-item"><a href="race-stream.html"><span class="nav-icon">📺</span><span>Race Stream</span></a></li>
+    </ul>
+    <div class="sidebar-footer">
+      <div class="theme-toggle-nav" onclick="toggleTheme()" title="Toggle dark/light mode">
+        <span class="nav-icon theme-icon">☀️</span>
+        <span>Theme</span>
+      </div>
+      <div class="sync-status"><span class="sync-dot"></span><span class="sync-text">Synced 6:00 AM</span></div>
+    </div>
+  </nav>
+  <main class="main-content">
+    <header class="page-header">
+      <div class="header-left"><h1 class="page-title">Other Activities</h1><span class="page-subtitle">Walking · Swimming · Misc</span></div>
+    </header>
+    <section class="section">
+      <div class="section-header"><h2>Recent Activities</h2><span class="section-meta">Walking, Swimming, and more</span></div>
+      <div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:40px;text-align:center;color:var(--text-muted)">
+        <div style="font-size:32px;margin-bottom:12px">○</div>
+        <div style="font-size:14px">No other activities in the last 30 days</div>
+      </div>
+    </section>
+  </main>
+</div>
+</body>
+</html>

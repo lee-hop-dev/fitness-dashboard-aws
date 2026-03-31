@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cardio — Fitness Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="assets/css/main.css">
+<script src="assets/js/theme-toggle.js"></script>
+</head>
+<body>
+<div class="app">
+  <nav class="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-initials">LH</span>
+      <span class="brand-text">Training<br>OS</span>
+    </div>
+    <ul class="nav-links">
+      <li class="nav-item"><a href="index.html"><span class="nav-icon">◈</span><span>Overview</span></a></li>
+      <li class="nav-item"><a href="cycling.html"><span class="nav-icon">⬡</span><span>Cycling</span></a></li>
+      <li class="nav-item"><a href="running.html"><span class="nav-icon">▷</span><span>Running</span></a></li>
+      <li class="nav-item"><a href="rowing.html"><span class="nav-icon">⊕</span><span>Rowing</span></a></li>
+      <li class="nav-item active"><a href="cardio.html"><span class="nav-icon">◎</span><span>Cardio</span></a></li>
+      <li class="nav-item"><a href="other.html"><span class="nav-icon">○</span><span>Other</span></a></li>
+      <li class="nav-item"><a href="race-stream.html"><span class="nav-icon">📺</span><span>Race Stream</span></a></li>
+    </ul>
+    <div class="sidebar-footer">
+      <div class="theme-toggle-nav" onclick="toggleTheme()" title="Toggle dark/light mode">
+        <span class="nav-icon theme-icon">☀️</span>
+        <span>Theme</span>
+      </div>
+      <div class="sync-status">
+        <span class="sync-dot"></span>
+        <span class="sync-text">Synced 6:00 AM</span>
+      </div>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div class="header-left">
+        <h1 class="page-title">Cardio & Workouts</h1>
+        <span class="page-subtitle">Strength · HIIT · Cross Training</span>
+      </div>
+      <div class="header-right">
+        <div class="year-totals">
+          <div class="year-stat">
+            <span class="year-stat-value" id="cardio-sessions">—</span>
+            <span class="year-stat-label">sessions YTD</span>
+          </div>
+          <div class="year-stat">
+            <span class="year-stat-value" id="cardio-hours">—</span>
+            <span class="year-stat-label">hours YTD</span>
+          </div>
+          <div class="year-stat">
+            <span class="year-stat-value" id="cardio-tss">—</span>
+            <span class="year-stat-label">TSS YTD</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Recent Sessions -->
+    <section class="section">
+      <div class="section-header">
+        <h2>Last 30 Days</h2>
+        <span class="section-meta" id="cardio-meta">Loading...</span>
+      </div>
+      <div class="activity-cards" id="cardio-activity-cards">
+        <!-- Activities will be dynamically loaded here -->
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script src="assets/js/charts.js"></script>
+<script src="assets/js/data-loader.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const { activities, wellness, weeklyTSS, ytd, meta, athlete } = await DATA.loadAll();
+
+    // Cardio activity types from Intervals.icu API
+    const cardioTypes = [
+      'WeightTraining',
+      'Workout',
+      'Crossfit',
+      'Elliptical',
+      'StairStepper',
+      'RockClimbing',
+      'HighIntensityIntervalTraining',
+      'Yoga',
+      'Pilates',
+      'Walk',
+      'Hike'
+    ];
+
+    const year = new Date().getFullYear().toString();
+    
+    // Filter cardio activities
+    const cardioActivities = activities.filter(a => cardioTypes.includes(a.type));
+    
+    // YTD cardio activities
+    const ytdCardio = cardioActivities.filter(a => a.date.startsWith(year));
+    
+    // Recent cardio (last 30 days)
+    const cutoff30 = new Date(Date.now() - 30 * 864e5).toISOString().split('T')[0];
+    const recentCardio = cardioActivities.filter(a => a.date >= cutoff30);
+
+    // Calculate YTD stats
+    const ytdSessions = ytdCardio.length;
+    const ytdHours = ytdCardio.reduce((sum, a) => sum + (a.duration || 0), 0) / 3600;
+    const ytdTSS = ytdCardio.reduce((sum, a) => sum + (a.tss || 0), 0);
+
+    // Update YTD display
+    document.getElementById('cardio-sessions').textContent = ytdSessions;
+    document.getElementById('cardio-hours').textContent = ytdHours.toFixed(1);
+    document.getElementById('cardio-tss').textContent = Math.round(ytdTSS);
+
+    // Update section meta
+    const metaEl = document.getElementById('cardio-meta');
+    if (metaEl) {
+      const recentHours = recentCardio.reduce((sum, a) => sum + (a.duration || 0), 0) / 3600;
+      metaEl.textContent = `${recentCardio.length} sessions · ${recentHours.toFixed(1)} hours`;
+    }
+
+    // Render activity cards
+    const container = document.getElementById('cardio-activity-cards');
+    if (container) {
+      if (recentCardio.length === 0) {
+        container.innerHTML = '<div style="color:var(--text-muted);font-family:var(--font-mono);font-size:12px;padding:20px">No cardio sessions in last 30 days</div>';
+      } else {
+        container.innerHTML = recentCardio.map(a => {
+          // Normalize activity type display name
+          const displayType = normalizeActivityType(a.type);
+          const typeClass = getActivityTypeClass(a.type);
+          const dotClass = getActivityDotClass(a.type);
+          
+          return `<div class="activity-card">
+            <div class="activity-card-type ${typeClass}">
+              <span class="type-dot ${dotClass}"></span>${displayType}
+            </div>
+            <div class="activity-card-name">${a.name || 'Workout'}</div>
+            <div class="activity-card-stats">
+              <div class="activity-stat">
+                <span class="activity-stat-value">${formatDuration(a.duration)}</span>
+                <span class="activity-stat-label">Duration</span>
+              </div>
+              <div class="activity-stat">
+                <span class="activity-stat-value">${a.avg_hr || '—'}</span>
+                <span class="activity-stat-label">Avg HR</span>
+              </div>
+              <div class="activity-stat">
+                <span class="activity-stat-value">${a.tss ? Math.round(a.tss) : '—'}</span>
+                <span class="activity-stat-label">TSS</span>
+              </div>
+              <div class="activity-stat">
+                <span class="activity-stat-value">${a.calories || '—'}</span>
+                <span class="activity-stat-label">kcal</span>
+              </div>
+            </div>
+            <div class="activity-card-footer">
+              <span>${a.date}</span>
+              ${a.tss ? `<span class="tss-val">TSS ${Math.round(a.tss)}${a.if_val ? ' · IF ' + a.if_val.toFixed(1) : ''}</span>` : ''}
+            </div>
+          </div>`;
+        }).join('');
+      }
+    }
+
+    console.log('Cardio page loaded successfully');
+    console.log('Total cardio activities:', cardioActivities.length);
+    console.log('YTD cardio:', ytdCardio.length);
+    console.log('Last 30 days:', recentCardio.length);
+
+  } catch(err) {
+    console.error('Cardio page error:', err);
+    const container = document.getElementById('cardio-activity-cards');
+    if (container) {
+      container.innerHTML = '<div style="color:var(--red);font-family:var(--font-mono);font-size:12px;padding:20px">Error loading data: ' + err.message + '</div>';
+    }
+  }
+});
+
+// Helper function to normalize activity type names for display
+function normalizeActivityType(type) {
+  const typeMap = {
+    'WeightTraining': 'Strength Training',
+    'Workout': 'HYROX / Workout',
+    'Crossfit': 'CrossFit',
+    'Elliptical': 'Elliptical',
+    'StairStepper': 'Stair Stepper',
+    'RockClimbing': 'Rock Climbing',
+    'HighIntensityIntervalTraining': 'HIIT',
+    'Yoga': 'Yoga',
+    'Pilates': 'Pilates',
+    'Walk': 'Walking',
+    'Hike': 'Hiking'
+  };
+  return typeMap[type] || type;
+}
+
+// Helper function to get CSS class for activity type
+function getActivityTypeClass(type) {
+  if (type === 'WeightTraining') return 'type-strength';
+  if (type === 'Workout') return 'type-workout';
+  if (type === 'Crossfit') return 'type-crossfit';
+  if (type === 'HighIntensityIntervalTraining') return 'type-hiit';
+  return 'type-cardio';
+}
+
+// Helper function to get dot class for activity type
+function getActivityDotClass(type) {
+  if (type === 'WeightTraining') return 'dot-strength';
+  if (type === 'Workout') return 'dot-workout';
+  if (type === 'Crossfit') return 'dot-crossfit';
+  if (type === 'HighIntensityIntervalTraining') return 'dot-hiit';
+  return 'dot-cardio';
+}
+
+// Duration formatter
+function formatDuration(seconds) {
+  if (!seconds) return '—';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}:${String(s).padStart(2, '0')}`;
+  return `${s}s`;
+}
+</script>
+</body>
+</html>

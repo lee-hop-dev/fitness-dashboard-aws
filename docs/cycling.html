@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<!-- v5 with Intervals.icu power curves API -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cycling — Training OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.0.1/chartjs-plugin-annotation.min.js"></script>
+<link rel="stylesheet" href="assets/css/main.css">
+<script src="assets/js/theme-toggle.js"></script>
+</head>
+<body>
+<div class="app">
+  <nav class="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-initials">LH</span>
+      <span class="brand-text">Training<br>OS</span>
+    </div>
+    <ul class="nav-links">
+      <li class="nav-item"><a href="index.html"><span class="nav-icon">◈</span><span>Overview</span></a></li>
+      <li class="nav-item active"><a href="cycling.html"><span class="nav-icon">🚲</span><span>Cycling</span></a></li>
+      <li class="nav-item"><a href="running.html"><span class="nav-icon">▷</span><span>Running</span></a></li>
+      <li class="nav-item"><a href="rowing.html"><span class="nav-icon">⊕</span><span>Rowing</span></a></li>
+      <li class="nav-item"><a href="cardio.html"><span class="nav-icon">◎</span><span>Cardio</span></a></li>
+      <li class="nav-item"><a href="other.html"><span class="nav-icon">○</span><span>Other</span></a></li>
+      <li class="nav-item"><a href="race-stream.html"><span class="nav-icon">📺</span><span>Race Stream</span></a></li>
+    </ul>
+    <div class="sidebar-footer">
+      <div class="theme-toggle-nav" onclick="toggleTheme()" title="Toggle dark/light mode">
+        <span class="nav-icon theme-icon">☀️</span>
+        <span>Theme</span>
+      </div>
+      <div class="sync-status"><span class="sync-dot"></span><span class="sync-text" id="last-sync">Loading...</span></div>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <header class="page-header">
+      <div class="header-left">
+        <h1 class="page-title">Cycling</h1>
+        <span class="page-subtitle">Outdoor · Indoor · Zwift</span>
+      </div>
+      <div class="header-right">
+        <div class="year-totals">
+          <div class="year-stat"><span class="year-stat-value" id="cy-distance">—</span><span class="year-stat-label">km YTD</span></div>
+          <div class="year-stat"><span class="year-stat-value" id="cy-hours">—</span><span class="year-stat-label">hrs YTD</span></div>
+          <div class="year-stat"><span class="year-stat-value" id="cy-elevation">—</span><span class="year-stat-label">m climb YTD</span></div>
+        </div>
+      </div>
+    </header>
+
+    <div id="loading-state" class="loading-overlay">
+      <div class="loading-spinner"></div>
+      <span>Loading cycling data...</span>
+    </div>
+
+    <div id="page-content" class="hidden">
+
+      <section class="metrics-row" style="grid-template-columns:repeat(4,1fr)">
+        <div class="metric-card fitness">
+          <div class="metric-label">90d Critical Power</div>
+          <div class="metric-value metric-accent" id="cp-value">—</div>
+          <div class="metric-delta neutral">W · 20min best estimate</div>
+          <div class="metric-bar"><div class="metric-bar-fill" id="cp-bar" style="width:0%"></div></div>
+          <div class="metric-sub">Intervals.icu 90-day CP</div>
+        </div>
+        <div class="metric-card fatigue">
+          <div class="metric-label">W/KG</div>
+          <div class="metric-value metric-orange" id="wkg-value">—</div>
+          <div class="metric-delta neutral" id="wkg-sub">at CP</div>
+          <div class="metric-bar"><div class="metric-bar-fill" id="wkg-bar" style="width:0%;background:var(--orange)"></div></div>
+          <div class="metric-sub">Based on current weight</div>
+        </div>
+        <div class="metric-card form">
+          <div class="metric-label">Peak Power · 90 Days</div>
+          <div style="display:flex;flex-direction:column;gap:6px;padding:8px 0">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono)">1 MIN</span>
+              <span style="font-size:16px;font-weight:700;color:var(--green)" id="peak-1min">—</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono)">5 MIN</span>
+              <span style="font-size:16px;font-weight:700;color:var(--accent)" id="peak-5min">—</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono)">20 MIN</span>
+              <span style="font-size:16px;font-weight:700;color:var(--purple)" id="peak-20min">—</span>
+            </div>
+          </div>
+          <div class="metric-sub">W · from Intervals.icu</div>
+        </div>
+        <div class="metric-card sleep-card">
+          <div class="metric-label">This Week</div>
+          <div class="metric-value metric-yellow" id="cy-week-count">—</div>
+          <div class="metric-delta neutral" id="cy-week-meta">rides</div>
+          <div class="metric-bar"><div class="metric-bar-fill" id="cy-week-bar" style="width:0%;background:var(--yellow)"></div></div>
+          <div class="metric-sub" id="cy-week-sub">Loading...</div>
+        </div>
+      </section>
+
+      <section class="charts-row two-one">
+        <div class="chart-card">
+          <div class="chart-header">
+            <span class="chart-title">Power Curve · 90 Days</span>
+            <div class="chart-legend">
+              <span class="legend-item ctl">Current</span>
+            </div>
+          </div>
+          <div class="chart-wrap tall"><canvas id="powerCurveChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><span class="chart-title">Weekly Volume · 12 Weeks</span></div>
+          <div class="chart-wrap tall"><canvas id="cyWeeklyVolumeChart"></canvas></div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-header">
+          <h2 class="section-title">Last 14 Days</h2>
+          <span class="section-meta" id="cy-activities-meta">—</span>
+        </div>
+        <div class="activity-cards" id="cy-activity-cards"></div>
+      </section>
+
+      <section class="section">
+        <div class="section-header">
+          <h2 class="section-title">Strava Segments</h2>
+          <span class="section-meta">PR & top-3 performances from your last ride</span>
+        </div>
+        <div class="segment-list" id="cy-segments"></div>
+      </section>
+
+    </div>
+    <p class="garmin-note">Charts may include data from Garmin devices</p>
+  </main>
+</div>
+
+
+
+<script src="assets/js/charts.js"></script>
+<script src="assets/js/data-loader.js"></script>
+<script src="assets/js/segments.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const { activities, wellness, meta } = await DATA.loadAll();
+    
+    // Load 90-day power curves from Intervals.icu
+    let powerCurves90d = null;
+    try {
+      const response = await fetch('data/power_curves_90d.json');
+      if (response.ok) {
+        powerCurves90d = await response.json();
+        console.log('Loaded 90-day power curves from Intervals:', powerCurves90d);
+      }
+    } catch(e) {
+      console.log('90-day power curves not available');
+    }
+    
+    const latest = DATA.latestWellness(wellness);
+    const weight = latest?.weight ?? meta?.weight ?? null;
+
+    const today = new Date().toISOString().split('T')[0];
+    const cutoff90 = new Date(Date.now() - 90*864e5).toISOString().split('T')[0];
+    const cutoff14 = new Date(Date.now() - 14*864e5).toISOString().split('T')[0];
+    const weekAgo  = new Date(Date.now() - 7*864e5).toISOString().split('T')[0];
+
+    const allRides = activities.filter(a => a.type === 'Ride' || a.type === 'VirtualRide');
+    const rides90  = allRides.filter(a => a.date >= cutoff90);
+    const rides14  = allRides.filter(a => a.date >= cutoff14);
+    const ridesWk  = allRides.filter(a => a.date >= weekAgo);
+    const withPower = rides90.filter(a => a.avg_power != null);
+
+    // YTD
+    const year = new Date().getFullYear();
+    const ytdRides = allRides.filter(a => a.date?.startsWith(String(year)));
+    document.getElementById('cy-distance').textContent  = Math.round(ytdRides.reduce((s,a)=>s+(a.distance||0),0)/1000).toLocaleString();
+    document.getElementById('cy-hours').textContent     = (ytdRides.reduce((s,a)=>s+(a.duration||0),0)/3600).toFixed(1);
+    document.getElementById('cy-elevation').textContent = Math.round(ytdRides.reduce((s,a)=>s+(a.elevation||0),0)).toLocaleString();
+
+    // Extract power bests from Intervals power curves
+    let cp = null;
+    let peak1min = null;
+    let peak5min = null;
+    let peak20min = null;
+    let powerBests = [];
+
+    if (powerCurves90d && powerCurves90d.list && powerCurves90d.list.length > 0) {
+      const curve = powerCurves90d.list[0]; // 90-day curve
+      console.log('Processing power curve:', curve.label);
+      
+      // API Schema: secs array has durations (in seconds), values array has watts
+      const durations = curve.secs || [];
+      const watts = curve.values || [];
+      
+      console.log('Durations available:', durations.length);
+      console.log('Watts available:', watts.length);
+      console.log('Sample durations:', durations.slice(0, 10));
+      console.log('Sample watts:', watts.slice(0, 10));
+      
+      // Build power bests array for chart
+      powerBests = durations.map((sec, idx) => ({
+        label: formatDurationLabel(sec),
+        value: watts[idx],
+        hr: null
+      }));
+      
+      // Find specific power values
+      const idx1min = durations.findIndex(s => s === 60);
+      const idx5min = durations.findIndex(s => s === 300);
+      const idx20min = durations.findIndex(s => s === 1200);
+      
+      if (idx1min >= 0) peak1min = watts[idx1min];
+      if (idx5min >= 0) peak5min = watts[idx5min];
+      if (idx20min >= 0) {
+        peak20min = watts[idx20min];
+        cp = peak20min; // CP is 20min power
+      }
+      
+      console.log('1min power:', peak1min, 'W');
+      console.log('5min power:', peak5min, 'W');
+      console.log('20min power (CP):', peak20min, 'W');
+    } else {
+      // Fallback to old method if Intervals data not available
+      cp = Number(latest?.cp ?? meta?.cp ?? null);
+      
+      peak1min  = latest?.p1  ?? meta?.p1  ?? null;
+      peak5min  = latest?.p5  ?? meta?.p5  ?? null;
+      peak20min = latest?.p20 ?? meta?.p20 ?? cp ?? null;
+
+      if (meta?.power_curve && Array.isArray(meta.power_curve)) {
+        const findPower = (sec) => meta.power_curve.find(p => p.duration === sec)?.power;
+        peak1min  = peak1min  ?? findPower(60);
+        peak5min  = peak5min  ?? findPower(300);
+        peak20min = peak20min ?? findPower(1200);
+      }
+
+      peak1min  = Number(peak1min);
+      peak5min  = Number(peak5min);
+      peak20min = Number(peak20min);
+    }
+
+    // Display CP
+    document.getElementById('cp-value').textContent = cp ? cp + 'W' : '—';
+
+    if (cp) {
+      const pct = Math.min(100, (cp / 400) * 100);
+      document.getElementById('cp-bar').style.width = pct + '%';
+
+      if (weight) {
+        const wkg = (cp / weight).toFixed(2);
+        document.getElementById('wkg-value').textContent = wkg;
+        document.getElementById('wkg-sub').textContent = `at CP · ${weight}kg`;
+        document.getElementById('wkg-bar').style.width =
+          Math.min(100, (parseFloat(wkg) / 6) * 100) + '%';
+      }
+    }
+
+    // Display peak powers
+    if (peak1min > 0) {
+      document.getElementById('peak-1min').textContent = peak1min + 'W';
+    }
+
+    if (peak5min > 0) {
+      document.getElementById('peak-5min').textContent = peak5min + 'W';
+    }
+
+    if (peak20min > 0) {
+      document.getElementById('peak-20min').textContent = peak20min + 'W';
+    }
+
+    // This week
+    const wkDist = ridesWk.reduce((s,a)=>s+(a.distance||0),0)/1000;
+    const wkHrs  = ridesWk.reduce((s,a)=>s+(a.duration||0),0)/3600;
+    document.getElementById('cy-week-count').textContent = ridesWk.length;
+    document.getElementById('cy-week-meta').textContent  = `rides · ${wkDist.toFixed(0)} km`;
+    document.getElementById('cy-week-sub').textContent   = `${wkHrs.toFixed(1)} hrs · TSS ${ridesWk.reduce((s,a)=>s+(a.tss||0),0)}`;
+    document.getElementById('cy-week-bar').style.width   = Math.min(100, ridesWk.length * 25) + '%';
+
+    // Power curve chart from Intervals data
+    if (powerBests.length > 0) {
+      buildPowerCurveChartLine(
+        'powerCurveChart',
+        powerBests,
+        null,
+        cp,
+        peak5min,
+        peak20min
+      );
+    } else if (meta?.power_curve && Array.isArray(meta.power_curve) && meta.power_curve.length > 0) {
+      const powerBests = meta.power_curve
+        .sort((a, b) => a.duration - b.duration)
+        .map(p => ({
+          label: formatDurationLabel(p.duration),
+          value: Number(p.power),
+          hr: null
+        }));
+
+      buildPowerCurveChartLine(
+        'powerCurveChart',
+        powerBests,
+        null,
+        cp,
+        peak5min,
+        peak20min
+      );
+    } else if (withPower.length > 0) {
+      const fallbackBests = buildPowerBestsFromRides(withPower, cp);
+      buildPowerCurveChartLine(
+        'powerCurveChart',
+        fallbackBests,
+        null,
+        cp,
+        peak5min,
+        peak20min
+      );
+    }
+
+    // Weekly Volume Chart - aggregate cycling activities by week
+    const weeklyData = [];
+    const weeksToShow = 12;
+    const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+    
+    // Calculate start of current week (Sunday)
+    const now = new Date();
+    const currentWeekStart = new Date(now);
+    currentWeekStart.setDate(now.getDate() - now.getDay());
+    currentWeekStart.setHours(0, 0, 0, 0);
+    
+    // Build array of week start dates going back 12 weeks
+    for (let i = weeksToShow - 1; i >= 0; i--) {
+      const weekStart = new Date(currentWeekStart.getTime() - (i * msPerWeek));
+      const weekEnd = new Date(weekStart.getTime() + msPerWeek);
+      
+      const weekStartStr = weekStart.toISOString().split('T')[0];
+      const weekEndStr = weekEnd.toISOString().split('T')[0];
+      
+      // Filter rides for this week
+      const weekRides = allRides.filter(a => 
+        a.date >= weekStartStr && a.date < weekEndStr
+      );
+      
+      // Calculate totals
+      const totalKm = weekRides.reduce((sum, a) => sum + (a.distance || 0), 0) / 1000;
+      const totalHours = weekRides.reduce((sum, a) => sum + (a.duration || 0), 0) / 3600;
+      
+      // Format week label (e.g., "Jan 5")
+      const weekLabel = weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      
+      weeklyData.push({
+        label: weekLabel,
+        distance: totalKm,
+        time: totalHours,
+        rides: weekRides.length
+      });
+    }
+    
+    // Build the chart
+    if (weeklyData.length) {
+      const ctx = document.getElementById('cyWeeklyVolumeChart');
+      if (ctx) {
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: weeklyData.map(w => w.label),
+            datasets: [
+              {
+                label: 'Distance (km)',
+                data: weeklyData.map(w => w.distance),
+                backgroundColor: 'rgba(0, 229, 255, 0.3)',
+                borderColor: 'rgba(0, 229, 255, 0.8)',
+                borderWidth: 1,
+                yAxisID: 'yDistance'
+              },
+              {
+                label: 'Time (hrs)',
+                data: weeklyData.map(w => w.time),
+                type: 'line',
+                borderColor: 'rgba(255, 195, 0, 1)',
+                backgroundColor: 'rgba(255, 195, 0, 0.1)',
+                borderWidth: 2,
+                tension: 0.4,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                pointBackgroundColor: 'rgba(255, 195, 0, 1)',
+                yAxisID: 'yTime',
+                fill: false
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+              mode: 'index',
+              intersect: false
+            },
+            plugins: {
+              legend: {
+                display: true,
+                position: 'top',
+                labels: {
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  font: { size: 11, family: 'DM Mono' },
+                  padding: 12,
+                  usePointStyle: true,
+                  pointStyle: 'circle'
+                }
+              },
+              tooltip: {
+                backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                titleColor: 'rgba(255, 255, 255, 0.9)',
+                bodyColor: 'rgba(255, 255, 255, 0.8)',
+                borderColor: 'rgba(0, 229, 255, 0.3)',
+                borderWidth: 1,
+                padding: 12,
+                displayColors: true,
+                callbacks: {
+                  title: (items) => {
+                    const idx = items[0].dataIndex;
+                    return `Week of ${weeklyData[idx].label} · ${weeklyData[idx].rides} rides`;
+                  },
+                  label: (context) => {
+                    const label = context.dataset.label || '';
+                    const value = context.parsed.y;
+                    if (label.includes('Distance')) {
+                      return ` ${label}: ${value.toFixed(1)} km`;
+                    } else {
+                      return ` ${label}: ${value.toFixed(1)} hrs`;
+                    }
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                grid: {
+                  color: 'rgba(255, 255, 255, 0.04)'
+                },
+                ticks: {
+                  color: 'rgba(255, 255, 255, 0.6)',
+                  font: { size: 10, family: 'DM Mono' }
+                }
+              },
+              yDistance: {
+                type: 'linear',
+                position: 'left',
+                grid: {
+                  color: 'rgba(255, 255, 255, 0.04)'
+                },
+                ticks: {
+                  color: 'rgba(0, 229, 255, 0.8)',
+                  font: { size: 10, family: 'DM Mono' },
+                  callback: (value) => value.toFixed(0) + ' km'
+                },
+                title: {
+                  display: false
+                }
+              },
+              yTime: {
+                type: 'linear',
+                position: 'right',
+                grid: {
+                  display: false
+                },
+                ticks: {
+                  color: 'rgba(255, 195, 0, 1)',
+                  font: { size: 10, family: 'DM Mono' },
+                  callback: (value) => value.toFixed(1) + ' hrs'
+                },
+                title: {
+                  display: false
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // Last 14 days cards
+    const totalDist14 = rides14.reduce((s,a)=>s+(a.distance||0),0)/1000;
+    const totalHrs14  = rides14.reduce((s,a)=>s+(a.duration||0),0)/3600;
+    document.getElementById('cy-activities-meta').textContent =
+      `${rides14.length} rides · ${totalDist14.toFixed(0)} km · ${totalHrs14.toFixed(1)} hrs`;
+
+    document.getElementById('cy-activity-cards').innerHTML = rides14.map(a => `
+      <div class="activity-card">
+        <div class="activity-card-type type-ride">
+          <span class="type-dot dot-ride"></span>
+          ${a.type === 'VirtualRide' ? 'Zwift' : 'Outdoor'}
+        </div>
+        <div class="activity-card-name">${a.name}</div>
+        <div class="activity-card-stats">
+          <div class="activity-stat"><span class="activity-stat-value">${formatDuration(a.duration)}</span><span class="activity-stat-label">Duration</span></div>
+          <div class="activity-stat"><span class="activity-stat-value">${a.distance?(a.distance/1000).toFixed(1):'—'}</span><span class="activity-stat-label">km</span></div>
+          <div class="activity-stat"><span class="activity-stat-value">${a.avg_power?a.avg_power+'W':'—'}</span><span class="activity-stat-label">Avg Power</span></div>
+          <div class="activity-stat"><span class="activity-stat-value">${a.avg_hr||'—'}</span><span class="activity-stat-label">Avg HR</span></div>
+        </div>
+        <div class="activity-card-footer">
+          <span>${a.date}</span>
+          <span class="tss-val">TSS ${a.tss}${a.if_val?' · IF '+a.if_val.toFixed(1):''}</span>
+        </div>
+      </div>`).join('') || '<div style="color:var(--text-muted);font-size:12px;padding:20px;font-family:var(--font-mono)">No cycling activities in last 14 days</div>';
+
+    document.getElementById('last-sync').textContent = 'Synced ' + new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('loading-state').classList.add('hidden');
+    document.getElementById('page-content').classList.remove('hidden');
+
+  } catch(err) {
+    document.getElementById('loading-state').innerHTML = `<div class="error-state">${err.message}</div>`;
+    console.error(err);
+  }
+});
+
+function buildPowerBestsFromRides(rides, cp) {
+  const labels   = ['5s','10s','15s','30s','1min','2min','3min','5min','6min','8min','10min','12min','15min','20min','30min','40min','60min','90min'];
+  const factors  = [3.6, 3.3, 3.1, 2.8, 2.3, 1.85, 1.65, 1.45, 1.38, 1.28, 1.18, 1.12, 1.07, 1.02, 0.96, 0.92, 0.87, 0.80];
+  const hrBases  = [158, 160, 162, 165, 172, 178, 180, 182, 181, 180, 178, 177, 175, 173, 170, 168, 165, 161];
+  const base = cp || Math.max(...rides.map(r => r.avg_power));
+
+  return labels.map((label, i) => ({
+    label,
+    value: Math.round(base * factors[i]),
+    hr: hrBases[i]
+  }));
+}
+
+function buildPowerCurveChartLine(canvasId, data, compare, cp, p5, p20) {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx) return;
+  
+  const labels = data.map(d => d.label);
+  const values = data.map(d => d.value);
+  
+  // Find indices for 10s, 1min, 5min, 20min
+  const idx10s = labels.indexOf('10s');
+  const idx1min = labels.indexOf('1min');
+  const idx5min = labels.indexOf('5min');
+  const idx20min = labels.indexOf('20min');
+  
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Power',
+        data: values,
+        borderColor: 'rgb(108, 99, 255)',
+        backgroundColor: 'rgba(108, 99, 255, 0.1)',
+        borderWidth: 2,
+        pointRadius: function(context) {
+          // Show larger points at 10s, 1min, 5min, 20min
+          const index = context.dataIndex;
+          if (index === idx10s || index === idx1min || index === idx5min || index === idx20min) {
+            return 5;
+          }
+          return 0;
+        },
+        pointBackgroundColor: function(context) {
+          const index = context.dataIndex;
+          if (index === idx10s) return '#f97316'; // orange
+          if (index === idx1min) return '#22c55e'; // green
+          if (index === idx5min) return '#6c63ff'; // purple
+          if (index === idx20min) return '#a855f7'; // purple
+          return 'rgb(108, 99, 255)';
+        },
+        pointHoverRadius: 6,
+        pointHoverBackgroundColor: 'rgb(108, 99, 255)',
+        fill: true,
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        intersect: false,
+        mode: 'index'
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(10, 10, 15, 0.95)',
+          titleColor: '#e8e8f0',
+          bodyColor: '#e8e8f0',
+          borderColor: 'rgba(255,255,255,0.1)',
+          borderWidth: 1,
+          padding: 12,
+          displayColors: false,
+          callbacks: {
+            label: function(context) {
+              return context.parsed.y + 'W';
+            }
+          }
+        },
+        annotation: {
+          annotations: {
+            line10s: idx10s >= 0 ? {
+              type: 'line',
+              xMin: idx10s,
+              xMax: idx10s,
+              borderColor: '#f97316',
+              borderWidth: 1,
+              borderDash: [5, 5],
+              label: {
+                display: true,
+                content: '10s: ' + values[idx10s] + 'W',
+                position: 'start',
+                backgroundColor: 'rgba(249, 115, 22, 0.8)',
+                color: '#fff',
+                font: { size: 10 }
+              }
+            } : {},
+            line1min: idx1min >= 0 ? {
+              type: 'line',
+              xMin: idx1min,
+              xMax: idx1min,
+              borderColor: '#22c55e',
+              borderWidth: 1,
+              borderDash: [5, 5],
+              label: {
+                display: true,
+                content: '1min: ' + values[idx1min] + 'W',
+                position: 'start',
+                backgroundColor: 'rgba(34, 197, 94, 0.8)',
+                color: '#fff',
+                font: { size: 10 }
+              }
+            } : {},
+            line5min: idx5min >= 0 ? {
+              type: 'line',
+              xMin: idx5min,
+              xMax: idx5min,
+              borderColor: '#6c63ff',
+              borderWidth: 1,
+              borderDash: [5, 5],
+              label: {
+                display: true,
+                content: '5min: ' + values[idx5min] + 'W',
+                position: 'start',
+                backgroundColor: 'rgba(108, 99, 255, 0.8)',
+                color: '#fff',
+                font: { size: 10 }
+              }
+            } : {},
+            line20min: idx20min >= 0 ? {
+              type: 'line',
+              xMin: idx20min,
+              xMax: idx20min,
+              borderColor: '#a855f7',
+              borderWidth: 1,
+              borderDash: [5, 5],
+              label: {
+                display: true,
+                content: '20min: ' + values[idx20min] + 'W',
+                position: 'start',
+                backgroundColor: 'rgba(168, 85, 247, 0.8)',
+                color: '#fff',
+                font: { size: 10 }
+              }
+            } : {}
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { 
+            color: '#6b6b7e', 
+            font: { size: 11 },
+            autoSkip: true,
+            maxTicksLimit: 12,
+            maxRotation: 0,
+            minRotation: 0,
+            callback: function(value, index) {
+              const label = this.getLabelForValue(value);
+              // Show only key labels: 5s, 30s, 1min, 5min, 20min, 30min, 60min (removed 10min)
+              const showLabels = ['5s', '30s', '1min', '5min', '20min', '30min', '60min'];
+              return showLabels.includes(label) ? label : '';
+            }
+          }
+        },
+        y: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { 
+            color: '#6b6b7e',
+            font: { size: 11 },
+            callback: function(value) {
+              return value + 'W';
+            },
+            stepSize: 50
+          },
+          beginAtZero: false
+        }
+      }
+    }
+  });
+}
+
+function formatDuration(seconds) {
+  if (!seconds) return '—';
+
+  if (seconds >= 3600)
+    return `${Math.floor(seconds/3600)}h ${Math.floor((seconds%3600)/60)}m`;
+
+  return `${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`;
+}
+
+function formatDurationLabel(seconds) {
+  if (seconds < 60) return seconds + 's';
+  if (seconds < 3600) return Math.round(seconds / 60) + 'min';
+  return Math.round(seconds / 3600) + 'h';
+}
+
+// Load and render segments
+renderSegments('cycling');
+</script>
+</body>
+</html>

@@ -448,9 +448,9 @@ If AWS migration has issues:
 
 | Phase | Duration | Status |
 |-------|----------|--------|
-| Phase 1: Foundation | Week 1 | In Progress (Step 1.1) |
-| Phase 2: Core Infrastructure | Week 2 | Not Started |
-| Phase 3: API Layer | Week 3 | Not Started |
+| Phase 1: Foundation | Week 1 | ✅ Complete |
+| Phase 2: Core Infrastructure | Week 2 | ✅ Complete |
+| Phase 3: API Layer | Week 3 | ✅ Complete — deploy `FitnessDashboardApi` stack |
 | Phase 4: Frontend Migration | Week 4 | Not Started |
 | Phase 5: Optimization | Week 5 | Not Started |
 

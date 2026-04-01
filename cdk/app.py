@@ -13,6 +13,11 @@ Phase 3: API Layer
 Phase 4: Frontend Migration
   - FrontendStack  (4.1 + 4.2) - S3 static bucket + CloudFront distribution
 
+Phase 5: Monitoring & Cost Control
+  - MonitoringStack         (5.1 + 5.2) - CloudWatch alarms, dashboard, SNS alerts
+  - BudgetStack             (5.2) - AWS Budgets with 4-tier alerting
+  - EmergencyShutdownStack  (5.2) - Kill switch Lambda + API endpoint
+
 Region: eu-west-2 (London)
 Account: Lee.Hopkins.Dev
 """
@@ -24,6 +29,9 @@ from fitness_dashboard_aws.secrets_stack import SecretsStack
 from fitness_dashboard_aws.collector_stack import CollectorStack
 from fitness_dashboard_aws.api_stack import ApiStack
 from fitness_dashboard_aws.frontend_stack import FrontendStack
+from fitness_dashboard_aws.monitoring_stack import MonitoringStack
+from fitness_dashboard_aws.budget_stack import BudgetStack
+from fitness_dashboard_aws.emergency_shutdown_stack import EmergencyShutdownStack
 
 app = cdk.App()
 
@@ -68,10 +76,52 @@ frontend_stack = FrontendStack(
     description="Fitness Dashboard - S3 static hosting + CloudFront CDN (Phase 4)",
 )
 
+# ── Phase 5: Monitoring & Cost Control ────────────────────────────────────
+emergency_shutdown_stack = EmergencyShutdownStack(
+    app,
+    "FitnessDashboardEmergencyShutdown",
+    collector_stack=collector_stack,
+    api_stack=api_stack,
+    env=env,
+    description="Fitness Dashboard - Emergency shutdown Lambda + kill switch API",
+)
+
+monitoring_stack = MonitoringStack(
+    app,
+    "FitnessDashboardMonitoring",
+    dynamo_stack=dynamo_stack,
+    collector_stack=collector_stack,
+    api_stack=api_stack,
+    alert_email="lee.hopkins+aws-alerts@gmail.com",
+    env=env,
+    description="Fitness Dashboard - CloudWatch alarms, dashboard, SNS alerts",
+)
+
+# Wire alert topic to emergency shutdown (resolves circular dependency)
+emergency_shutdown_stack.set_alert_topic(monitoring_stack.alert_topic)
+
+budget_stack = BudgetStack(
+    app,
+    "FitnessDashboardBudget",
+    alert_topic=monitoring_stack.alert_topic,
+    shutdown_topic=emergency_shutdown_stack.shutdown_topic,
+    env=env,
+    description="Fitness Dashboard - AWS Budgets with 4-tier cost alerts",
+)
+
 # Explicit dependency ordering
 collector_stack.add_dependency(dynamo_stack)
 collector_stack.add_dependency(secrets_stack)
 api_stack.add_dependency(dynamo_stack)
 # FrontendStack is independent of backend stacks — no dependency needed
+
+# Phase 5 dependencies
+emergency_shutdown_stack.add_dependency(collector_stack)
+emergency_shutdown_stack.add_dependency(api_stack)
+monitoring_stack.add_dependency(dynamo_stack)
+monitoring_stack.add_dependency(collector_stack)
+monitoring_stack.add_dependency(api_stack)
+budget_stack.add_dependency(monitoring_stack)
+budget_stack.add_dependency(emergency_shutdown_stack)
 
 app.synth()

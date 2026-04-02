@@ -94,10 +94,7 @@ class BudgetStack(Stack):
                         threshold_type="PERCENTAGE",
                     ),
                     subscribers=[
-                        budgets.CfnBudget.SubscriberProperty(
-                            subscription_type="SNS",
-                            address=alert_topic.topic_arn,
-                        ),
+                        # Only shutdown topic here - it will notify alert_topic via Lambda
                         budgets.CfnBudget.SubscriberProperty(
                             subscription_type="SNS",
                             address=shutdown_topic.topic_arn,

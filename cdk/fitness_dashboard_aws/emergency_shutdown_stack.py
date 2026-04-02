@@ -132,12 +132,8 @@ class EmergencyShutdownStack(Stack):
             shutdown_integration,
             api_key_required=False,  # Token auth handled in Lambda
         )
-
-        # Enable CORS for shutdown endpoint
-        shutdown_resource.add_cors_preflight(
-            allow_origins=["*"],
-            allow_methods=["POST", "OPTIONS"],
-        )
+        
+        # CORS already configured at API level in api_stack, no need to add here
 
         # ── Outputs ────────────────────────────────────────────────────────────
         # Kill switch URL for mobile/desktop use

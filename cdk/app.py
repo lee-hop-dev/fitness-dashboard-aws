@@ -81,9 +81,8 @@ emergency_shutdown_stack = EmergencyShutdownStack(
     app,
     "FitnessDashboardEmergencyShutdown",
     collector_stack=collector_stack,
-    api_stack=api_stack,
     env=env,
-    description="Fitness Dashboard - Emergency shutdown Lambda + kill switch API",
+    description="Fitness Dashboard - Emergency shutdown Lambda (SNS-triggered)",
 )
 
 monitoring_stack = MonitoringStack(
@@ -117,7 +116,6 @@ api_stack.add_dependency(dynamo_stack)
 
 # Phase 5 dependencies
 emergency_shutdown_stack.add_dependency(collector_stack)
-emergency_shutdown_stack.add_dependency(api_stack)
 monitoring_stack.add_dependency(dynamo_stack)
 monitoring_stack.add_dependency(collector_stack)
 monitoring_stack.add_dependency(api_stack)

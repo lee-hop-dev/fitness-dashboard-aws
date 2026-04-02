@@ -14,7 +14,6 @@ from aws_cdk import (
     SecretValue,
     aws_lambda as lambda_,
     aws_iam as iam,
-    aws_apigateway as apigw,
     aws_sns as sns,
     aws_sns_subscriptions as subscriptions,
     aws_logs as logs,
@@ -23,7 +22,6 @@ from aws_cdk import (
 from constructs import Construct
 
 from .collector_stack import CollectorStack
-from .api_stack import ApiStack
 
 
 class EmergencyShutdownStack(Stack):
@@ -33,7 +31,6 @@ class EmergencyShutdownStack(Stack):
         scope: Construct,
         construct_id: str,
         collector_stack: CollectorStack,
-        api_stack: ApiStack,
         **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -70,21 +67,6 @@ class EmergencyShutdownStack(Stack):
             )
         )
 
-        # Grant permission to update API Gateway throttling
-        shutdown_role.add_to_policy(
-            iam.PolicyStatement(
-                effect=iam.Effect.ALLOW,
-                actions=[
-                    "apigateway:GET",
-                    "apigateway:PATCH",
-                    "apigateway:UpdateStage",
-                ],
-                resources=[
-                    f"arn:aws:apigateway:{self.region}::/restapis/{api_stack.api.rest_api_id}/*"
-                ],
-            )
-        )
-
         # Grant permission to publish to alert SNS topic (set later via set_alert_topic method)
 
         # ── Generate Shutdown Token ───────────────────────────────────────────
@@ -107,8 +89,6 @@ class EmergencyShutdownStack(Stack):
             role=shutdown_role,
             environment={
                 "EVENTBRIDGE_RULE_NAME": "fitness-dashboard-daily-sync",
-                "API_GATEWAY_ID": api_stack.api.rest_api_id,
-                "API_GATEWAY_STAGE": "prod",
                 "SHUTDOWN_TOKEN": shutdown_token,
             },
             log_retention=logs.RetentionDays.ONE_MONTH,
@@ -119,37 +99,7 @@ class EmergencyShutdownStack(Stack):
             subscriptions.LambdaSubscription(self.shutdown_fn)
         )
 
-        # ── API Gateway Integration ───────────────────────────────────────────
-        # Add shutdown endpoint to existing API
-        shutdown_integration = apigw.LambdaIntegration(
-            self.shutdown_fn,
-            proxy=True,
-        )
-
-        shutdown_resource = api_stack.api.root.add_resource("emergency-shutdown")
-        shutdown_resource.add_method(
-            "POST",
-            shutdown_integration,
-            api_key_required=False,  # Token auth handled in Lambda
-        )
-        
-        # CORS already configured at API level in api_stack, no need to add here
-
         # ── Outputs ────────────────────────────────────────────────────────────
-        # Kill switch URL for mobile/desktop use
-        kill_switch_url = (
-            f"https://{api_stack.api.rest_api_id}.execute-api.{self.region}.amazonaws.com/prod/"
-            f"emergency-shutdown?token={shutdown_token}"
-        )
-
-        CfnOutput(
-            self,
-            "KillSwitchURL",
-            value=kill_switch_url,
-            description="Emergency shutdown URL (bookmark this for quick access)",
-            export_name="FitnessDashboardKillSwitchURL",
-        )
-
         CfnOutput(
             self,
             "ShutdownTopicARN",
@@ -158,12 +108,19 @@ class EmergencyShutdownStack(Stack):
             export_name="FitnessDashboardShutdownTopicARN",
         )
 
-        # Store token as output (for manual retrieval if needed)
+        CfnOutput(
+            self,
+            "ShutdownFunctionName",
+            value=self.shutdown_fn.function_name,
+            description="Lambda function name for emergency shutdown",
+        )
+
+        # Store token as output (for manual Lambda invocation if needed)
         CfnOutput(
             self,
             "ShutdownToken",
             value=shutdown_token,
-            description="Authentication token for kill switch (keep secret)",
+            description="Authentication token for manual shutdown (invoke Lambda directly)",
         )
 
     def set_alert_topic(self, alert_topic: sns.Topic) -> None:

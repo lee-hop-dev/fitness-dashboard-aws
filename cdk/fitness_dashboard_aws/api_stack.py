@@ -171,6 +171,18 @@ class ApiStack(Stack):
         ytd.add_method("GET", lambda_integration)
 
         # ── CloudFormation Outputs ────────────────────────────────────────────
+    # ── Public helper ─────────────────────────────────────────────────────────
+
+    def _make_lambda_integration(self, fn: lambda_.Function) -> apigw.LambdaIntegration:
+        """Return a proxy LambdaIntegration for the given function.
+        Used by add-on stacks (e.g. StravaOAuthStack) to attach routes
+        to this API without duplicating integration config.
+        """
+        return apigw.LambdaIntegration(
+            fn,
+            request_templates={"application/json": '{"statusCode": "200"}'},
+            proxy=True,
+        )
         CfnOutput(
             self,
             "ApiUrl",

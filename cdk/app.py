@@ -30,6 +30,7 @@ from fitness_dashboard_aws.collector_stack import CollectorStack
 from fitness_dashboard_aws.api_stack import ApiStack
 from fitness_dashboard_aws.frontend_stack import FrontendStack
 from fitness_dashboard_aws.monitoring_stack import MonitoringStack
+from fitness_dashboard_aws.strava_oauth_stack import StravaOAuthStack
 from fitness_dashboard_aws.budget_stack import BudgetStack
 from fitness_dashboard_aws.emergency_shutdown_stack import EmergencyShutdownStack
 
@@ -76,6 +77,16 @@ frontend_stack = FrontendStack(
     description="Fitness Dashboard - S3 static hosting + CloudFront CDN (Phase 4)",
 )
 
+# ── Phase 7: Strava OAuth ──────────────────────────────────────────────────
+strava_oauth_stack = StravaOAuthStack(
+    app,
+    "FitnessDashboardStravaOAuth",
+    secrets_stack=secrets_stack,
+    api_stack=api_stack,
+    env=env,
+    description="Fitness Dashboard - Strava OAuth server-side token exchange (Phase 7)",
+)
+
 # ── Phase 5: Monitoring & Cost Control ────────────────────────────────────
 emergency_shutdown_stack = EmergencyShutdownStack(
     app,
@@ -113,6 +124,10 @@ collector_stack.add_dependency(dynamo_stack)
 collector_stack.add_dependency(secrets_stack)
 api_stack.add_dependency(dynamo_stack)
 # FrontendStack is independent of backend stacks — no dependency needed
+
+# Phase 7 dependencies
+strava_oauth_stack.add_dependency(secrets_stack)
+strava_oauth_stack.add_dependency(api_stack)
 
 # Phase 5 dependencies
 emergency_shutdown_stack.add_dependency(collector_stack)

@@ -227,11 +227,14 @@ const DATA = {
 
     // Extract threshold_pace from the Run sport settings.
     // GET /athlete/{id} returns WithSportSettings which includes sportSettings[].
-    // threshold_pace is in seconds-per-km (MINS_KM units) per the Intervals.icu SportSettings schema.
+    // threshold_pace from Intervals.icu is stored in m/s — convert to seconds/km for display.
     const runSettings = (profile.sportSettings || []).find(s =>
       Array.isArray(s.types) && s.types.includes('Run')
     );
-    const threshold_pace = runSettings?.threshold_pace ?? null; // seconds per km, or null if not set
+    const rawThresholdMps = runSettings?.threshold_pace ?? null; // m/s from Intervals.icu
+    const threshold_pace = rawThresholdMps != null && rawThresholdMps > 0
+      ? Math.round(1000 / rawThresholdMps)  // convert m/s → seconds per km
+      : null;
 
     const athlete = {
       ...profile,

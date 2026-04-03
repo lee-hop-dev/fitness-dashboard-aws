@@ -155,13 +155,6 @@
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     const { activities, wellness, weeklyTSS, ytd, meta, athlete } = await DATA.loadAll();
-
-    // DIAGNOSTIC — remove after confirming threshold_pace is present
-    console.log('[DIAG] athlete.threshold_pace:', athlete?.threshold_pace);
-    console.log('[DIAG] athlete.sportSettings present:', Array.isArray(athlete?.sportSettings));
-    console.log('[DIAG] athlete.sportSettings length:', athlete?.sportSettings?.length ?? 'N/A');
-    const runSportSettings = (athlete?.sportSettings || []).find(s => Array.isArray(s.types) && s.types.includes('Run'));
-    console.log('[DIAG] Run sportSettings entry:', runSportSettings ? JSON.stringify(runSportSettings) : 'NOT FOUND');
     // Load 90-day pace curves from Intervals.icu
     let paceCurves90d = null;
     try {
@@ -265,9 +258,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('pb-10k').textContent = `PB: ${fmtTime(athlete.pb_10k)}`;
       }
 
-      // Threshold pace — sourced from Intervals.icu Run sport settings (threshold_pace field).
-      // Value is seconds per km. Show as MM:SS/km and drive the bar relative to 7:00/km (420s) floor
-      // and 3:00/km (180s) ceiling (faster = higher bar fill).
+      // Threshold pace — sourced from Intervals.icu Run sport settings.
+      // data-loader converts raw m/s → seconds per km. Bar: 3:00/km (fast)=100%, 7:00/km=0%.
       if (athlete.threshold_pace != null && athlete.threshold_pace > 0) {
         const tpSec = Math.round(athlete.threshold_pace);
         const tpMin = Math.floor(tpSec / 60);

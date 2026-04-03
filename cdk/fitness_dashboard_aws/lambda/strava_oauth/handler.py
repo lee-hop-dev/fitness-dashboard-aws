@@ -85,7 +85,9 @@ def call_strava_token(payload: dict) -> dict:
     except urllib.error.HTTPError as exc:
         body = exc.read().decode("utf-8")
         logger.error("Strava HTTP error %s: %s", exc.code, body)
-        raise RuntimeError(f"Strava returned {exc.code}: {body}") from exc
+        # Re-raise with status so caller can forward Strava's actual code
+        exc._strava_body = body
+        raise exc
 
 
 def handle_token_exchange(body: dict) -> dict:

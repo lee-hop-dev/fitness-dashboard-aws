@@ -224,11 +224,21 @@ const DATA = {
     // Take the most recent non-null value across activities — same approach as original collector.
     const wPrime = (activitiesResp.activities || [])
       .find(a => a.icu_w_prime != null)?.icu_w_prime ?? null;
+
+    // Extract threshold_pace from the Run sport settings.
+    // GET /athlete/{id} returns WithSportSettings which includes sportSettings[].
+    // threshold_pace is in seconds-per-km (MINS_KM units) per the Intervals.icu SportSettings schema.
+    const runSettings = (profile.sportSettings || []).find(s =>
+      Array.isArray(s.types) && s.types.includes('Run')
+    );
+    const threshold_pace = runSettings?.threshold_pace ?? null; // seconds per km, or null if not set
+
     const athlete = {
       ...profile,
-      ftp:     profile.icu_ftp  || profile.ftp    || null,
-      w_prime: wPrime,
-      weight:  profile.icu_weight || profile.weight || null,
+      ftp:             profile.icu_ftp  || profile.ftp    || null,
+      w_prime:         wPrime,
+      weight:          profile.icu_weight || profile.weight || null,
+      threshold_pace,  // seconds per km from Run sport settings; null if not configured
     };
 
     // Meta — assemble from three curve endpoints

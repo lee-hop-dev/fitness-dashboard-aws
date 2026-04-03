@@ -93,10 +93,10 @@
       </div>
       <div class="metric-card hrv">
         <div class="metric-label">THRESHOLD PACE</div>
-        <div class="metric-value" style="color:var(--purple)">4:25</div>
+        <div class="metric-value" style="color:var(--purple)" id="threshold-pace-value">—</div>
         <div class="metric-delta neutral">per km</div>
-        <div class="metric-bar"><div class="metric-bar-fill" style="width:58%;background:var(--purple)"></div></div>
-        <div class="metric-sub">Current estimate</div>
+        <div class="metric-bar"><div class="metric-bar-fill" id="threshold-pace-bar" style="width:0%;background:var(--purple)"></div></div>
+        <div class="metric-sub" id="threshold-pace-sub">From Intervals.icu settings</div>
       </div>
       <div class="metric-card sleep">
         <div class="metric-label">THIS WEEK</div>
@@ -256,6 +256,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       if (athlete.pb_10k) {
         document.getElementById('pb-10k').textContent = `PB: ${fmtTime(athlete.pb_10k)}`;
+      }
+
+      // Threshold pace — sourced from Intervals.icu Run sport settings (threshold_pace field).
+      // Value is seconds per km. Show as MM:SS/km and drive the bar relative to 7:00/km (420s) floor
+      // and 3:00/km (180s) ceiling (faster = higher bar fill).
+      if (athlete.threshold_pace != null && athlete.threshold_pace > 0) {
+        const tpSec = Math.round(athlete.threshold_pace);
+        const tpMin = Math.floor(tpSec / 60);
+        const tpS   = String(tpSec % 60).padStart(2, '0');
+        document.getElementById('threshold-pace-value').textContent = `${tpMin}:${tpS}`;
+        // Bar fill: 0% = 7:00/km (420s), 100% = 3:00/km (180s); clamp to 5–95%
+        const pct = Math.min(95, Math.max(5, Math.round(((420 - tpSec) / (420 - 180)) * 100)));
+        document.getElementById('threshold-pace-bar').style.width = `${pct}%`;
+        document.getElementById('threshold-pace-sub').textContent = 'Intervals.icu Run settings';
       }
     }
 

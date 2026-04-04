@@ -38,6 +38,8 @@ const DATA = {
       // icu_intensity is stored as a ratio (e.g. 0.85); pages use if_val directly
       if_val:    a.icu_intensity  != null ? a.icu_intensity  : (a.if_val ?? null),
       tss:       a.icu_training_load != null ? a.icu_training_load : (a.tss ?? 0),
+      // average_speed from Intervals.icu (m/s) → avg_speed used by running/cycling pages
+      avg_speed: a.average_speed != null ? a.average_speed : (a.avg_speed ?? null),
     };
   },
 
@@ -179,7 +181,10 @@ const DATA = {
   },
 
   // ── loadAll ──────────────────────────────────────────────────────────────
-  async loadAll() {
+  // activityDays: how many days of activities to load for the main list
+  //   default 90 — enough for cycling/running recent cards and charts
+  //   pass 400 for rowing/running pages that need all-time PBs
+  async loadAll({ activityDays = 90 } = {}) {
     const [
       activitiesResp,
       wellnessResp,
@@ -192,7 +197,7 @@ const DATA = {
       heatmap1yResp,
       heatmap3yResp,
     ] = await Promise.all([
-      this._fetch('/activities',  { days: 90,   limit: 500  }),
+      this._fetch('/activities',  { days: activityDays, limit: 1000 }),
       this._fetch('/wellness',    { days: 180 }),
       this._fetch('/weekly-tss',  { weeks: 52  }),
       this._fetch('/ytd'),

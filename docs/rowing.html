@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   console.log('🚀 Rowing page starting...');
   
   try {
-    const { activities, weeklyTSS } = await DATA.loadAll();
+    const { activities, weeklyTSS } = await DATA.loadAll({ activityDays: 400 });
     console.log('📊 Total activities loaded:', activities.length);
 
     // ULTRA-COMPREHENSIVE ROWING FILTERING - catch everything possible

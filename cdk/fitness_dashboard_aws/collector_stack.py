@@ -59,12 +59,12 @@ class CollectorStack(Stack):
         secrets_stack.intervals_secret.grant_read(collector_role)
         secrets_stack.strava_secret.grant_read(collector_role)
 
-        # Grant write access to S3 frontend bucket for segments.json
+        # Grant write access to S3 frontend bucket for segments.json and curve JSON files
         # Using explicit IAM policy to avoid cross-stack CloudFormation export dependency
         collector_role.add_to_policy(
             iam.PolicyStatement(
                 actions=["s3:PutObject"],
-                resources=[f"arn:aws:s3:::{frontend_bucket_name}/data/segments.json"],
+                resources=[f"arn:aws:s3:::{frontend_bucket_name}/data/*"],
             )
         )
 

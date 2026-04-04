@@ -115,11 +115,12 @@ def float_to_decimal(obj):
 
 # ── Sync functions ────────────────────────────────────────────────────────────
 
-def sync_activities(api_key: str, days: int = 90) -> int:
+def sync_activities(api_key: str, days: int = 400) -> int:
     """
     Fetch recent activities from Intervals.icu and upsert into DynamoDB.
     Uses the /athlete/{id}/activities endpoint.
-    Fetches last 90 days by default; pass days=400 for a one-time backfill.
+    Fetches last 400 days by default to populate the 1-year heatmap and
+    rowing/running all-time PBs. Pass days=1095 for a 3-year backfill.
 
     Field names follow the Intervals.icu OpenAPI spec exactly.
     Key fields stored as-is from the API:
@@ -207,9 +208,15 @@ def sync_wellness(api_key: str) -> int:
 
 def sync_curve(api_key: str, endpoint: str, sport_type: str, curve_key: str) -> bool:
     """
-    Generic curve sync: fetches from Intervals.icu and writes to DynamoDB curves table.
+    Generic curve sync: fetches from Intervals.icu, writes to DynamoDB curves table,
+    and writes the raw response to S3 as a static JSON file for the frontend.
+
+    S3 filenames match what the pages fetch directly:
+      power → data/power_curves_90d.json
+      pace  → data/pace_curves_90d.json
+      hr    → data/hr_curves_90d.json
+
     Intervals computes all curves — never recalculate client-side.
-    params format matches working collect_data.py: curves as list.
     """
     table = dynamodb.Table(CURVES_TABLE)
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -224,12 +231,25 @@ def sync_curve(api_key: str, endpoint: str, sport_type: str, curve_key: str) -> 
         logger.warning(f"No data returned for {curve_key}")
         return False
 
+    # Write to DynamoDB (for API Gateway endpoint)
     item = float_to_decimal(data) if isinstance(data, dict) else {"raw": float_to_decimal(data)}
     item["athlete_id"] = ATHLETE_ID
     item["curve_type_date"] = f"{curve_key}#{today}"
     item["fetched_date"] = today
     table.put_item(Item=item)
-    logger.info(f"Synced {curve_key} curves")
+    logger.info(f"Synced {curve_key} curves to DynamoDB")
+
+    # Write to S3 (for direct static file fetch by cycling/running pages)
+    if FRONTEND_BUCKET:
+        s3_key = f"data/{curve_key}_curves_90d.json"
+        s3_client.put_object(
+            Bucket=FRONTEND_BUCKET,
+            Key=s3_key,
+            Body=json.dumps(data),
+            ContentType="application/json",
+        )
+        logger.info(f"Wrote {s3_key} to s3://{FRONTEND_BUCKET}/{s3_key}")
+
     return True
 
 
@@ -472,9 +492,10 @@ def handler(event, context):
 
     results = {}
 
-    # Support one-time backfill: invoke Lambda with {"backfill_days": 400}
-    backfill_days = int(event.get("backfill_days", 90))
-    if backfill_days != 90:
+    # Default 400 days keeps the 1-year heatmap and all-time rowing/running PBs populated.
+    # Pass {"backfill_days": 1095} for a 3-year backfill.
+    backfill_days = int(event.get("backfill_days", 400))
+    if backfill_days != 400:
         logger.info(f"Backfill mode: fetching {backfill_days} days of activities")
 
     try:

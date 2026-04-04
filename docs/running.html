@@ -154,7 +154,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    const { activities, wellness, weeklyTSS, ytd, meta, athlete } = await DATA.loadAll();
+    const { activities, wellness, weeklyTSS, ytd, meta, athlete } = await DATA.loadAll({ activityDays: 400 });
     // Load 90-day pace curves from Intervals.icu
     let paceCurves90d = null;
     try {

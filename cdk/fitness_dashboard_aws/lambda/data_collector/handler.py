@@ -9,6 +9,7 @@ Athlete ID: 5718022 (i5718022 prefix in API calls)
 Auth: Basic auth with "API_KEY" as username + actual key as password
 """
 
+import base64
 import json
 import logging
 import os

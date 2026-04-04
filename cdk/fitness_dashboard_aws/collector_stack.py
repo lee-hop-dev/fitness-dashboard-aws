@@ -51,6 +51,10 @@ class CollectorStack(Stack):
         dynamo_stack.wellness_table.grant_write_data(collector_role)
         dynamo_stack.curves_table.grant_write_data(collector_role)
 
+        # Grant read (Scan) access to activities table for segment sync
+        # grant_write_data only covers Put/Delete/Update — Scan requires explicit read grant
+        dynamo_stack.activities_table.grant_read_data(collector_role)
+
         # Grant read access to secrets
         secrets_stack.intervals_secret.grant_read(collector_role)
         secrets_stack.strava_secret.grant_read(collector_role)

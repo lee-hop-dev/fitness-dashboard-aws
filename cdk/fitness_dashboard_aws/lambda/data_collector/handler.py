@@ -58,6 +58,9 @@ def paginate_query(table, **kwargs) -> list:
             break
         kwargs["ExclusiveStartKey"] = last
     return items
+
+
+def get_intervals_api_key() -> str:
     """
     Retrieve Intervals.icu API key from Secrets Manager.
     Handles both storage formats:

@@ -51,19 +51,12 @@ secrets_stack = SecretsStack(
     description="Fitness Dashboard - API credentials in Secrets Manager",
 )
 
-frontend_stack = FrontendStack(
-    app,
-    "FitnessDashboardFrontend",
-    env=env,
-    description="Fitness Dashboard - S3 static hosting + CloudFront CDN (Phase 4)",
-)
-
 collector_stack = CollectorStack(
     app,
     "FitnessDashboardCollector",
     dynamo_stack=dynamo_stack,
     secrets_stack=secrets_stack,
-    frontend_stack=frontend_stack,
+    frontend_bucket_name=f"fitness-dashboard-frontend-656370357696",
     env=env,
     description="Fitness Dashboard - Lambda data collector + EventBridge schedule",
 )
@@ -75,6 +68,13 @@ api_stack = ApiStack(
     athlete_id="5718022",
     env=env,
     description="Fitness Dashboard - API Gateway REST API + Lambda query functions",
+)
+
+frontend_stack = FrontendStack(
+    app,
+    "FitnessDashboardFrontend",
+    env=env,
+    description="Fitness Dashboard - S3 static hosting + CloudFront CDN (Phase 4)",
 )
 
 
@@ -113,7 +113,6 @@ budget_stack = BudgetStack(
 # Explicit dependency ordering
 collector_stack.add_dependency(dynamo_stack)
 collector_stack.add_dependency(secrets_stack)
-collector_stack.add_dependency(frontend_stack)
 api_stack.add_dependency(dynamo_stack)
 # FrontendStack is independent of backend stacks — no dependency needed
 

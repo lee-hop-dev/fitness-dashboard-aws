@@ -19,7 +19,6 @@ from constructs import Construct
 
 from .dynamodb_stack import DynamoDBStack
 from .secrets_stack import SecretsStack
-from .frontend_stack import FrontendStack
 
 
 class CollectorStack(Stack):
@@ -30,7 +29,7 @@ class CollectorStack(Stack):
         construct_id: str,
         dynamo_stack: DynamoDBStack,
         secrets_stack: SecretsStack,
-        frontend_stack: FrontendStack,
+        frontend_bucket_name: str,
         **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -56,8 +55,14 @@ class CollectorStack(Stack):
         secrets_stack.intervals_secret.grant_read(collector_role)
         secrets_stack.strava_secret.grant_read(collector_role)
 
-        # Grant write access to S3 frontend bucket (for segments.json)
-        frontend_stack.bucket.grant_write(collector_role)
+        # Grant write access to S3 frontend bucket for segments.json
+        # Using explicit IAM policy to avoid cross-stack CloudFormation export dependency
+        collector_role.add_to_policy(
+            iam.PolicyStatement(
+                actions=["s3:PutObject"],
+                resources=[f"arn:aws:s3:::{frontend_bucket_name}/data/segments.json"],
+            )
+        )
 
         # ── Lambda Function ───────────────────────────────────────────────────
         self.collector_fn = lambda_.Function(
@@ -78,7 +83,7 @@ class CollectorStack(Stack):
                 "CURVES_TABLE": dynamo_stack.curves_table.table_name,
                 "INTERVALS_SECRET_NAME": secrets_stack.intervals_secret.secret_name,
                 "STRAVA_SECRET_NAME": secrets_stack.strava_secret.secret_name,
-                "FRONTEND_BUCKET": frontend_stack.bucket.bucket_name,
+                "FRONTEND_BUCKET": frontend_bucket_name,
             },
             log_retention=logs.RetentionDays.THREE_MONTHS,
         )

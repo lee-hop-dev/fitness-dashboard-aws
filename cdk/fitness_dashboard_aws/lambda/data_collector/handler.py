@@ -20,6 +20,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 import boto3
+from boto3.dynamodb.conditions import Key
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -44,6 +45,20 @@ STRAVA_SECRET_NAME = os.environ.get(
     "STRAVA_SECRET_NAME", "fitness-dashboard/strava-credentials"
 )
 FRONTEND_BUCKET = os.environ.get("FRONTEND_BUCKET", "")
+
+
+def paginate_query(table, **kwargs) -> list:
+    """Exhaust DynamoDB Query pagination and return all matching items."""
+    items = []
+    while True:
+        resp = table.query(**kwargs)
+        items.extend(resp.get("Items", []))
+        last = resp.get("LastEvaluatedKey")
+        if not last:
+            break
+        kwargs["ExclusiveStartKey"] = last
+    return items
+
 
 def get_intervals_api_key() -> str:
     """
@@ -270,11 +285,44 @@ def sync_all_curves(api_key: str) -> dict:
     return results
 
 
+def calculate_pb(activities: list, target_distance: float, tolerance: float = 0.15):
+    """
+    Calculate personal best time for a target distance from all activities.
+    Mirrors V1 collect_data.py calculate_pb() exactly.
+
+    Args:
+        activities: list of raw activity dicts from DynamoDB (Intervals.icu field names)
+        target_distance: target in metres (e.g. 5000 for 5K)
+        tolerance: distance tolerance as a fraction (default 15%)
+
+    Returns:
+        Best estimated time in seconds (float), or None.
+    """
+    margin = target_distance * tolerance
+    candidates = [
+        a for a in activities
+        if a.get("type") in ("Run", "VirtualRun")
+        and a.get("distance") and abs(float(a["distance"]) - target_distance) < margin
+        and a.get("average_speed") and float(a["average_speed"]) > 0
+    ]
+    if not candidates:
+        return None
+    best = min(
+        target_distance / float(a["average_speed"])
+        for a in candidates
+    )
+    logger.info(f"PB for {target_distance}m: {best:.1f}s from {len(candidates)} candidates")
+    return round(best, 1)
+
+
 def sync_athlete(api_key: str) -> dict:
     """
-    Fetch current athlete profile from Intervals.icu.
-    Includes FTP, W'bal, weight and other current stats.
-    Stored in wellness table under a special 'athlete_profile' sort key.
+    Fetch current athlete profile from Intervals.icu, calculate running PBs
+    from all stored activities, and persist everything to the wellness table
+    under a special 'athlete_profile' sort key.
+
+    Running PBs (pb_5k, pb_10k, pb_half_marathon) are computed from all
+    activities in DynamoDB — same approach as V1 collect_data.py.
     """
     table = dynamodb.Table(WELLNESS_TABLE)
 
@@ -283,13 +331,35 @@ def sync_athlete(api_key: str) -> dict:
         api_key,
     )
 
+    # Scan all activities to calculate running PBs — V1 approach
+    act_table = dynamodb.Table(ACTIVITIES_TABLE)
+    all_activities = paginate_query(
+        act_table,
+        IndexName="athlete_id-start_date-index",
+        KeyConditionExpression=(
+            Key("athlete_id").eq(ATHLETE_ID) &
+            Key("start_date").gte("2000-01-01")
+        ),
+        ProjectionExpression="#t, distance, average_speed",
+        ExpressionAttributeNames={"#t": "type"},
+    )
+
+    pb_5k           = calculate_pb(all_activities, 5000)
+    pb_10k          = calculate_pb(all_activities, 10000)
+    pb_half_marathon = calculate_pb(all_activities, 21097.5)
+    logger.info(f"PBs — 5k: {pb_5k}s, 10k: {pb_10k}s, half: {pb_half_marathon}s")
+
     item = float_to_decimal(athlete)
     item["athlete_id"] = ATHLETE_ID
-    item["date"] = "athlete_profile"  # Static key for latest profile
+    item["date"] = "athlete_profile"
     item["updated_at"] = datetime.now(timezone.utc).isoformat()
+    # Store PBs alongside the profile so /athlete endpoint returns them
+    if pb_5k:            item["pb_5k"]            = float_to_decimal(pb_5k)
+    if pb_10k:           item["pb_10k"]           = float_to_decimal(pb_10k)
+    if pb_half_marathon: item["pb_half_marathon"] = float_to_decimal(pb_half_marathon)
 
     table.put_item(Item=item)
-    logger.info("Synced athlete profile")
+    logger.info("Synced athlete profile with running PBs")
     return item
 
 

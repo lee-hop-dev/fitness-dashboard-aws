@@ -285,78 +285,72 @@ def sync_all_curves(api_key: str) -> dict:
     return results
 
 
-def calculate_pb(activities: list, target_distance: float, tolerance: float = 0.15):
+def get_running_pbs(api_key: str) -> dict:
     """
-    Calculate personal best time for a target distance from all activities.
-    Mirrors V1 collect_data.py calculate_pb() exactly.
-
-    Args:
-        activities: list of raw activity dicts from DynamoDB (Intervals.icu field names)
-        target_distance: target in metres (e.g. 5000 for 5K)
-        tolerance: distance tolerance as a fraction (default 15%)
-
-    Returns:
-        Best estimated time in seconds (float), or None.
+    Read all-time running PBs directly from Intervals.icu pace-curves endpoint
+    using curves=all. This is the same authoritative source as the Intervals UI.
+    Reads distance[] and values[] arrays to find exact 5k and 10k times.
     """
-    margin = target_distance * tolerance
-    candidates = [
-        a for a in activities
-        if a.get("type") in ("Run", "VirtualRun")
-        and a.get("distance") and abs(float(a["distance"]) - target_distance) < margin
-        and a.get("average_speed") and float(a["average_speed"]) > 0
-    ]
-    if not candidates:
-        return None
-    best = min(
-        target_distance / float(a["average_speed"])
-        for a in candidates
+    data = intervals_get(
+        f"athlete/{ATHLETE_ID}/pace-curves",
+        api_key,
+        params={"type": "Run", "curves": ["all"]},
     )
-    logger.info(f"PB for {target_distance}m: {best:.1f}s from {len(candidates)} candidates")
-    return round(best, 1)
+    if not data:
+        logger.warning("No all-time pace curve returned")
+        return {}
+
+    curve = None
+    if isinstance(data, dict) and data.get("list"):
+        curve = data["list"][0]
+    elif isinstance(data, list) and data:
+        curve = data[0]
+
+    if not curve:
+        return {}
+
+    distances = curve.get("distance", [])
+    times     = curve.get("values", [])
+
+    if not isinstance(distances, list):
+        logger.warning("Pace curve distance field is not an array")
+        return {}
+
+    pbs = {}
+    for target, key in [(5000, "pb_5k"), (10000, "pb_10k"), (21097, "pb_half_marathon")]:
+        idx = next(
+            (i for i, d in enumerate(distances) if abs(float(d) - target) < 50),
+            None,
+        )
+        if idx is not None and times[idx]:
+            pbs[key] = round(float(times[idx]), 1)
+            mins, secs = divmod(int(pbs[key]), 60)
+            logger.info(f"{key}: {pbs[key]}s ({mins}:{secs:02d})")
+        else:
+            logger.info(f"{key}: not found in all-time pace curve")
+
+    return pbs
 
 
 def sync_athlete(api_key: str) -> dict:
     """
-    Fetch current athlete profile from Intervals.icu, calculate running PBs
-    from all stored activities, and persist everything to the wellness table
-    under a special 'athlete_profile' sort key.
-
-    Running PBs (pb_5k, pb_10k, pb_half_marathon) are computed from all
-    activities in DynamoDB — same approach as V1 collect_data.py.
+    Fetch athlete profile from Intervals.icu and persist to wellness table.
+    Running PBs are read from the Intervals all-time pace curve — the same
+    authoritative source Intervals.icu UI uses. No activity scanning.
     """
     table = dynamodb.Table(WELLNESS_TABLE)
 
-    athlete = intervals_get(
-        f"athlete/{ATHLETE_ID}",
-        api_key,
-    )
+    athlete = intervals_get(f"athlete/{ATHLETE_ID}", api_key)
 
-    # Scan all activities to calculate running PBs — V1 approach
-    act_table = dynamodb.Table(ACTIVITIES_TABLE)
-    all_activities = paginate_query(
-        act_table,
-        IndexName="athlete_id-start_date-index",
-        KeyConditionExpression=(
-            Key("athlete_id").eq(ATHLETE_ID) &
-            Key("start_date").gte("2000-01-01")
-        ),
-        ProjectionExpression="#t, distance, average_speed",
-        ExpressionAttributeNames={"#t": "type"},
-    )
-
-    pb_5k           = calculate_pb(all_activities, 5000)
-    pb_10k          = calculate_pb(all_activities, 10000)
-    pb_half_marathon = calculate_pb(all_activities, 21097.5)
-    logger.info(f"PBs — 5k: {pb_5k}s, 10k: {pb_10k}s, half: {pb_half_marathon}s")
+    pbs = get_running_pbs(api_key)
+    logger.info(f"Running PBs from Intervals all-time pace curve: {pbs}")
 
     item = float_to_decimal(athlete)
     item["athlete_id"] = ATHLETE_ID
-    item["date"] = "athlete_profile"
+    item["date"]       = "athlete_profile"
     item["updated_at"] = datetime.now(timezone.utc).isoformat()
-    # Store PBs alongside the profile so /athlete endpoint returns them
-    if pb_5k:            item["pb_5k"]            = float_to_decimal(pb_5k)
-    if pb_10k:           item["pb_10k"]           = float_to_decimal(pb_10k)
-    if pb_half_marathon: item["pb_half_marathon"] = float_to_decimal(pb_half_marathon)
+    for k, v in pbs.items():
+        item[k] = float_to_decimal(v)
 
     table.put_item(Item=item)
     logger.info("Synced athlete profile with running PBs")

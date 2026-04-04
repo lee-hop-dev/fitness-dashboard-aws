@@ -201,10 +201,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       console.log('Sample durations:', durations.slice(0, 10));
       console.log('Sample watts:', watts.slice(0, 10));
       
-      // Build power bests array for chart
+      // Build power bests array for chart — include secs for exact index lookup
       powerBests = durations.map((sec, idx) => ({
         label: formatDurationLabel(sec),
         value: watts[idx],
+        secs:  sec,
         hr: null
       }));
       
@@ -537,10 +538,10 @@ function buildPowerCurveChartLine(canvasId, data, compare, cp, p5, p20) {
   const values = data.map(d => d.value);
   
   // Find indices for 10s, 1min, 5min, 20min
-  const idx10s = labels.indexOf('10s');
-  const idx1min = labels.indexOf('1min');
-  const idx5min = labels.indexOf('5min');
-  const idx20min = labels.indexOf('20min');
+  const idx10s  = data.findIndex(d => d.secs === 10);
+  const idx1min = data.findIndex(d => d.secs === 60);
+  const idx5min = data.findIndex(d => d.secs === 300);
+  const idx20min = data.findIndex(d => d.secs === 1200);
   
   new Chart(ctx, {
     type: 'line',

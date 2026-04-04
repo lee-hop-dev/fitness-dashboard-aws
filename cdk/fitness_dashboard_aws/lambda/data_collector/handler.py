@@ -20,6 +20,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 import boto3
+from boto3.dynamodb.conditions import Key
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -44,6 +45,20 @@ STRAVA_SECRET_NAME = os.environ.get(
     "STRAVA_SECRET_NAME", "fitness-dashboard/strava-credentials"
 )
 FRONTEND_BUCKET = os.environ.get("FRONTEND_BUCKET", "")
+
+
+def paginate_query(table, **kwargs) -> list:
+    """Exhaust DynamoDB Query pagination and return all matching items."""
+    items = []
+    while True:
+        resp = table.query(**kwargs)
+        items.extend(resp.get("Items", []))
+        last = resp.get("LastEvaluatedKey")
+        if not last:
+            break
+        kwargs["ExclusiveStartKey"] = last
+    return items
+
 
 def get_intervals_api_key() -> str:
     """
@@ -270,26 +285,75 @@ def sync_all_curves(api_key: str) -> dict:
     return results
 
 
+def get_running_pbs(api_key: str) -> dict:
+    """
+    Read all-time running PBs directly from Intervals.icu pace-curves endpoint
+    using curves=all. This is the same authoritative source as the Intervals UI.
+    Reads distance[] and values[] arrays to find exact 5k and 10k times.
+    """
+    data = intervals_get(
+        f"athlete/{ATHLETE_ID}/pace-curves",
+        api_key,
+        params={"type": "Run", "curves": ["all"]},
+    )
+    if not data:
+        logger.warning("No all-time pace curve returned")
+        return {}
+
+    curve = None
+    if isinstance(data, dict) and data.get("list"):
+        curve = data["list"][0]
+    elif isinstance(data, list) and data:
+        curve = data[0]
+
+    if not curve:
+        return {}
+
+    distances = curve.get("distance", [])
+    times     = curve.get("values", [])
+
+    if not isinstance(distances, list):
+        logger.warning("Pace curve distance field is not an array")
+        return {}
+
+    pbs = {}
+    for target, key in [(5000, "pb_5k"), (10000, "pb_10k"), (21097, "pb_half_marathon")]:
+        idx = next(
+            (i for i, d in enumerate(distances) if abs(float(d) - target) < 50),
+            None,
+        )
+        if idx is not None and times[idx]:
+            pbs[key] = round(float(times[idx]), 1)
+            mins, secs = divmod(int(pbs[key]), 60)
+            logger.info(f"{key}: {pbs[key]}s ({mins}:{secs:02d})")
+        else:
+            logger.info(f"{key}: not found in all-time pace curve")
+
+    return pbs
+
+
 def sync_athlete(api_key: str) -> dict:
     """
-    Fetch current athlete profile from Intervals.icu.
-    Includes FTP, W'bal, weight and other current stats.
-    Stored in wellness table under a special 'athlete_profile' sort key.
+    Fetch athlete profile from Intervals.icu and persist to wellness table.
+    Running PBs are read from the Intervals all-time pace curve — the same
+    authoritative source Intervals.icu UI uses. No activity scanning.
     """
     table = dynamodb.Table(WELLNESS_TABLE)
 
-    athlete = intervals_get(
-        f"athlete/{ATHLETE_ID}",
-        api_key,
-    )
+    athlete = intervals_get(f"athlete/{ATHLETE_ID}", api_key)
+
+    pbs = get_running_pbs(api_key)
+    logger.info(f"Running PBs from Intervals all-time pace curve: {pbs}")
 
     item = float_to_decimal(athlete)
     item["athlete_id"] = ATHLETE_ID
-    item["date"] = "athlete_profile"  # Static key for latest profile
+    item["date"]       = "athlete_profile"
     item["updated_at"] = datetime.now(timezone.utc).isoformat()
+    for k, v in pbs.items():
+        item[k] = float_to_decimal(v)
 
     table.put_item(Item=item)
-    logger.info("Synced athlete profile")
+    logger.info("Synced athlete profile with running PBs")
     return item
 
 

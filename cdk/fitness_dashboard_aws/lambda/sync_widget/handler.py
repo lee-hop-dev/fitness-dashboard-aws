@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 lambda_client = boto3.client("lambda", region_name="eu-west-2")
 logs_client = boto3.client("logs", region_name="eu-west-2")
 
-COLLECTOR_NAME = "FitnessDashboardCollector"
+COLLECTOR_NAME = "fitness-dashboard-data-collector"
 LOG_GROUP = f"/aws/lambda/{COLLECTOR_NAME}"
 
 

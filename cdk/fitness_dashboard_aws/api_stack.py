@@ -218,7 +218,7 @@ class ApiStack(Stack):
         # ── Ops: Sync Widget Lambda + CloudWatch Dashboard ────────────────────
         # CloudWatch custom widget that lets you trigger FitnessDashboardCollector
         # on demand from the AWS Console, without opening the Lambda test tab.
-        COLLECTOR_NAME = "FitnessDashboardCollector"
+        COLLECTOR_NAME = "fitness-dashboard-data-collector"
 
         sync_widget_role = iam.Role(
             self,

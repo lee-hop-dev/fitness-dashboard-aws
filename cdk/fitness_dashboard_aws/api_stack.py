@@ -30,6 +30,7 @@ from aws_cdk import (
     aws_apigateway as apigw,
     aws_logs as logs,
     aws_secretsmanager as sm,
+    aws_cloudwatch as cloudwatch,
 )
 from constructs import Construct
 
@@ -213,6 +214,82 @@ class ApiStack(Stack):
         strava_token.add_method("POST", strava_integration)
         strava_refresh = strava.add_resource("refresh")
         strava_refresh.add_method("POST", strava_integration)
+
+        # ── Ops: Sync Widget Lambda + CloudWatch Dashboard ────────────────────
+        # CloudWatch custom widget that lets you trigger FitnessDashboardCollector
+        # on demand from the AWS Console, without opening the Lambda test tab.
+        COLLECTOR_NAME = "fitness-dashboard-data-collector"
+
+        sync_widget_role = iam.Role(
+            self,
+            "SyncWidgetRole",
+            assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
+            managed_policies=[
+                iam.ManagedPolicy.from_aws_managed_policy_name(
+                    "service-role/AWSLambdaBasicExecutionRole"
+                )
+            ],
+        )
+
+        # Allow widget to invoke the collector
+        sync_widget_role.add_to_policy(
+            iam.PolicyStatement(
+                actions=["lambda:InvokeFunction"],
+                resources=[
+                    f"arn:aws:lambda:eu-west-2:656370357696:function:{COLLECTOR_NAME}"
+                ],
+            )
+        )
+
+        self.sync_widget_fn = lambda_.Function(
+            self,
+            "SyncWidgetFunction",
+            function_name="FitnessDashboardSyncWidget",
+            runtime=lambda_.Runtime.PYTHON_3_11,
+            handler="handler.handler",
+            code=lambda_.Code.from_asset(
+                "fitness_dashboard_aws/lambda/sync_widget"
+            ),
+            timeout=Duration.seconds(30),
+            memory_size=128,
+            role=sync_widget_role,
+            description="CloudWatch custom widget — triggers Intervals.icu sync on demand",
+            log_retention=logs.RetentionDays.ONE_MONTH,
+        )
+
+        # Grant CloudWatch permission to invoke the widget Lambda
+        self.sync_widget_fn.add_permission(
+            "AllowCloudWatchInvoke",
+            principal=iam.ServicePrincipal("cloudwatch.amazonaws.com"),
+        )
+
+        # CloudWatch dashboard with the custom widget
+        import json as _json
+        cloudwatch.CfnDashboard(
+            self,
+            "TrainingOsOpsDashboard",
+            dashboard_name="TrainingOS-Ops",
+            dashboard_body=_json.dumps({
+                "widgets": [
+                    {
+                        "type": "custom",
+                        "x": 0,
+                        "y": 0,
+                        "width": 8,
+                        "height": 4,
+                        "properties": {
+                            "endpoint": self.sync_widget_fn.function_arn,
+                            "title": "Manual sync — Intervals.icu",
+                            "updateOn": {
+                                "refresh": True,
+                                "resize": False,
+                                "timeRange": False,
+                            },
+                        },
+                    }
+                ]
+            }),
+        )
 
         # ── CloudFormation Outputs ────────────────────────────────────────────
         CfnOutput(

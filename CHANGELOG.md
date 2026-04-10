@@ -115,3 +115,27 @@ Console: https://eu-west-2.console.aws.amazon.com/lambda/home?region=eu-west-2#/
 
 ### Current Branch
 `fix/power-chart-label-mismatch` — contains all fixes from this session. Merge to main after verification.
+
+---
+
+## Session: 2026-04-11 — CloudWatch Ops Dashboard
+
+### Changes Delivered
+
+#### 1. TrainingOS-Ops CloudWatch Dashboard
+**Objective:** Native AWS ops dashboard with manual sync trigger — no frontend changes.
+
+**What was built:**
+- New `FitnessDashboardSyncWidget` Lambda added to `FitnessDashboardApi` CDK stack
+- Reads last sync timestamp from `/aws/lambda/fitness-dashboard-data-collector` CloudWatch Logs
+- Invokes `fitness-dashboard-data-collector` asynchronously on button click
+- CloudWatch custom dashboard `TrainingOS-Ops` with 8×4 widget
+- IAM role scoped to `lambda:InvokeFunction` + `logs:DescribeLogStreams` on collector
+
+**Files Changed:**
+- `cdk/fitness_dashboard_aws/api_stack.py` — SyncWidgetRole, SyncWidgetFunction, CfnDashboard
+- `cdk/fitness_dashboard_aws/lambda/sync_widget/handler.py` — new Lambda handler
+
+**Result:** Dashboard live at CloudWatch → Dashboards → TrainingOS-Ops. Last sync timestamp and Trigger sync now button both working.
+
+**Deploy note:** CloudShell must be on `fix/power-chart-label-mismatch` branch. `main` branch does not have this code.

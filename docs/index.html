@@ -641,7 +641,7 @@ function generateSparkline(containerId, data, color) {
 
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    const { activities, wellness, weeklyTSS, ytd, heatmap1y, athlete, meta } = await DATA.loadAll();
+    const { activities, wellness, weeklyTSS, ytd, athlete, meta } = await DATA.loadAll();
 
     // Load 90-day curves from Intervals.icu
     let powerCurves90d = null;
@@ -801,8 +801,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ---- CALENDAR (FIXED: now color-coded by activity type) ----
     renderCalendar(activities);
 
-    // ---- HEATMAP (FIXED: alignment corrected) ----
-    renderHeatmap(heatmap1y);
+    // ---- HEATMAP — deferred so it never blocks main page data ----
+    // loadHeatmap1y() fetches /activities?days=365 independently of loadAll().
+    // Sport pages (cycling/running/rowing/cardio) never call this, saving ~3.6s each.
+    DATA.loadHeatmap1y().then(heatmap1y => {
+      renderHeatmap(heatmap1y);
+    }).catch(err => {
+      console.warn('Heatmap failed to load:', err);
+    });
     document.querySelectorAll('[data-heatmap-toggle]').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('[data-heatmap-toggle]').forEach(b => b.classList.remove('active'));

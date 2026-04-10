@@ -184,6 +184,8 @@ const DATA = {
   // activityDays: how many days of activities to load for the main list
   //   default 90 — enough for cycling/running recent cards and charts
   //   pass 400 for rowing/running pages that need all-time PBs
+  // Note: heatmap data is NOT loaded here. index.html calls loadHeatmap1y()
+  //   separately after the main data resolves so sport pages pay no cost.
   async loadAll({ activityDays = 90 } = {}) {
     const [
       activitiesResp,
@@ -194,8 +196,6 @@ const DATA = {
       powerCurveResp,
       paceCurveResp,
       hrCurveResp,
-      heatmap1yResp,
-      heatmap3yResp,
     ] = await Promise.all([
       this._fetch('/activities',  { days: activityDays, limit: 1000 }),
       this._fetch('/wellness',    { days: 180 }),
@@ -205,8 +205,6 @@ const DATA = {
       this._fetch('/power-curve'),
       this._fetch('/pace-curve'),
       this._fetch('/hr-curve'),
-      this._fetch('/activities',  { days: 365,  limit: 1000 }),
-      this._fetch('/activities',  { days: 1095, limit: 3000 }),
     ]);
 
     // Normalise activities — map Intervals.icu field names to page field names
@@ -218,10 +216,6 @@ const DATA = {
     // Normalise weeklyTSS and ytd
     const weeklyTSS = this._normaliseWeeklyTSS(weeklyTSSResp.weekly_tss);
     const ytd = this._normaliseYTD(ytdResp);
-
-    // Build heatmap cells from raw activities (renderHeatmap needs {date,level,tss})
-    const heatmap1y = this._buildHeatmapCells(heatmap1yResp.activities || [], 365);
-    const heatmap3y = this._buildHeatmapCells(heatmap3yResp.activities || [], 1095);
 
     // Athlete — map Intervals.icu field names
     const profile = athleteResp.profile || {};
@@ -263,7 +257,16 @@ const DATA = {
       hr_secs:     hrCurveResp.secs    || null,
     };
 
-    return { activities, wellness, weeklyTSS, ytd, heatmap1y, heatmap3y, athlete, meta };
+    return { activities, wellness, weeklyTSS, ytd, athlete, meta };
+  },
+
+  // ── loadHeatmap1y ────────────────────────────────────────────────────────
+  // Fetches 365 days of activities and builds heatmap cells.
+  // Called only by index.html — deferred after main loadAll() resolves so
+  // sport pages (cycling/running/rowing/cardio) pay zero cost for heatmap data.
+  async loadHeatmap1y() {
+    const resp = await this._fetch('/activities', { days: 365, limit: 1000 });
+    return this._buildHeatmapCells(resp.activities || [], 365);
   },
 
   // ── Helpers ───────────────────────────────────────────────────────────────

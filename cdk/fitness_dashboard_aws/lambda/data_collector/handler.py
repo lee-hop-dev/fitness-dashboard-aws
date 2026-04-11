@@ -559,18 +559,16 @@ def _should_include_segment(effort: dict) -> bool:
 def _fetch_stream_data(activity_id: str, api_key: str) -> dict:
     """
     Fetch raw activity streams from Intervals.icu.
-    Returns a dict keyed by stream type, each containing a 'data' array.
+    Returns a dict keyed by stream type, each value being the data array.
     activity_id must include the 'i' prefix (e.g. 'i135229442').
+
+    Correct endpoint: /api/v1/activity/{id}/streams.json
+    Note: 'activity' singular (not athlete/.../activities), .json suffix required.
+    Ref: https://forum.intervals.icu/t/access-activities-streams-via-api/101065
     """
-    streams_requested = [
-        "time", "watts", "heartrate", "cadence",
-        "velocity_smooth", "altitude", "latlng", "distance",
-    ]
-    params = {"stream_types": streams_requested}
     raw = intervals_get(
-        f"athlete/{ATHLETE_ID}/activities/{activity_id}/streams",
+        f"activity/{activity_id}/streams.json",
         api_key,
-        params=params,
     )
     # Intervals returns a list of {type, data[]} objects — normalise to dict
     if isinstance(raw, list):

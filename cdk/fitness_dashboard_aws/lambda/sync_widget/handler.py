@@ -2,7 +2,6 @@
 CloudWatch Custom Widget — Manual Sync Trigger
 """
 import boto3
-import json
 from datetime import datetime, timezone
 
 lambda_client = boto3.client("lambda", region_name="eu-west-2")
@@ -10,6 +9,7 @@ logs_client = boto3.client("logs", region_name="eu-west-2")
 
 COLLECTOR_NAME = "fitness-dashboard-data-collector"
 LOG_GROUP = f"/aws/lambda/{COLLECTOR_NAME}"
+WIDGET_ARN = "arn:aws:lambda:eu-west-2:656370357696:function:FitnessDashboardSyncWidget"
 
 
 def get_last_sync_time():
@@ -40,31 +40,22 @@ def render_widget(message=None, error=None):
     elif error:
         status_html = f'<p style="margin:10px 0 0;padding:8px 12px;background:#f8d7da;color:#721c24;border-radius:4px;font-size:13px;">{error}</p>'
 
-    return f"""
-    <html>
-    <body style="font-family:Arial,sans-serif;padding:16px 20px;margin:0;">
-        <p style="margin:0 0 4px;font-size:13px;color:#5f6b7a;">Last sync</p>
-        <p style="margin:0 0 16px;font-size:18px;font-weight:600;color:#16191f;">{last_sync}</p>
-        <form method="post">
-            <input type="hidden" name="action" value="sync" />
-            <button type="submit" class="btn btn-primary">Trigger sync now</button>
-        </form>
-        {status_html}
-    </body>
-    </html>
-    """
+    # cwdb-action must immediately follow the element it applies to.
+    # JSON payload goes as direct text content inside the tag.
+    # endpoint must be the full Lambda ARN.
+    return f"""<div style="font-family:Arial,sans-serif;padding:16px 20px;">
+<p style="margin:0 0 4px;font-size:13px;color:#5f6b7a;">Last sync</p>
+<p style="margin:0 0 16px;font-size:18px;font-weight:600;color:#16191f;">{last_sync}</p>
+<a class="btn btn-primary">Trigger sync now</a>
+<cwdb-action action="call" endpoint="{WIDGET_ARN}">
+{{ "action": "sync" }}
+</cwdb-action>
+{status_html}
+</div>"""
 
 
 def handler(event, context):
-    # On form POST, CloudWatch passes body as a dict with form fields
-    body = event.get("body") or {}
-    if isinstance(body, str):
-        # parse application/x-www-form-urlencoded
-        from urllib.parse import parse_qs
-        parsed = parse_qs(body)
-        action = parsed.get("action", [None])[0]
-    else:
-        action = body.get("action") or (event.get("callbackParameters") or {}).get("action")
+    action = (event.get("callbackParameters") or {}).get("action")
 
     if action == "sync":
         try:

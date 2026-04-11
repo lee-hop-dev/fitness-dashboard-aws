@@ -7,11 +7,34 @@ import boto3
 from datetime import datetime, timezone
 
 lambda_client = boto3.client("lambda", region_name="eu-west-2")
+logs_client = boto3.client("logs", region_name="eu-west-2")
 
 COLLECTOR_NAME = "fitness-dashboard-data-collector"
+LOG_GROUP = f"/aws/lambda/{COLLECTOR_NAME}"
+
+
+def get_last_sync_time():
+    try:
+        streams = logs_client.describe_log_streams(
+            logGroupName=LOG_GROUP,
+            orderBy="LastEventTime",
+            descending=True,
+            limit=1,
+        )
+        if not streams.get("logStreams"):
+            return "No sync recorded yet"
+        ts_ms = streams["logStreams"][0].get("lastEventTimestamp")
+        if not ts_ms:
+            return "Unknown"
+        dt = datetime.fromtimestamp(ts_ms / 1000, tz=timezone.utc)
+        return dt.strftime("%d %b %Y  %H:%M UTC")
+    except Exception as e:
+        return f"Unable to read logs: {e}"
 
 
 def render_widget(message=None, error=None):
+    last_sync = get_last_sync_time()
+
     status_html = ""
     if message:
         status_html = f"""
@@ -28,14 +51,14 @@ def render_widget(message=None, error=None):
 
     return f"""
     <div style="font-family:Arial,sans-serif;padding:16px 20px;">
-        <p style="margin:0 0 16px;font-size:13px;color:#5f6b7a;">
-            Triggers a full Intervals.icu data sync immediately,
-            bypassing the 06:00 UTC schedule.
+        <p style="margin:0 0 4px;font-size:13px;color:#5f6b7a;">Last sync</p>
+        <p style="margin:0 0 16px;font-size:18px;font-weight:600;color:#16191f;">
+            {last_sync}
         </p>
-        <a class="btn btn-primary"
-           href="cwdb-action:call?endpoint=FitnessDashboardSyncWidget&action=sync">
-            Trigger sync now
-        </a>
+        <cwdb-action action="call" endpoint="FitnessDashboardSyncWidget">
+            <json>{{"action":"sync"}}</json>
+            <button class="btn btn-primary">Trigger sync now</button>
+        </cwdb-action>
         {status_html}
     </div>
     """

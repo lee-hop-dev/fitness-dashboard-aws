@@ -241,6 +241,16 @@ class ApiStack(Stack):
             )
         )
 
+        # Allow widget to read collector log streams for last-sync timestamp
+        sync_widget_role.add_to_policy(
+            iam.PolicyStatement(
+                actions=["logs:DescribeLogStreams", "logs:GetLogEvents"],
+                resources=[
+                    f"arn:aws:logs:eu-west-2:656370357696:log-group:/aws/lambda/{COLLECTOR_NAME}:*"
+                ],
+            )
+        )
+
         self.sync_widget_fn = lambda_.Function(
             self,
             "SyncWidgetFunction",

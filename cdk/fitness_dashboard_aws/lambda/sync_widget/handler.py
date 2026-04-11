@@ -65,9 +65,20 @@ def render_widget(message=None, error=None):
 
 
 def handler(event, context):
-    action = (event.get("callbackParameters") or {}).get("action")
+    # CloudWatch custom widgets pass button actions in multiple possible locations
+    # depending on how the cwdb-action URL is constructed. Check all of them.
+    action = (
+        (event.get("callbackParameters") or {}).get("action")
+        or event.get("actionType")
+        or (event.get("widgetContext") or {}).get("params", {}).get("action")
+    )
 
-    if action == "sync":
+    # Also treat any non-initial invocation (where widgetContext has a forms key) as sync
+    widget_context = event.get("widgetContext") or {}
+    if not action and widget_context.get("forms"):
+        action = "sync"
+
+    if action and action != "initial":
         try:
             lambda_client.invoke(
                 FunctionName=COLLECTOR_NAME,

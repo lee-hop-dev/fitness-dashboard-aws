@@ -947,6 +947,13 @@ function getIntervalsActivityUrl(activityId) {
   return `https://intervals.icu/activities/${id}`;
 }
 
+// Keyboard accessibility for activity cards (div[role="link"])
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && e.target.classList.contains('activity-card')) {
+    e.target.click();
+  }
+});
+
 function renderActivityCards(activities) {
   const container = document.getElementById('activity-cards');
   const totalDist = activities.reduce((s,a) => s+(a.distance||0),0)/1000;
@@ -987,7 +994,8 @@ function renderActivityCards(activities) {
       stat1lbl = 'Effort';
     }
     return `
-      <a class="activity-card" href="${getIntervalsActivityUrl(a.id)}" target="_blank" rel="noopener noreferrer">
+      <div class="activity-card" onclick="window.location='activity.html?id=${a.id}'" role="link" tabindex="0" aria-label="${a.name}">
+        <div class="activity-card-wedge" onclick="event.stopPropagation();window.open('${getIntervalsActivityUrl(a.id)}','_blank','noopener,noreferrer')" title="Open in Intervals.icu" aria-label="Open in Intervals.icu"></div>
         <div class="activity-card-type ${info.colorClass}">
           <span class="type-dot ${info.dotClass}"></span>${info.label}
         </div>
@@ -1002,7 +1010,7 @@ function renderActivityCards(activities) {
           <span>${a.date}</span>
           <span class="tss-val">TSS ${Math.round(getTSS(a))}${a.if_val?' · IF '+a.if_val.toFixed(1):''}</span>
         </div>
-      </a>`;
+      </div>`;
   }).join('');
 }
 

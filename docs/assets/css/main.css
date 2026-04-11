@@ -632,7 +632,43 @@ body {
   justify-content: space-between;
 }
 
-.activity-card-footer .tss-val { color: var(--text-secondary); }
+/* Activity card — Intervals.icu wedge (top-right corner, Phase 8) */
+.activity-card-wedge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 36px 36px 0;
+  border-color: transparent #f97316 transparent transparent;
+  border-radius: 0 var(--radius-md) 0 0;
+  transition: border-color var(--transition), transform var(--transition);
+  z-index: 2;
+  cursor: pointer;
+}
+
+.activity-card-wedge:hover {
+  border-color: transparent #ff8c3a transparent transparent;
+  transform: scale(1.15);
+}
+
+.activity-card-wedge::after {
+  content: '⟶';
+  position: absolute;
+  top: -2px;
+  right: -32px;
+  font-size: 8px;
+  color: rgba(255,255,255,0.85);
+  line-height: 1;
+  pointer-events: none;
+}
+
+[data-theme="light"] .activity-card-wedge {
+  border-color: transparent #ea6a2a transparent transparent;
+}
+
+
 
 /* Upcoming event cards - half height */
 .upcoming-cards .activity-card {

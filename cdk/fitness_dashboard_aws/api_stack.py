@@ -270,7 +270,7 @@ class ApiStack(Stack):
         # Grant CloudWatch permission to invoke the widget Lambda
         self.sync_widget_fn.add_permission(
             "AllowCloudWatchInvoke",
-            principal=iam.ServicePrincipal("cloudwatch.amazonaws.com"),
+            principal=iam.ServicePrincipal("lambda.amazonaws.com"),
         )
 
         # CloudWatch dashboard with the custom widget

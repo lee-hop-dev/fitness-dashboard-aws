@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Training OS V2 — Architecture Showcase</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:           #07090d;
+    --surface:      #0d1117;
+    --surface2:     #111820;
+    --surface3:     #16202b;
+    --border:       #1a2940;
+    --border-hi:    #244060;
+    --accent:       #00c8f0;
+    --accent2:      #00e87a;
+    --accent3:      #ff6b35;
+    --aws:          #ff9900;
+    --purple:       #9b6dff;
+    --text:         #b8cfe0;
+    --text-bright:  #ddeeff;
+    --text-muted:   #4a6a88;
+    --text-dim:     #253a50;
+    --mono:         'JetBrains Mono', monospace;
+    --sans:         'DM Sans', sans-serif;
+    --display:      'Bebas Neue', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ── NOISE TEXTURE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0.4;
+  }
+
+  /* ── GRID PATTERN ── */
+  .grid-bg {
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 60px 60px;
+    opacity: 0.3;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── HERO GLOW ── */
+  .hero-glow {
+    position: absolute;
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 900px;
+    height: 600px;
+    background: radial-gradient(ellipse, rgba(0,200,240,0.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* ── LAYOUT ── */
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 32px;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid var(--border);
+    background: rgba(7,9,13,0.85);
+    backdrop-filter: blur(12px);
+  }
+
+  .nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 32px;
+  }
+
+  .nav-logo {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .nav-logo span { color: var(--text-muted); }
+
+  .nav-links {
+    display: flex;
+    gap: 28px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    text-decoration: none;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--accent); }
+  .nav-links a.active { color: var(--accent); }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    padding: 100px 0 80px;
+    overflow: hidden;
+  }
+
+  .hero-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent2);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    padding: 5px 12px;
+    border: 1px solid rgba(0,232,122,0.25);
+    border-radius: 2px;
+    background: rgba(0,232,122,0.04);
+  }
+
+  .hero-tag::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent2);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  .hero-title {
+    font-family: var(--display);
+    font-size: clamp(52px, 8vw, 96px);
+    line-height: 0.95;
+    letter-spacing: 0.02em;
+    color: var(--text-bright);
+    margin-bottom: 8px;
+  }
+
+  .hero-title .line2 {
+    color: transparent;
+    -webkit-text-stroke: 1px var(--border-hi);
+  }
+
+  .hero-title .accent-word { color: var(--accent); }
+
+  .hero-subtitle {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+    margin-bottom: 32px;
+    margin-top: 20px;
+  }
+
+  .hero-desc {
+    max-width: 620px;
+    color: var(--text);
+    font-size: 16px;
+    line-height: 1.8;
+    font-weight: 300;
+    margin-bottom: 40px;
+  }
+
+  .hero-desc strong { color: var(--text-bright); font-weight: 500; }
+
+  .v-compare {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .v-badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 8px 16px;
+    border-radius: 2px;
+    letter-spacing: 0.08em;
+  }
+
+  .v-badge.v1 {
+    background: rgba(90,122,153,0.08);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+
+  .v-badge.v2 {
+    background: rgba(0,200,240,0.08);
+    border: 1px solid rgba(0,200,240,0.3);
+    color: var(--accent);
+  }
+
+  .v-badge .label { opacity: 0.6; margin-right: 6px; }
+
+  /* ── SECTION ── */
+  section { padding: 72px 0; }
+
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+
+  .section-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    padding: 3px 8px;
+    border: 1px solid rgba(0,200,240,0.2);
+    border-radius: 2px;
+  }
+
+  .section-title {
+    font-family: var(--display);
+    font-size: clamp(28px, 4vw, 42px);
+    letter-spacing: 0.04em;
+    color: var(--text-bright);
+  }
+
+  .section-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--border-hi), transparent);
+    margin-left: 8px;
+  }
+
+  /* ── DIVIDER ── */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-hi), transparent);
+    margin: 0;
+  }
+
+  /* ── ARCHITECTURE DIAGRAM ── */
+  .arch-diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 40px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 48px;
+  }
+
+  .arch-diagram::before {
+    content: 'SYSTEM ARCHITECTURE';
+    position: absolute;
+    top: 16px; right: 20px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.15em;
+  }
+
+  .arch-flow {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
+    align-items: center;
+    gap: 0;
+    overflow-x: auto;
+  }
+
+  .arch-node {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 16px 14px;
+    text-align: center;
+    position: relative;
+    transition: border-color 0.3s, transform 0.2s;
+  }
+
+  .arch-node:hover {
+    border-color: var(--border-hi);
+    transform: translateY(-2px);
+  }
+
+  .arch-node.highlight { border-color: rgba(0,200,240,0.4); }
+  .arch-node.highlight:hover { border-color: var(--accent); }
+
+  .arch-node .node-icon {
+    font-size: 22px;
+    margin-bottom: 6px;
+    display: block;
+  }
+
+  .arch-node .node-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .arch-node .node-name {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-bright);
+    font-weight: 600;
+  }
+
+  .arch-node .node-sub {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--aws);
+    margin-top: 4px;
+    display: block;
+  }
+
+  .arch-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 8px;
+    color: var(--text-dim);
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .arch-arrow.labeled {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .arch-arrow .arrow-label {
+    font-family: var(--mono);
+    font-size: 8px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+  }
+
+  /* ── AWS SERVICES GRID ── */
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .service-card {
+    background: var(--surface);
+    padding: 24px;
+    transition: background 0.2s;
+    position: relative;
+  }
+
+  .service-card:hover { background: var(--surface2); }
+
+  .service-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .service-card:hover::after { opacity: 1; }
+  .service-card.cat-compute::after { background: var(--accent); }
+  .service-card.cat-data::after { background: var(--accent2); }
+  .service-card.cat-cdn::after { background: var(--aws); }
+  .service-card.cat-security::after { background: var(--purple); }
+  .service-card.cat-ops::after { background: var(--accent3); }
+
+  .service-cat {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .service-cat.compute { color: var(--accent); }
+  .service-cat.data { color: var(--accent2); }
+  .service-cat.cdn { color: var(--aws); }
+  .service-cat.security { color: var(--purple); }
+  .service-cat.ops { color: var(--accent3); }
+
+  .service-name {
+    font-family: var(--display);
+    font-size: 22px;
+    letter-spacing: 0.05em;
+    color: var(--text-bright);
+    margin-bottom: 8px;
+  }
+
+  .service-resource {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    word-break: break-all;
+  }
+
+  .service-desc {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.6;
+    font-weight: 300;
+  }
+
+  /* ── DATA FLOW ── */
+  .flow-timeline {
+    position: relative;
+    padding-left: 32px;
+  }
+
+  .flow-timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px; top: 8px; bottom: 8px;
+    width: 1px;
+    background: linear-gradient(180deg, var(--accent), var(--border), var(--border));
+  }
+
+  .flow-step {
+    position: relative;
+    margin-bottom: 32px;
+    animation: fadeUp 0.4s ease both;
+  }
+
+  .flow-step::before {
+    content: '';
+    position: absolute;
+    left: -28px; top: 6px;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    border: 1px solid var(--accent);
+    background: var(--bg);
+  }
+
+  .flow-step:first-child::before { background: var(--accent); }
+
+  .flow-time {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    margin-bottom: 6px;
+  }
+
+  .flow-title {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-bright);
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .flow-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  /* ── SKILLS TABLE ── */
+  .skills-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  @media (max-width: 700px) { .skills-grid { grid-template-columns: 1fr; } }
+
+  .skill-group {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .skill-group-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .skill-group-header.aws { color: var(--aws); background: rgba(255,153,0,0.04); }
+  .skill-group-header.dev { color: var(--accent); background: rgba(0,200,240,0.04); }
+  .skill-group-header.ai  { color: var(--accent2); background: rgba(0,232,122,0.04); }
+  .skill-group-header.ops { color: var(--accent3); background: rgba(255,107,53,0.04); }
+
+  .skill-item {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .skill-item:last-child { border-bottom: none; }
+
+  .skill-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 2px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .skill-tag.aws  { background: rgba(255,153,0,0.1);   color: var(--aws);    border: 1px solid rgba(255,153,0,0.2); }
+  .skill-tag.dev  { background: rgba(0,200,240,0.08);  color: var(--accent); border: 1px solid rgba(0,200,240,0.2); }
+  .skill-tag.ai   { background: rgba(0,232,122,0.08);  color: var(--accent2);border: 1px solid rgba(0,232,122,0.2); }
+  .skill-tag.ops  { background: rgba(255,107,53,0.08); color: var(--accent3);border: 1px solid rgba(255,107,53,0.2); }
+
+  .skill-text {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.5;
+  }
+
+  .skill-text strong { color: var(--text-bright); font-weight: 500; }
+
+  /* ── AI SECTION ── */
+  .ai-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .ai-panel-header {
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0,232,122,0.03);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .ai-panel-header h3 {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent2);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .ai-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent2);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  .ai-tasks {
+    padding: 28px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+  }
+
+  .ai-task {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 16px;
+    border-left: 2px solid var(--accent2);
+  }
+
+  .ai-task-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent2);
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+
+  .ai-task-desc {
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.6;
+    font-weight: 300;
+  }
+
+  /* ── COST PANEL ── */
+  .cost-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 2px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+
+  @media (max-width: 700px) { .cost-grid { grid-template-columns: 1fr; } }
+
+  .cost-card {
+    background: var(--surface);
+    padding: 28px 24px;
+  }
+
+  .cost-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .cost-value {
+    font-family: var(--display);
+    font-size: 42px;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .cost-value.green { color: var(--accent2); }
+  .cost-value.amber { color: var(--aws); }
+  .cost-value.red   { color: var(--accent3); }
+
+  .cost-note {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  .budget-tiers {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 24px;
+  }
+
+  .budget-tier {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .budget-tier:last-child { border-bottom: none; }
+
+  .budget-amount {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 700;
+    width: 52px;
+    flex-shrink: 0;
+  }
+
+  .budget-bar-wrap {
+    flex: 1;
+    height: 4px;
+    background: var(--surface3);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .budget-bar {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 1s ease;
+  }
+
+  .budget-tier-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    width: 70px;
+    flex-shrink: 0;
+    text-align: right;
+  }
+
+  /* ── UNDER THE HOOD ── */
+  .hood-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  .hood-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+
+  .hood-card:hover { border-color: var(--border-hi); }
+
+  .hood-card::before {
+    content: '';
+    position: absolute;
+    bottom: -30px; right: -30px;
+    width: 100px; height: 100px;
+    border-radius: 50%;
+    opacity: 0.04;
+  }
+
+  .hood-card.c1::before { background: var(--accent); }
+  .hood-card.c2::before { background: var(--accent2); }
+  .hood-card.c3::before { background: var(--aws); }
+  .hood-card.c4::before { background: var(--purple); }
+  .hood-card.c5::before { background: var(--accent3); }
+  .hood-card.c6::before { background: var(--accent); }
+
+  .hood-icon {
+    font-size: 28px;
+    margin-bottom: 14px;
+    display: block;
+  }
+
+  .hood-title {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-bright);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .hood-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.65;
+    font-weight: 300;
+  }
+
+  .hood-tag {
+    display: inline-block;
+    margin-top: 12px;
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 3px 8px;
+    border-radius: 2px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* ── STAT BAR ── */
+  .stat-bar {
+    display: flex;
+    gap: 2px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 48px;
+  }
+
+  .stat-item {
+    flex: 1;
+    background: var(--surface);
+    padding: 20px 16px;
+    text-align: center;
+  }
+
+  .stat-value {
+    font-family: var(--display);
+    font-size: 36px;
+    letter-spacing: 0.05em;
+    color: var(--text-bright);
+    display: block;
+  }
+
+  .stat-value.accent { color: var(--accent); }
+  .stat-value.green  { color: var(--accent2); }
+  .stat-value.aws    { color: var(--aws); }
+
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text-muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 4px;
+    display: block;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 40px 0;
+  }
+
+  .footer-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .footer-left {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .footer-left strong { color: var(--text); }
+
+  .footer-links {
+    display: flex;
+    gap: 20px;
+  }
+
+  .footer-link {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    text-decoration: none;
+    letter-spacing: 0.06em;
+    transition: color 0.2s;
+  }
+
+  .footer-link:hover { color: var(--accent); }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .fade-in { animation: fadeUp 0.6s ease both; }
+  .fade-in:nth-child(1) { animation-delay: 0.05s; }
+  .fade-in:nth-child(2) { animation-delay: 0.12s; }
+  .fade-in:nth-child(3) { animation-delay: 0.19s; }
+  .fade-in:nth-child(4) { animation-delay: 0.26s; }
+  .fade-in:nth-child(5) { animation-delay: 0.33s; }
+  .fade-in:nth-child(6) { animation-delay: 0.40s; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 3px; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    .arch-flow { grid-template-columns: 1fr; }
+    .arch-arrow { transform: rotate(90deg); padding: 8px 0; }
+    .stat-bar { flex-wrap: wrap; }
+    .stat-item { flex: 1 1 40%; }
+    .nav-links { display: none; }
+    .cost-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <div class="nav-logo">Training<span>/</span>OS <span>—</span> V2</div>
+    <ul class="nav-links">
+      <li><a href="index.html">◈ Overview</a></li>
+      <li><a href="cycling.html">🚲 Cycling</a></li>
+      <li><a href="running.html">▷ Running</a></li>
+      <li><a href="rowing.html">⊕ Rowing</a></li>
+      <li><a href="cardio.html">◎ Cardio</a></li>
+      <li><a href="other.html">○ Other</a></li>
+      <li><a href="race-stream.html">📺 Race Stream</a></li>
+      <li><a href="about.html" class="active">⚙ Architecture</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-glow"></div>
+  <div class="wrap">
+    <div class="hero-tag">Phase 2 Migration — v1 → v2</div>
+    <h1 class="hero-title">
+      CLOUD<br>
+      <span class="line2">ARCHITECT<span class="accent-word">URE</span></span>
+    </h1>
+    <p class="hero-subtitle">// fitness-dashboard-aws &nbsp;·&nbsp; eu-west-2 &nbsp;·&nbsp; fully serverless</p>
+    <p class="hero-desc">
+      Training OS V2 is a deliberate re-architecture of a static GitHub Pages fitness dashboard onto 
+      <strong>AWS serverless infrastructure</strong> — built to demonstrate real cloud engineering skills 
+      in a live, demoable system. Every layer was designed, deployed, and iterated using 
+      <strong>AI-assisted development</strong> via Claude, treating it as a senior technical collaborator 
+      rather than a code generator.
+    </p>
+    <div class="v-compare">
+      <div class="v-badge v1"><span class="label">V1 ·</span> GitHub Pages · Static · Python Pipeline · Frozen Portfolio</div>
+      <div class="v-badge v2"><span class="label">V2 ·</span> AWS Serverless · CDK · Live · Continuously Evolving</div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- STATS -->
+<div class="wrap" style="padding-top: 48px;">
+  <div class="stat-bar">
+    <div class="stat-item fade-in">
+      <span class="stat-value accent">7</span>
+      <span class="stat-label">CDK Stacks Deployed</span>
+    </div>
+    <div class="stat-item fade-in">
+      <span class="stat-value green">8</span>
+      <span class="stat-label">AWS Services Active</span>
+    </div>
+    <div class="stat-item fade-in">
+      <span class="stat-value aws">~0</span>
+      <span class="stat-label">Monthly Cost (USD)</span>
+    </div>
+    <div class="stat-item fade-in">
+      <span class="stat-value accent">6</span>
+      <span class="stat-label">REST API Endpoints</span>
+    </div>
+    <div class="stat-item fade-in">
+      <span class="stat-value green">278</span>
+      <span class="stat-label">Activities Synced</span>
+    </div>
+    <div class="stat-item fade-in">
+      <span class="stat-value accent">7</span>
+      <span class="stat-label">CloudWatch Alarms</span>
+    </div>
+  </div>
+</div>
+
+<!-- ARCHITECTURE -->
+<section id="architecture">
+  <div class="wrap">
+    <div class="section-header">
+      <span class="section-num">01</span>
+      <h2 class="section-title">SYSTEM ARCHITECTURE</h2>
+      <div class="section-line"></div>
+    </div>
+
+    <div class="arch-diagram">
+      <div class="arch-flow">
+        <!-- Node 1 -->
+        <div class="arch-node">
+          <span class="node-icon">⏰</span>
+          <span class="node-label">Trigger</span>
+          <span class="node-name">EventBridge</span>
+          <span class="node-sub">06:00 UTC daily</span>
+        </div>
+        <div class="arch-arrow labeled">
+          <div>→</div>
+          <div class="arrow-label">invokes</div>
+        </div>
+        <!-- Node 2 -->
+        <div class="arch-node highlight">
+          <span class="node-icon">λ</span>
+          <span class="node-label">Compute</span>
+          <span class="node-name">Lambda</span>
+          <span class="node-sub">Collector + API</span>
+        </div>
+        <div class="arch-arrow labeled">
+          <div>→</div>
+          <div class="arrow-label">reads / writes</div>
+        </div>
+        <!-- Node 3 -->
+        <div class="arch-node">
+          <span class="node-icon">🗄</span>
+          <span class="node-label">Data</span>
+          <span class="node-name">DynamoDB</span>
+          <span class="node-sub">3 tables</span>
+        </div>
+        <div class="arch-arrow labeled">
+          <div>→</div>
+          <div class="arrow-label">via API GW</div>
+        </div>
+        <!-- Node 4 -->
+        <div class="arch-node highlight">
+          <span class="node-icon">🌐</span>
+          <span class="node-label">CDN</span>
+          <span class="node-name">CloudFront</span>
+          <span class="node-sub">+ S3 origin</span>
+        </div>
+      </div>
+      <div style="margin-top: 28px; display: flex; gap: 20px; flex-wrap: wrap;">
+        <div style="font-family: var(--mono); font-size: 10px; color: var(--text-muted);">
+          <span style="color: var(--accent);">→</span>&nbsp; Intervals.icu API feeds Lambda via Basic Auth (Secrets Manager)
+        </div>
+        <div style="font-family: var(--mono); font-size: 10px; color: var(--text-muted);">
+          <span style="color: var(--accent2);">→</span>&nbsp; Strava OAuth handled by dedicated Lambda, tokens persisted in Secrets Manager
+        </div>
+        <div style="font-family: var(--mono); font-size: 10px; color: var(--text-muted);">
+          <span style="color: var(--aws);">→</span>&nbsp; Browser calls API Gateway REST endpoints directly; CDN serves all static assets
+        </div>
+      </div>
+    </div>
+
+    <!-- Data flow -->
+    <h3 style="font-family: var(--mono); font-size: 11px; color: var(--text-muted); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 28px;">Daily Data Flow</h3>
+    <div class="flow-timeline">
+      <div class="flow-step">
+        <div class="flow-time">06:00 UTC</div>
+        <div class="flow-title">EventBridge fires scheduled trigger</div>
+        <div class="flow-desc">AWS EventBridge rule invokes the FitnessDashboardCollector Lambda on a fixed cron schedule, bypassing any manual interaction.</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-time">06:00 + ~30s</div>
+        <div class="flow-title">Lambda authenticates with Intervals.icu</div>
+        <div class="flow-desc">Lambda retrieves the API key from Secrets Manager at runtime — never stored in code. Uses Basic Auth to call the Intervals.icu API (the authoritative data source for all training metrics).</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-time">06:01</div>
+        <div class="flow-title">Activities, wellness, and curves written to DynamoDB</div>
+        <div class="flow-desc">Three separate DynamoDB tables updated: Activities (training sessions), Wellness (daily CTL/ATL/TSB/HRV), and Curves (power, pace, and HR curves). On-demand billing — no idle cost.</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-time">06:02</div>
+        <div class="flow-title">Static JSON files written to S3</div>
+        <div class="flow-desc">Processed curve data written as static JSON files to S3 for efficient frontend consumption, reducing DynamoDB read costs at page load.</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-time">Browser request</div>
+        <div class="flow-title">CloudFront serves assets; API Gateway handles data calls</div>
+        <div class="flow-desc">HTML/CSS/JS served from CloudFront CDN (S3 origin). All live data calls from the browser hit API Gateway, which routes to the appropriate DynamoDB query Lambda.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- AWS SERVICES -->
+<section id="services">
+  <div class="wrap">
+    <div class="section-header">
+      <span class="section-num">02</span>
+      <h2 class="section-title">AWS SERVICES USED</h2>
+      <div class="section-line"></div>
+    </div>
+
+    <div class="services-grid">
+
+      <div class="service-card cat-compute fade-in">
+        <div class="service-cat compute">⚡ Compute</div>
+        <div class="service-name">Lambda</div>
+        <div class="service-resource">FitnessDashboardCollector · strava-oauth · 5× API query functions</div>
+        <div class="service-desc">Serverless compute for all backend logic — data collection, OAuth token exchange, and DynamoDB query functions. Zero idle cost; only billed per invocation.</div>
+      </div>
+
+      <div class="service-card cat-data fade-in">
+        <div class="service-cat data">🗄 Database</div>
+        <div class="service-name">DynamoDB</div>
+        <div class="service-resource">Activities · Wellness · Curves (on-demand billing)</div>
+        <div class="service-desc">Three NoSQL tables with on-demand capacity — no provisioned throughput cost. Stores all training activities, daily wellness metrics, and power/pace/HR curves.</div>
+      </div>
+
+      <div class="service-card cat-cdn fade-in">
+        <div class="service-cat cdn">☁ CDN / Hosting</div>
+        <div class="service-name">CloudFront + S3</div>
+        <div class="service-resource">E2A1SYDA1ZW3KS · fitness-dashboard-frontend-656370357696</div>
+        <div class="service-desc">CloudFront CDN distributes the static frontend globally from an S3 origin. All assets cached at edge — fast load times regardless of visitor location.</div>
+      </div>
+
+      <div class="service-card cat-cdn fade-in">
+        <div class="service-cat cdn">🔌 API</div>
+        <div class="service-name">API Gateway</div>
+        <div class="service-resource">j2zxz92vd4.execute-api.eu-west-2.amazonaws.com/prod/</div>
+        <div class="service-desc">REST API exposing six endpoints to the frontend — activities, wellness, athlete profile, power curve, pace curve, and HR curve. CORS configured for CloudFront domain.</div>
+      </div>
+
+      <div class="service-card cat-security fade-in">
+        <div class="service-cat security">🔐 Security</div>
+        <div class="service-name">Secrets Manager</div>
+        <div class="service-resource">fitness-dashboard/intervals-key · strava-credentials</div>
+        <div class="service-desc">All API credentials (Intervals.icu key, Strava client ID/secret/refresh token) stored in Secrets Manager. Retrieved at Lambda runtime — never in source code or environment variables.</div>
+      </div>
+
+      <div class="service-card cat-ops fade-in">
+        <div class="service-cat ops">⏰ Scheduling</div>
+        <div class="service-name">EventBridge</div>
+        <div class="service-resource">Daily cron — 06:00 UTC</div>
+        <div class="service-desc">Managed event bus rule fires the collector Lambda every morning at 06:00 UTC. Fully managed — no servers, no cron jobs, no maintenance overhead.</div>
+      </div>
+
+      <div class="service-card cat-ops fade-in">
+        <div class="service-cat ops">📊 Monitoring</div>
+        <div class="service-name">CloudWatch</div>
+        <div class="service-resource">7 alarms · Lambda errors · API 5xx · DynamoDB throttles</div>
+        <div class="service-desc">Seven CloudWatch alarms covering Lambda error rates, throttles, API Gateway 5xx responses, and DynamoDB throttling events. Real-time alerting on infrastructure health.</div>
+      </div>
+
+      <div class="service-card cat-compute fade-in">
+        <div class="service-cat compute">🏗 Infrastructure as Code</div>
+        <div class="service-name">AWS CDK</div>
+        <div class="service-resource">7 stacks · TypeScript · CloudFormation-backed</div>
+        <div class="service-desc">All infrastructure defined in code across seven CDK stacks. Repeatable, version-controlled deployments. No manual console clicking — every resource is declarative and auditable.</div>
+      </div>
+
+      <div class="service-card cat-security fade-in">
+        <div class="service-cat security">💰 Cost Control</div>
+        <div class="service-name">Budgets + Kill Switch</div>
+        <div class="service-resource">4-tier alerts · Emergency shutdown Lambda</div>
+        <div class="service-desc">Four-tier AWS Budget alerts from $2.40 to $10. An emergency kill-switch Lambda can disable EventBridge, scale DynamoDB to zero, and pause CloudFront via a single POST request.</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- SKILLS -->
+<section id="skills">
+  <div class="wrap">
+    <div class="section-header">
+      <span class="section-num">03</span>
+      <h2 class="section-title">SKILLS DEMONSTRATED</h2>
+      <div class="section-line"></div>
+    </div>
+
+    <div class="skills-grid">
+
+      <div class="skill-group">
+        <div class="skill-group-header aws">☁ AWS Cloud Engineering</div>
+        <div class="skill-item fade-in">
+          <span class="skill-tag aws">CDK</span>
+          <div class="skill-text"><strong>Infrastructure as Code</strong> — all seven stacks defined in TypeScript CDK, deployed via CloudFormation. No manual resource creation.</div>
+        </div>
+        <div class="skill-item fade-in">
+          <span class="skill-tag aws">IAM</span>
+          <div class="skill-text"><strong>Least-privilege access</strong> — Lambda execution roles scoped to specific DynamoDB tables, S3 buckets, and Secrets Manager ARNs only.</div>
+        </div>
+        <div class="skill-item fade-in">
+          <span class="skill-tag aws">Lambda</span>
+          <div class="skill-text"><strong>Serverless design</strong> — event-driven compute with no idle cost. Multiple Lambda functions with distinct responsibilities.</div>
+        </div>
+        <div class="skill-item fade-in">
+          <span class="skill-tag aws">DynamoDB</span>
+          <div class="skill-text"><strong>NoSQL data modelling</strong> — partition key design, paginated queries, on-demand capacity for cost efficiency.</div>
+        </div>
+        <div class="skill-item fade-in">
+          <span class="skill-tag aws">CloudFront</span>
+          <div class="skill-text"><strong>CDN configuration</strong> — origin policies, cache invalidation strategy, custom domain routing.</div>
+        </div>
+      </div>
+
+      <div class="skill-group">
+        <div class="skill-group-header dev">⌨ Software Engineering</div>
+        <div class="skill-item fade-in">
+          <span class="skill-tag dev">Python</span>
+          <div class="skill-text"><strong>Lambda handlers</strong> — data collection, API integration, error handling, pagination, and S3 writes all in Python.</div>
+        </div>
+        <div class="skill-item fade-in">
+          <span class="skill-tag dev">REST APIs</span>
+          <div class="skill-text"><strong>API design and integration</strong> — consumed Intervals.icu and Strava APIs; designed and deployed own REST API via API Gateway.</div>
+        </div>
+        <div class="skill-item fade-in">
+          <span class="skill-tag dev">OAuth 2.0</span>
+          <div class="skill-text"><strong>Strava OAuth flow</strong> — authorisation code flow, token exchange, refresh token persistence in Secrets Manager.</div>
+        </div>
+        <div class="skill-item fade-in">
+          <span class="skill-tag dev">JS / HTML</span>
+          <div class="skill-text"><strong>Frontend engineering</strong> — vanilla JS dashboard, Chart.js integration, dynamic API calls, responsive layout.</div>
+        </div>
+        <div class="skill-item fade-in">
+          <span class="skill-tag dev">Git</span>
+          <div class="skill-text"><strong>Version control discipline</strong> — conventional commits, feature branches, CHANGELOG.md as definitive project log.</div>
+        </div>
+      </div>
+
+      <div class="skill-group">
+        <div class="skill-group-header ai">⚡ AI-Assisted Development</div>
+        <div class="skill-item fade-in">
+          <span class="skill-tag ai">Prompting</span>
+          <div class="skill-text"><strong>Structured AI collaboration</strong> — using Claude as a senior engineering partner: architecture planning, code review, bug diagnosis, and documentation.</div>
+        </div>
+        <div class="skill-item fade-in">
+          <span class="skill-tag ai">Planning</span>
+          <div class="skill-text"><strong>AI-driven planning docs</strong> — phase plans, epic task breakdowns, and handover documents generated and maintained through iterative AI sessions.</div>
+        </div>
+        <div class="skill-item fade-in">
+          <span class="skill-tag ai">Debugging</span>
+          <div class="skill-text"><strong>Root-cause analysis</strong> — using AI to trace bugs through Lambda logs, CloudWatch, and frontend JS without direct sandbox access to live systems.</div>
+        </div>
+        <div class="skill-item fade-in">
+          <span class="skill-tag ai">Context</span>
+          <div class="skill-text"><strong>Project context management</strong> — maintaining a structured project file so every AI session picks up exactly where the last left off.</div>
+        </div>
+      </div>
+
+      <div class="skill-group">
+        <div class="skill-group-header ops">🔧 DevOps & Operations</div>
+        <div class="skill-item fade-in">
+          <span class="skill-tag ops">Monitoring</span>
+          <div class="skill-text"><strong>Proactive alerting</strong> — CloudWatch alarms on error rates, throttles, and API health. OpsHub-style dashboard for live sync status.</div>
+        </div>
+        <div class="skill-item fade-in">
+          <span class="skill-tag ops">Cost Eng.</span>
+          <div class="skill-text"><strong>FinOps discipline</strong> — every architecture decision evaluated for cost impact. Four-tier budget alerts. Free-tier maintained for 7+ phases.</div>
+        </div>
+        <div class="skill-item fade-in">
+          <span class="skill-tag ops">Deploy</span>
+          <div class="skill-text"><strong>Repeatable deployment</strong> — scripted frontend deploy with Lambda-managed file exclusions; CloudFront invalidation on every release.</div>
+        </div>
+        <div class="skill-item fade-in">
+          <span class="skill-tag ops">Security</span>
+          <div class="skill-text"><strong>Secrets hygiene</strong> — zero hardcoded credentials anywhere in codebase. All secrets runtime-fetched from Secrets Manager.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- AI WORKFLOW -->
+<section id="ai">
+  <div class="wrap">
+    <div class="section-header">
+      <span class="section-num">04</span>
+      <h2 class="section-title">AI-ASSISTED BUILD WORKFLOW</h2>
+      <div class="section-line"></div>
+    </div>
+
+    <p style="max-width: 680px; margin-bottom: 36px; font-size: 15px; color: var(--text); line-height: 1.8; font-weight: 300;">
+      This project was built using <strong style="color: var(--text-bright);">Claude (Anthropic)</strong> as an active technical collaborator — not a code generator. Every phase was planned, reviewed, and debugged through structured AI sessions. The project demonstrates not just cloud skills, but the emerging skill of <strong style="color: var(--accent2);">effective human-AI engineering collaboration</strong>.
+    </p>
+
+    <div class="ai-panel">
+      <div class="ai-panel-header">
+        <div class="ai-dot"></div>
+        <h3>How Claude was used across this project</h3>
+      </div>
+      <div class="ai-tasks">
+        <div class="ai-task fade-in">
+          <div class="ai-task-title">Architecture Design</div>
+          <div class="ai-task-desc">Evaluated serverless patterns, CDK stack organisation, DynamoDB data modelling, and API Gateway routing strategy before a single line was written.</div>
+        </div>
+        <div class="ai-task fade-in">
+          <div class="ai-task-title">CDK Stack Generation</div>
+          <div class="ai-task-desc">All seven CDK stacks scaffolded and refined through iterative AI sessions — Lambda permissions, DynamoDB schemas, EventBridge rules, and budget configurations.</div>
+        </div>
+        <div class="ai-task fade-in">
+          <div class="ai-task-title">Lambda Development</div>
+          <div class="ai-task-desc">Python handlers written with AI assistance: pagination logic, Secrets Manager integration, Intervals.icu API calls, DynamoDB write patterns, and error handling.</div>
+        </div>
+        <div class="ai-task fade-in">
+          <div class="ai-task-title">Bug Diagnosis</div>
+          <div class="ai-task-desc">CloudWatch log traces, chart annotation label mismatches, and OAuth callback issues all diagnosed through AI-assisted root-cause analysis without direct system access.</div>
+        </div>
+        <div class="ai-task fade-in">
+          <div class="ai-task-title">Project Documentation</div>
+          <div class="ai-task-desc">Handover documents, development plans, and CHANGELOG entries maintained as structured AI sessions — ensuring full continuity between work sessions.</div>
+        </div>
+        <div class="ai-task fade-in">
+          <div class="ai-task-title">Frontend Engineering</div>
+          <div class="ai-task-desc">Chart.js integration, API wiring, deploy scripts, and this architecture showcase page — all developed with AI as a frontend pair-programmer.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- COST CONTROL -->
+<section id="cost">
+  <div class="wrap">
+    <div class="section-header">
+      <span class="section-num">05</span>
+      <h2 class="section-title">COST ENGINEERING</h2>
+      <div class="section-line"></div>
+    </div>
+
+    <p style="max-width: 640px; margin-bottom: 36px; font-size: 15px; color: var(--text); line-height: 1.8; font-weight: 300;">
+      Every architecture decision was made with cost as a first-class constraint. After seven complete phases — including live OAuth, monitoring, and CDN delivery — the platform runs at <strong style="color: var(--accent2);">near-zero monthly cost</strong> on AWS free tier.
+    </p>
+
+    <div class="cost-grid">
+      <div class="cost-card">
+        <div class="cost-label">Current Monthly Cost</div>
+        <div class="cost-value green">~$0</div>
+        <div class="cost-note">AWS free tier · Lambda, DynamoDB,<br>CloudFront, API Gateway all within limits</div>
+      </div>
+      <div class="cost-card">
+        <div class="cost-label">Target Post-Free Tier</div>
+        <div class="cost-value amber">&lt;$1</div>
+        <div class="cost-note">On-demand DynamoDB + low Lambda invocations<br>keeps post-free-tier cost minimal</div>
+      </div>
+      <div class="cost-card">
+        <div class="cost-label">Emergency Ceiling</div>
+        <div class="cost-value red">$10</div>
+        <div class="cost-note">Kill-switch Lambda disables all services<br>before spend could exceed this</div>
+      </div>
+    </div>
+
+    <div class="budget-tiers">
+      <h3 style="font-family: var(--mono); font-size: 10px; color: var(--text-muted); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 20px;">4-Tier Budget Alert System</h3>
+      <div class="budget-tier">
+        <span class="budget-amount" style="color: #4ade80;">$2.40</span>
+        <div class="budget-bar-wrap"><div class="budget-bar" style="width: 24%; background: #4ade80;"></div></div>
+        <span class="budget-tier-label" style="color: #4ade80;">WARN</span>
+      </div>
+      <div class="budget-tier">
+        <span class="budget-amount" style="color: var(--aws);">$3.00</span>
+        <div class="budget-bar-wrap"><div class="budget-bar" style="width: 30%; background: var(--aws);"></div></div>
+        <span class="budget-tier-label" style="color: var(--aws);">ALERT</span>
+      </div>
+      <div class="budget-tier">
+        <span class="budget-amount" style="color: var(--accent3);">$5.00</span>
+        <div class="budget-bar-wrap"><div class="budget-bar" style="width: 50%; background: var(--accent3);"></div></div>
+        <span class="budget-tier-label" style="color: var(--accent3);">CRITICAL</span>
+      </div>
+      <div class="budget-tier">
+        <span class="budget-amount" style="color: #ff3b3b;">$10.00</span>
+        <div class="budget-bar-wrap"><div class="budget-bar" style="width: 100%; background: #ff3b3b;"></div></div>
+        <span class="budget-tier-label" style="color: #ff3b3b;">KILL SWITCH</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- UNDER THE HOOD -->
+<section id="hood">
+  <div class="wrap">
+    <div class="section-header">
+      <span class="section-num">06</span>
+      <h2 class="section-title">UNDER THE HOOD</h2>
+      <div class="section-line"></div>
+    </div>
+
+    <p style="max-width: 640px; margin-bottom: 36px; font-size: 15px; color: var(--text); line-height: 1.8; font-weight: 300;">
+      The visible dashboard is the thin layer on top. What a visitor doesn't see is where the engineering complexity lives — the systems that run silently every day to keep the data fresh, the infrastructure correct, and the costs controlled.
+    </p>
+
+    <div class="hood-grid">
+      <div class="hood-card c1 fade-in">
+        <span class="hood-icon">🔄</span>
+        <div class="hood-title">Automated Daily Sync</div>
+        <div class="hood-desc">Every morning at 06:00 UTC, EventBridge fires the collector Lambda without any human interaction. It fetches up to 400 days of activity data, daily wellness metrics, and multi-type performance curves — all written to DynamoDB and S3 automatically.</div>
+        <span class="hood-tag" style="background: rgba(0,200,240,0.08); color: var(--accent); border: 1px solid rgba(0,200,240,0.2);">EventBridge · Lambda · DynamoDB · S3</span>
+      </div>
+
+      <div class="hood-card c2 fade-in">
+        <span class="hood-icon">🔐</span>
+        <div class="hood-title">Zero Hardcoded Credentials</div>
+        <div class="hood-desc">No API keys, tokens, or secrets exist anywhere in the codebase or environment variables. Every credential — Intervals.icu API key, Strava client secret, OAuth refresh tokens — is retrieved from Secrets Manager at Lambda runtime and discarded after use.</div>
+        <span class="hood-tag" style="background: rgba(155,109,255,0.08); color: var(--purple); border: 1px solid rgba(155,109,255,0.2);">Secrets Manager · IAM · Least Privilege</span>
+      </div>
+
+      <div class="hood-card c3 fade-in">
+        <span class="hood-icon">📐</span>
+        <div class="hood-title">Infrastructure as Code — All 7 Stacks</div>
+        <div class="hood-desc">Every AWS resource — tables, Lambdas, API routes, alarms, budgets, even the kill switch — is defined in TypeScript CDK. The entire platform can be torn down and redeployed from source in minutes. No manual console configuration exists.</div>
+        <span class="hood-tag" style="background: rgba(255,153,0,0.08); color: var(--aws); border: 1px solid rgba(255,153,0,0.2);">AWS CDK · CloudFormation · TypeScript</span>
+      </div>
+
+      <div class="hood-card c4 fade-in">
+        <span class="hood-icon">📊</span>
+        <div class="hood-title">7 Live CloudWatch Alarms</div>
+        <div class="hood-desc">Lambda error rates, Lambda throttles, API Gateway 5xx responses, and DynamoDB read/write throttles are all monitored in real time. Alarms are wired into an operational dashboard — any infrastructure fault surfaces immediately without log-diving.</div>
+        <span class="hood-tag" style="background: rgba(255,107,53,0.08); color: var(--accent3); border: 1px solid rgba(255,107,53,0.2);">CloudWatch · Alarms · OpsHub Dashboard</span>
+      </div>
+
+      <div class="hood-card c5 fade-in">
+        <span class="hood-icon">💀</span>
+        <div class="hood-title">Emergency Kill Switch</div>
+        <div class="hood-desc">A dedicated Lambda accessible via a single POST request can shut down the entire platform: disables the EventBridge schedule, scales DynamoDB to zero, and pauses CloudFront distribution. Designed to prevent runaway costs if something goes wrong.</div>
+        <span class="hood-tag" style="background: rgba(255,59,59,0.08); color: #ff3b3b; border: 1px solid rgba(255,59,59,0.2);">Lambda · EmergencyShutdownStack · Budgets</span>
+      </div>
+
+      <div class="hood-card c6 fade-in">
+        <span class="hood-icon">🏃</span>
+        <div class="hood-title">Authoritative Data Discipline</div>
+        <div class="hood-desc">All training metrics — FTP, power curves, running PBs, CTL/ATL/TSB — are fetched directly from Intervals.icu APIs. No metrics are ever calculated from raw activity data in the application layer. This is a hard architectural rule maintained across every phase.</div>
+        <span class="hood-tag" style="background: rgba(0,200,240,0.08); color: var(--accent); border: 1px solid rgba(0,200,240,0.2);">Intervals.icu · API-first · No derived metrics</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-left">
+      <strong>Training OS V2</strong> &nbsp;·&nbsp; Lee Hopkins &nbsp;·&nbsp; AWS eu-west-2 &nbsp;·&nbsp; April 2026<br>
+      <span style="font-size: 10px;">Active development — Phases 1–7 complete. Phase 8 planned.</span>
+    </div>
+    <div class="footer-links">
+      <a href="https://d3mtfyb3f9u51j.cloudfront.net" class="footer-link" target="_blank">Live Dashboard ↗</a>
+      <a href="https://github.com/lee-hop-dev/fitness-dashboard-aws" class="footer-link" target="_blank">GitHub Repo ↗</a>
+      <a href="https://www.youtube.com/@lh_cymru" class="footer-link" target="_blank">YouTube ↗</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

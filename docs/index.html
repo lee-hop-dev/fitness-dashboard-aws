@@ -941,7 +941,9 @@ function formatDistanceLabel(meters) {
 }
 
 function getIntervalsActivityUrl(activityId) {
-  return `https://intervals.icu/activities/i${activityId}`;
+  // IDs from API already include the i prefix (e.g. "i135229442")
+  const id = String(activityId).startsWith("i") ? activityId : `i${activityId}`;
+  return `https://intervals.icu/activities/${id}`;
 }
 
 function renderActivityCards(activities) {

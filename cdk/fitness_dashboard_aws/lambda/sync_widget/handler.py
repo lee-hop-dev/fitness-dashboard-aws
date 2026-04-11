@@ -14,7 +14,6 @@ logs_client = boto3.client("logs", region_name="eu-west-2")
 
 COLLECTOR_NAME = "fitness-dashboard-data-collector"
 LOG_GROUP = f"/aws/lambda/{COLLECTOR_NAME}"
-WIDGET_ARN = "arn:aws:lambda:eu-west-2:656370357696:function:FitnessDashboardSyncWidget"
 
 
 def get_last_sync_time():
@@ -36,7 +35,7 @@ def get_last_sync_time():
         return f"Unable to read: {e}"
 
 
-def render_widget(message=None, error=None):
+def render_widget(context_arn, message=None, error=None):
     last_sync = get_last_sync_time()
 
     status_html = ""
@@ -45,19 +44,22 @@ def render_widget(message=None, error=None):
     elif error:
         status_html = f'<p style="margin:10px 0 0;padding:8px 12px;background:#f8d7da;color:#721c24;border-radius:4px;font-size:13px;">{error}</p>'
 
-    return f"""<div style="font-family:Arial,sans-serif;padding:16px 20px;">
-<p style="margin:0 0 4px;font-size:13px;color:#5f6b7a;">Last sync</p>
-<p style="margin:0 0 16px;font-size:18px;font-weight:600;color:#16191f;">{last_sync}</p>
-<a class="btn btn-primary">Trigger sync now</a>
-<cwdb-action action="call" endpoint="{WIDGET_ARN}">
-{{ "action": "sync" }}
-</cwdb-action>
-{status_html}
-</div>"""
+    # Key requirements from AWS samples:
+    # 1. Use context.invoked_function_arn (not hardcoded ARN)
+    # 2. No whitespace between <a> and <cwdb-action>
+    # 3. JSON payload inline with no extra newlines
+    return (
+        f'<div style="font-family:Arial,sans-serif;padding:16px 20px;">'
+        f'<p style="margin:0 0 4px;font-size:13px;color:#5f6b7a;">Last sync</p>'
+        f'<p style="margin:0 0 16px;font-size:18px;font-weight:600;color:#16191f;">{last_sync}</p>'
+        f'<a class="btn btn-primary">Trigger sync now</a>'
+        f'<cwdb-action action="call" endpoint="{context_arn}">{{"action":"sync"}}</cwdb-action>'
+        f'{status_html}'
+        f'</div>'
+    )
 
 
 def handler(event, context):
-    # Log the full event so we can see exactly what CloudWatch sends on button click
     logger.info("EVENT: %s", json.dumps(event))
 
     action = (event.get("callbackParameters") or {}).get("action")
@@ -71,10 +73,11 @@ def handler(event, context):
                 Payload=b"{}",
             )
             now = datetime.now(timezone.utc).strftime("%d %b %Y  %H:%M UTC")
-            logger.info("Sync triggered successfully at %s", now)
-            return render_widget(message=f"Sync triggered at {now} — allow ~60s to complete.")
+            logger.info("Sync triggered at %s", now)
+            return render_widget(context.invoked_function_arn,
+                                 message=f"Sync triggered at {now} — allow ~60s to complete.")
         except Exception as e:
             logger.error("Sync failed: %s", e)
-            return render_widget(error=f"Failed to trigger: {e}")
+            return render_widget(context.invoked_function_arn, error=f"Failed to trigger: {e}")
 
-    return render_widget()
+    return render_widget(context.invoked_function_arn)

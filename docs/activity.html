@@ -1038,7 +1038,7 @@ function buildLapsTable(laps, sport) {
   thead.innerHTML = cols.map(c => `<th>${c.label}</th>`).join('');
 
   // Build start-time index for crosshair sync
-  lapStartSeconds = laps.map(l => l.start_time ?? 0);
+  lapStartSeconds = laps.map(l => l._start_sec ?? 0);
 
   tbody.innerHTML = laps.map((lap, i) => {
     const cells = cols.map(c => {
@@ -1046,7 +1046,7 @@ function buildLapsTable(laps, sport) {
       const val = c.fmt ? c.fmt(raw) : (raw ?? i + 1);
       return `<td${c.cls ? ` class="${c.cls}"` : ''}>${val}</td>`;
     }).join('');
-    return `<tr data-lap="${i}" onclick="dispatchCrosshair(${lapStartSeconds[i]})">${cells}</tr>`;
+    return `<tr data-lap="${i}" onclick="dispatchCrosshair(${lapStartSeconds[i] ?? 0})">${cells}</tr>`;
   }).join('');
 }
 
@@ -1367,12 +1367,44 @@ async function init() {
     return;
   }
 
-  // Fetch athlete profile for FTP, HRmax
+  // Fetch athlete profile for FTP, HRmax.
+  // /athlete returns { profile: {...}, recent_wellness: [...] }.
+  // All athlete fields (icu_ftp, max_hr etc) live under .profile.
   let athleteData = {};
   try {
     const ar = await fetch(`${API_BASE}/athlete`);
-    if (ar.ok) athleteData = await ar.json();
+    if (ar.ok) {
+      const raw = await ar.json();
+      athleteData = raw.profile || raw;
+    }
   } catch (_) { /* non-fatal */ }
+
+  // Fetch activity metadata (name, start date) from /activities/{id}.
+  // Stream JSON does not include name or start_date_local —
+  // those fields live only in the DynamoDB Activities table.
+  // DynamoDB stores activity_id as a numeric string (no 'i' prefix).
+  let activityMeta = {};
+  try {
+    const numericId = actId.replace(/^i/, '');
+    const mr = await fetch(`${API_BASE}/activities/${numericId}`);
+    if (mr.ok) activityMeta = await mr.json();
+  } catch (_) { /* non-fatal — name and date degrade gracefully */ }
+
+  // Normalise lap start_time: Intervals.icu returns ISO strings, not elapsed seconds.
+  // Convert to elapsed seconds from activity start for crosshair sync.
+  const laps = data.laps || [];
+  if (laps.length) {
+    const firstIso = laps[0].start_time;
+    const actStartMs = firstIso ? new Date(firstIso).getTime() : null;
+    laps.forEach(lap => {
+      lap._start_sec = (lap.start_time && actStartMs)
+        ? Math.round((new Date(lap.start_time).getTime() - actStartMs) / 1000)
+        : 0;
+      if (lap.end_time && actStartMs) {
+        lap._end_sec = Math.round((new Date(lap.end_time).getTime() - actStartMs) / 1000);
+      }
+    });
+  }
 
   // Update sync status
   const syncEl = document.getElementById('last-sync');
@@ -1383,21 +1415,23 @@ async function init() {
 
   const sport = data.sport_type || '';
 
-  // Render header
+  // Render header — name and date from activity metadata; degrade to stream fields
   const badgeEl = document.getElementById('sport-badge');
   badgeEl.textContent = `${sportIcon(sport)} ${sportLabel(sport)}`;
   badgeEl.className = `activity-sport-badge ${sport}`;
 
-  document.getElementById('activity-name').textContent = data.name || 'Activity';
-  document.getElementById('activity-date').textContent  = fmtDate(data.start_time || data.synced_at);
+  const actName = activityMeta.name || activityMeta.activity_name || 'Activity';
+  const actDate = activityMeta.start_date_local || activityMeta.start_date || data.synced_at;
+  document.getElementById('activity-name').textContent = actName;
+  document.getElementById('activity-date').textContent  = fmtDate(actDate);
   document.getElementById('kudos-count').textContent = data.kudos_count ?? '0';
 
-  document.title = `${data.name || 'Activity'} — Training OS`;
+  document.title = `${actName} — Training OS`;
 
-  // Build all sections
+  // Build all sections — pass normalised laps array
   buildSummaryStrip(data, athleteData);
   buildCharts(data, athleteData);
-  buildLapsTable(data.laps, sport);
+  buildLapsTable(laps, sport);
   buildSegments(data.segments);
   buildOverlay(sport, data);
 

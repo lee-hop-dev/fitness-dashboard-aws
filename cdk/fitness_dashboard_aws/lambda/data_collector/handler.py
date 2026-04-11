@@ -631,25 +631,35 @@ def _fetch_qualifying_segments(strava_id: str, access_token: str) -> list:
 
 def _fetch_laps(activity_id: str, api_key: str) -> list:
     """
-    Fetch lap data from Intervals.icu for an activity.
+    Fetch lap/interval data from Intervals.icu for an activity.
     Returns a list of normalised lap dicts. Returns [] gracefully on error.
-    activity_id must include the 'i' prefix.
+    activity_id must include the 'i' prefix (e.g. 'i135229442').
+
+    Correct endpoint: /api/v1/activity/{id}?intervals=true
+    Returns activity detail with an 'intervals' array containing lap data.
+    Ref: https://forum.intervals.icu/t/solved-how-to-fetch-lap-interval-data-via-api/126341
     """
     try:
         raw = intervals_get(
-            f"athlete/{ATHLETE_ID}/activities/{activity_id}/laps",
+            f"activity/{activity_id}",
             api_key,
+            params={"intervals": "true"},
         )
-        if not isinstance(raw, list):
+        if not isinstance(raw, dict):
+            return []
+        intervals = raw.get("intervals", [])
+        if not isinstance(intervals, list):
             return []
         laps = []
-        for i, lap in enumerate(raw, start=1):
+        for i, lap in enumerate(intervals, start=1):
+            # Skip non-lap intervals (e.g. type != "LAP" if field exists)
             laps.append({
                 "lap":         i,
                 "elapsed_s":   lap.get("elapsed_time", 0),
                 "avg_watts":   lap.get("average_watts"),
                 "avg_hr":      lap.get("average_heartrate"),
                 "avg_cadence": lap.get("average_cadence"),
+                "distance_m":  lap.get("distance"),
             })
         return laps
     except Exception as e:

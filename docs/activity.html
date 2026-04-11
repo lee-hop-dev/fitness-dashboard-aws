@@ -1038,7 +1038,7 @@ function buildLapsTable(laps, sport) {
   thead.innerHTML = cols.map(c => `<th>${c.label}</th>`).join('');
 
   // Build start-time index for crosshair sync
-  lapStartSeconds = laps.map(l => l._start_sec ?? 0);
+  lapStartSeconds = laps.map(l => l.start_time ?? 0);
 
   tbody.innerHTML = laps.map((lap, i) => {
     const cells = cols.map(c => {
@@ -1390,21 +1390,10 @@ async function init() {
     if (mr.ok) activityMeta = await mr.json();
   } catch (_) { /* non-fatal — name and date degrade gracefully */ }
 
-  // Normalise lap start_time: Intervals.icu returns ISO strings, not elapsed seconds.
-  // Convert to elapsed seconds from activity start for crosshair sync.
+  // Lap start_time from Intervals.icu icu_intervals is an integer —
+  // seconds from activity start. Same coordinate system as time[] stream array.
+  // Use directly for crosshair sync — no conversion needed.
   const laps = data.laps || [];
-  if (laps.length) {
-    const firstIso = laps[0].start_time;
-    const actStartMs = firstIso ? new Date(firstIso).getTime() : null;
-    laps.forEach(lap => {
-      lap._start_sec = (lap.start_time && actStartMs)
-        ? Math.round((new Date(lap.start_time).getTime() - actStartMs) / 1000)
-        : 0;
-      if (lap.end_time && actStartMs) {
-        lap._end_sec = Math.round((new Date(lap.end_time).getTime() - actStartMs) / 1000);
-      }
-    });
-  }
 
   // Update sync status
   const syncEl = document.getElementById('last-sync');

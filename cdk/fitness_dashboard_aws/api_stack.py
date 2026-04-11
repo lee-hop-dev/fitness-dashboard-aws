@@ -215,10 +215,54 @@ class ApiStack(Stack):
         strava_refresh = strava.add_resource("refresh")
         strava_refresh.add_method("POST", strava_integration)
 
+        # ── Ops: trigger-sync endpoint ────────────────────────────────────────
+        # Simple GET endpoint invoked by the dashboard widget link button.
+        COLLECTOR_NAME = "fitness-dashboard-data-collector"
+
+        trigger_sync_role = iam.Role(
+            self,
+            "TriggerSyncRole",
+            assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
+            managed_policies=[
+                iam.ManagedPolicy.from_aws_managed_policy_name(
+                    "service-role/AWSLambdaBasicExecutionRole"
+                )
+            ],
+        )
+        trigger_sync_role.add_to_policy(
+            iam.PolicyStatement(
+                actions=["lambda:InvokeFunction"],
+                resources=[
+                    f"arn:aws:lambda:eu-west-2:656370357696:function:{COLLECTOR_NAME}"
+                ],
+            )
+        )
+
+        trigger_sync_fn = lambda_.Function(
+            self,
+            "TriggerSyncFunction",
+            function_name="fitness-dashboard-trigger-sync",
+            runtime=lambda_.Runtime.PYTHON_3_11,
+            handler="handler.handler",
+            code=lambda_.Code.from_asset(
+                "fitness_dashboard_aws/lambda/trigger_sync"
+            ),
+            timeout=Duration.seconds(15),
+            memory_size=128,
+            role=trigger_sync_role,
+            description="GET /trigger-sync — fires data collector on demand",
+            log_retention=logs.RetentionDays.ONE_MONTH,
+        )
+
+        trigger_sync_resource = self.api.root.add_resource("trigger-sync")
+        trigger_sync_resource.add_method(
+            "GET",
+            apigw.LambdaIntegration(trigger_sync_fn, proxy=True),
+        )
+
         # ── Ops: Sync Widget Lambda + CloudWatch Dashboard ────────────────────
         # CloudWatch custom widget that lets you trigger FitnessDashboardCollector
         # on demand from the AWS Console, without opening the Lambda test tab.
-        COLLECTOR_NAME = "fitness-dashboard-data-collector"
 
         sync_widget_role = iam.Role(
             self,

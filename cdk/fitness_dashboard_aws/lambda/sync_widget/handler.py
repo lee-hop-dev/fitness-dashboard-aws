@@ -1,5 +1,7 @@
 """
 CloudWatch Custom Widget — Manual Sync Trigger
+Uses a direct API Gateway link rather than cwdb-action (which is unreliable).
+The /trigger-sync endpoint is already exposed via API Gateway.
 """
 import boto3
 import json
@@ -9,11 +11,12 @@ from datetime import datetime, timezone
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-lambda_client = boto3.client("lambda", region_name="eu-west-2")
 logs_client = boto3.client("logs", region_name="eu-west-2")
+lambda_client = boto3.client("lambda", region_name="eu-west-2")
 
 COLLECTOR_NAME = "fitness-dashboard-data-collector"
 LOG_GROUP = f"/aws/lambda/{COLLECTOR_NAME}"
+API_URL = "https://j2zxz92vd4.execute-api.eu-west-2.amazonaws.com/prod/trigger-sync"
 
 
 def get_last_sync_time():
@@ -35,36 +38,11 @@ def get_last_sync_time():
         return f"Unable to read: {e}"
 
 
-def render_widget(context_arn, message=None, error=None):
-    last_sync = get_last_sync_time()
-
-    status_html = ""
-    if message:
-        status_html = f'<p style="margin:10px 0 0;padding:8px 12px;background:#d4edda;color:#155724;border-radius:4px;font-size:13px;">{message}</p>'
-    elif error:
-        status_html = f'<p style="margin:10px 0 0;padding:8px 12px;background:#f8d7da;color:#721c24;border-radius:4px;font-size:13px;">{error}</p>'
-
-    # Key requirements from AWS samples:
-    # 1. Use context.invoked_function_arn (not hardcoded ARN)
-    # 2. No whitespace between <a> and <cwdb-action>
-    # 3. JSON payload inline with no extra newlines
-    return (
-        f'<div style="font-family:Arial,sans-serif;padding:16px 20px;">'
-        f'<p style="margin:0 0 4px;font-size:13px;color:#5f6b7a;">Last sync</p>'
-        f'<p style="margin:0 0 16px;font-size:18px;font-weight:600;color:#16191f;">{last_sync}</p>'
-        f'<a class="btn btn-primary">Trigger sync now</a>'
-        f'<cwdb-action action="call" endpoint="{context_arn}">{{"action":"sync"}}</cwdb-action>'
-        f'{status_html}'
-        f'</div>'
-    )
-
-
 def handler(event, context):
     logger.info("EVENT: %s", json.dumps(event))
 
+    # Check if this is a direct sync trigger (called from API Gateway link)
     action = (event.get("callbackParameters") or {}).get("action")
-    logger.info("ACTION: %s", action)
-
     if action == "sync":
         try:
             lambda_client.invoke(
@@ -74,10 +52,22 @@ def handler(event, context):
             )
             now = datetime.now(timezone.utc).strftime("%d %b %Y  %H:%M UTC")
             logger.info("Sync triggered at %s", now)
-            return render_widget(context.invoked_function_arn,
-                                 message=f"Sync triggered at {now} — allow ~60s to complete.")
+            triggered_msg = f'<p style="margin:10px 0 0;padding:8px 12px;background:#d4edda;color:#155724;border-radius:4px;font-size:13px;">Sync triggered at {now} — allow ~60s to complete.</p>'
         except Exception as e:
-            logger.error("Sync failed: %s", e)
-            return render_widget(context.invoked_function_arn, error=f"Failed to trigger: {e}")
+            triggered_msg = f'<p style="margin:10px 0 0;padding:8px 12px;background:#f8d7da;color:#721c24;border-radius:4px;font-size:13px;">Failed: {e}</p>'
+    else:
+        triggered_msg = ""
 
-    return render_widget(context.invoked_function_arn)
+    last_sync = get_last_sync_time()
+
+    # Use a plain href link to the API Gateway trigger endpoint.
+    # Opens in a new tab, triggers the sync, user closes the tab.
+    # This is reliable — no cwdb-action dependency.
+    return (
+        f'<div style="font-family:Arial,sans-serif;padding:16px 20px;">'
+        f'<p style="margin:0 0 4px;font-size:13px;color:#5f6b7a;">Last sync</p>'
+        f'<p style="margin:0 0 16px;font-size:18px;font-weight:600;color:#16191f;">{last_sync}</p>'
+        f'<a class="btn btn-primary" href="{API_URL}" target="_blank">Trigger sync now</a>'
+        f'{triggered_msg}'
+        f'</div>'
+    )

@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Activity — Training OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="stylesheet" href="assets/css/main.css?v=20260320-5">
+<script src="assets/js/theme-toggle.js"></script>
+<style>
+
+/* ============================================
+   ACTIVITY DETAIL PAGE — LOCAL STYLES
+   Inherits all CSS variables from main.css
+   No new design tokens introduced.
+   ============================================ */
+
+/* Back nav */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  text-decoration: none;
+  margin-bottom: 20px;
+  transition: color var(--transition);
+}
+.back-link:hover { color: var(--accent); }
+.back-link::before { content: '←'; font-size: 14px; }
+
+/* Page header — activity-specific */
+.activity-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.activity-header-left { flex: 1; min-width: 0; }
+
+.activity-sport-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+}
+.activity-sport-badge.Ride,
+.activity-sport-badge.VirtualRide { background: var(--accent-dim); color: var(--accent); border: 1px solid var(--accent-border); }
+.activity-sport-badge.Run { background: var(--green-dim); color: var(--green); border: 1px solid rgba(0,255,135,0.3); }
+.activity-sport-badge.Rowing,
+.activity-sport-badge.Rowing { background: var(--purple-dim); color: var(--purple); border: 1px solid rgba(255,112,67,0.3); }
+
+.activity-title {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.8px;
+  color: #ffffff;
+  margin-bottom: 4px;
+  line-height: 1.15;
+}
+
+.activity-date {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+/* Kudos display — top-right of header */
+.kudos-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+.kudos-heart { font-size: 20px; line-height: 1; }
+.kudos-count {
+  font-size: 24px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: #ffffff;
+  line-height: 1;
+}
+.kudos-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+}
+
+/* Summary metrics strip */
+.summary-strip {
+  display: flex;
+  gap: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 18px;
+  overflow: hidden;
+}
+
+.summary-metric {
+  flex: 1;
+  padding: 14px 18px;
+  border-right: 1px solid var(--border);
+  min-width: 0;
+}
+.summary-metric:last-child { border-right: none; }
+
+.summary-metric-value {
+  font-size: 22px;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  letter-spacing: -0.8px;
+  color: #ffffff;
+  white-space: nowrap;
+}
+.summary-metric-value.accent { color: var(--accent); }
+.summary-metric-value.green  { color: var(--green); }
+.summary-metric-value.orange { color: var(--orange); }
+
+.summary-metric-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--text-muted);
+  margin-top: 3px;
+  font-weight: 700;
+}
+
+/* Two-column layout for map + primary chart */
+.map-chart-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+/* GPS Map */
+.map-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.map-card-header {
+  padding: 14px 18px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+#activity-map {
+  height: 280px;
+  background: var(--bg-elevated);
+}
+
+/* Override Leaflet colours for dark theme */
+.leaflet-container { background: #0f1117; }
+.leaflet-tile { filter: brightness(0.75) saturate(0.6); }
+.leaflet-control-attribution {
+  background: rgba(8,10,13,0.85) !important;
+  color: var(--text-faint) !important;
+  font-size: 9px !important;
+}
+.leaflet-control-attribution a { color: var(--text-muted) !important; }
+
+/* Chart cards */
+.chart-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+  transition: border-color var(--transition);
+}
+.chart-card:hover { border-color: var(--border-bright); }
+
+.chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.chart-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+.chart-meta {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+.chart-wrap { position: relative; height: 180px; }
+.chart-wrap.primary { height: 220px; }
+
+/* Charts row — all charts below map */
+.charts-row {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.charts-row.two-col { grid-template-columns: 1fr 1fr; }
+.charts-row.single  { grid-template-columns: 1fr; }
+
+/* Zone colour bar legend */
+.zone-legend {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.zone-pip {
+  width: 10px; height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.zone-label {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  margin-right: 4px;
+}
+
+/* 42-day overlay panel */
+.overlay-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+  margin-bottom: 12px;
+}
+.overlay-note {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+/* Lap splits table */
+.laps-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+  margin-bottom: 12px;
+}
+.laps-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  margin-top: 12px;
+}
+.laps-table th {
+  text-align: left;
+  padding: 6px 10px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+.laps-table td {
+  padding: 8px 10px;
+  color: var(--text-primary);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  transition: background var(--transition);
+}
+.laps-table tr:hover td { background: var(--bg-hover); cursor: pointer; }
+.laps-table tr.lap-highlight td {
+  background: var(--bg-active);
+  color: var(--accent);
+}
+.laps-table td:first-child { color: var(--text-muted); }
+.laps-table td.accent { color: var(--accent); font-weight: 700; }
+
+/* Segments panel */
+.segments-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+  margin-bottom: 12px;
+}
+.segment-items { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+
+.segment-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition);
+}
+.segment-item:hover { border-color: var(--border-bright); }
+
+.segment-item-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+.segment-item-meta {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+.segment-item-badges { display: flex; gap: 5px; flex-wrap: wrap; }
+
+.seg-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  letter-spacing: 0.3px;
+}
+.seg-badge.pr-gold   { background: rgba(255,214,0,0.15);  color: var(--gold);   border: 1px solid rgba(255,214,0,0.3); }
+.seg-badge.pr-silver { background: rgba(192,200,216,0.12); color: var(--silver); border: 1px solid rgba(192,200,216,0.25); }
+.seg-badge.pr-bronze { background: rgba(205,127,50,0.12);  color: var(--bronze); border: 1px solid rgba(205,127,50,0.25); }
+.seg-badge.top10     { background: rgba(0,229,255,0.1);   color: var(--accent); border: 1px solid var(--accent-border); }
+.seg-badge.ag-top10  { background: rgba(255,107,43,0.1);  color: var(--orange); border: 1px solid rgba(255,107,43,0.3); }
+
+.segments-empty {
+  padding: 20px;
+  text-align: center;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+/* Crosshair cursor line on charts */
+.chart-cursor-line {
+  pointer-events: none;
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 1px;
+  background: rgba(255,255,255,0.15);
+  display: none;
+}
+
+/* Not available banner (>14d or no stream) */
+.not-available {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  gap: 12px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  text-align: center;
+}
+.not-available-icon { font-size: 40px; margin-bottom: 4px; }
+.not-available strong { color: var(--text-secondary); font-size: 15px; display: block; margin-bottom: 4px; }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .map-chart-row { grid-template-columns: 1fr; }
+  .charts-row.two-col { grid-template-columns: 1fr; }
+  .summary-strip { flex-wrap: wrap; }
+  .summary-metric { flex: 0 0 50%; }
+  .activity-header { flex-direction: column; }
+}
+
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ======== SIDEBAR (matches all other pages) ======== -->
+  <nav class="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-initials">LH</span>
+      <span class="brand-text">Training<br>OS</span>
+    </div>
+    <ul class="nav-links">
+      <li class="nav-item"><a href="index.html"><span class="nav-icon">◈</span><span>Overview</span></a></li>
+      <li class="nav-item"><a href="cycling.html"><span class="nav-icon">⬡</span><span>Cycling</span></a></li>
+      <li class="nav-item"><a href="running.html"><span class="nav-icon">▷</span><span>Running</span></a></li>
+      <li class="nav-item"><a href="rowing.html"><span class="nav-icon">⊕</span><span>Rowing</span></a></li>
+      <li class="nav-item"><a href="cardio.html"><span class="nav-icon">◎</span><span>Cardio</span></a></li>
+      <li class="nav-item"><a href="other.html"><span class="nav-icon">○</span><span>Other</span></a></li>
+      <li class="nav-item"><a href="race-stream.html"><span class="nav-icon">📺</span><span>Race Stream</span></a></li>
+      <li class="nav-item"><a href="about.html"><span class="nav-icon">⚙</span><span>Architecture</span></a></li>
+    </ul>
+    <div class="sidebar-footer">
+      <div class="theme-toggle-nav" onclick="toggleTheme()" title="Toggle dark/light mode">
+        <span class="nav-icon theme-icon">☀️</span>
+        <span>Theme</span>
+      </div>
+      <div class="sync-status">
+        <span class="sync-dot"></span>
+        <span class="sync-text" id="last-sync">Loading...</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ======== MAIN CONTENT ======== -->
+  <main class="main-content">
+
+    <a href="index.html" class="back-link">Back to Overview</a>
+
+    <!-- Loading -->
+    <div id="loading-state" class="loading-overlay">
+      <div class="loading-spinner"></div>
+      <span>Loading activity data...</span>
+    </div>
+
+    <!-- Error / not available -->
+    <div id="error-state" class="hidden">
+      <div class="not-available">
+        <div class="not-available-icon">◌</div>
+        <strong id="error-title">Activity not available</strong>
+        <span id="error-msg">Stream data is only available for activities within the last 14 days.</span>
+        <a href="index.html" class="back-link" style="margin-top:12px;margin-bottom:0">← Return to overview</a>
+      </div>
+    </div>
+
+    <!-- Activity content (hidden until data loaded) -->
+    <div id="activity-content" class="hidden">
+
+      <!-- Header -->
+      <header class="activity-header">
+        <div class="activity-header-left">
+          <div class="activity-sport-badge" id="sport-badge">—</div>
+          <h1 class="activity-title" id="activity-name">—</h1>
+          <span class="activity-date" id="activity-date">—</span>
+        </div>
+        <div class="kudos-display" id="kudos-section">
+          <span class="kudos-heart">❤️</span>
+          <div>
+            <div class="kudos-count" id="kudos-count">—</div>
+            <div class="kudos-label">Kudos</div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Summary metrics strip -->
+      <div class="summary-strip" id="summary-strip">
+        <!-- Populated by JS based on sport -->
+      </div>
+
+      <!-- GPS Map + Primary chart row -->
+      <div class="map-chart-row" id="map-chart-row">
+
+        <!-- GPS Map (cycling + running only) -->
+        <div class="map-card" id="map-section">
+          <div class="map-card-header">
+            <span class="chart-title" id="map-title">GPS Route</span>
+            <div class="zone-legend" id="zone-legend"></div>
+          </div>
+          <div id="activity-map"></div>
+        </div>
+
+        <!-- Primary chart (power for cycling, pace for running/rowing) -->
+        <div class="chart-card" id="primary-chart-card">
+          <div class="chart-header">
+            <span class="chart-title" id="primary-chart-title">Power</span>
+            <span class="chart-meta" id="primary-chart-meta"></span>
+          </div>
+          <div class="chart-wrap primary">
+            <canvas id="chart-primary"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- HR + Cadence row -->
+      <div class="charts-row two-col" id="row-hr-cad">
+        <div class="chart-card">
+          <div class="chart-header">
+            <span class="chart-title">Heart Rate</span>
+            <span class="chart-meta" id="hr-avg-meta"></span>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="chart-hr"></canvas>
+          </div>
+        </div>
+        <div class="chart-card" id="cadence-card">
+          <div class="chart-header">
+            <span class="chart-title" id="cadence-chart-title">Cadence</span>
+            <span class="chart-meta" id="cadence-avg-meta"></span>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="chart-cadence"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Speed chart (cycling only) -->
+      <div class="charts-row single" id="row-speed" style="display:none">
+        <div class="chart-card">
+          <div class="chart-header">
+            <span class="chart-title">Speed</span>
+            <span class="chart-meta" id="speed-avg-meta"></span>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="chart-speed"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 42-day overlay (cycling + running) -->
+      <div class="overlay-card" id="overlay-section" style="display:none">
+        <div class="chart-header">
+          <span class="chart-title" id="overlay-title">42-Day Power Curve</span>
+          <span class="chart-meta">contextual overlay</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chart-overlay"></canvas>
+        </div>
+        <div class="overlay-note" id="overlay-note">Showing best efforts from the last 42 days. Today's activity highlighted.</div>
+      </div>
+
+      <!-- Lap splits -->
+      <div class="laps-card" id="laps-section">
+        <div class="chart-header">
+          <span class="chart-title">Lap Splits</span>
+          <span class="chart-meta" id="laps-meta"></span>
+        </div>
+        <table class="laps-table" id="laps-table">
+          <thead>
+            <tr id="laps-thead"></tr>
+          </thead>
+          <tbody id="laps-tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Segments panel -->
+      <div class="segments-card" id="segments-section">
+        <div class="chart-header">
+          <span class="chart-title">Segment Achievements</span>
+          <span class="chart-meta" id="segments-meta"></span>
+        </div>
+        <div class="segment-items" id="segment-items"></div>
+      </div>
+
+    </div><!-- /activity-content -->
+
+  </main>
+</div>
+
+<script>
+'use strict';
+
+/* ============================================
+   CONSTANTS & CONFIG
+   ============================================ */
+const API_BASE = 'https://j2zxz92vd4.execute-api.eu-west-2.amazonaws.com/prod';
+const CF_BASE  = '';  // relative — served from same CloudFront origin
+
+// Zone colour maps — from Phase 8 planning doc
+const POWER_ZONE_COLOURS = ['#9ca3af','#60a5fa','#34d399','#fbbf24','#f97316','#ef4444'];
+const HR_ZONE_COLOURS    = ['#9ca3af','#60a5fa','#34d399','#fbbf24','#ef4444'];
+
+// Chart.js global defaults — match existing dashboard aesthetic
+Chart.defaults.color = '#b8c0d0';
+Chart.defaults.font.family = "'DM Mono', monospace";
+Chart.defaults.font.size = 10;
+
+/* ============================================
+   UTILITIES
+   ============================================ */
+function fmtDuration(secs) {
+  if (!secs && secs !== 0) return '—';
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const s = secs % 60;
+  if (h > 0) return `${h}h ${m.toString().padStart(2,'0')}m`;
+  return `${m}:${s.toString().padStart(2,'0')}`;
+}
+
+function fmtPace(mps) {
+  // Convert m/s to min/km
+  if (!mps || mps <= 0) return '—';
+  const secPerKm = 1000 / mps;
+  const m = Math.floor(secPerKm / 60);
+  const s = Math.round(secPerKm % 60);
+  return `${m}:${s.toString().padStart(2,'0')}/km`;
+}
+
+function fmtSpeed(mps) {
+  if (!mps && mps !== 0) return '—';
+  return (mps * 3.6).toFixed(1) + ' km/h';
+}
+
+function fmtDist(metres) {
+  if (!metres && metres !== 0) return '—';
+  return metres >= 1000 ? (metres / 1000).toFixed(2) + ' km' : metres.toFixed(0) + ' m';
+}
+
+function fmtDate(isoStr) {
+  if (!isoStr) return '—';
+  const d = new Date(isoStr);
+  return d.toLocaleDateString('en-GB', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+}
+
+function isCycling(sport) {
+  return ['Ride','VirtualRide','GravelRide','MountainBikeRide','EBikeRide'].includes(sport);
+}
+function isRunning(sport) {
+  return ['Run','VirtualRun','TrailRun'].includes(sport);
+}
+function isRowing(sport) {
+  return ['Rowing','rowing','Workout'].includes(sport) || (sport || '').toLowerCase().includes('row');
+}
+
+function avg(arr) {
+  if (!arr || !arr.length) return null;
+  const valid = arr.filter(v => v != null && v > 0);
+  return valid.length ? valid.reduce((a,b) => a+b, 0) / valid.length : null;
+}
+
+function max(arr) {
+  if (!arr || !arr.length) return null;
+  return Math.max(...arr.filter(v => v != null));
+}
+
+/* ============================================
+   POWER / HR ZONE CALCULATION
+   ============================================ */
+function getPowerZone(watts, ftp) {
+  if (!ftp || !watts) return 0;
+  const pct = watts / ftp;
+  if (pct <= 0.55) return 0;
+  if (pct <= 0.75) return 1;
+  if (pct <= 0.90) return 2;
+  if (pct <= 1.05) return 3;
+  if (pct <= 1.20) return 4;
+  return 5;
+}
+
+function getHrZone(hr, hrmax) {
+  if (!hrmax || !hr) return 0;
+  const pct = hr / hrmax;
+  if (pct <= 0.50) return 0;
+  if (pct <= 0.60) return 1;
+  if (pct <= 0.70) return 2;
+  if (pct <= 0.80) return 3;
+  return 4;
+}
+
+/* ============================================
+   GPS DECIMATION
+   ============================================ */
+function decimateGps(latlng, targetPoints = 800) {
+  if (!latlng || !latlng.length) return [];
+  const step = Math.ceil(latlng.length / targetPoints);
+  return latlng.filter((_, i) => i % step === 0);
+}
+
+function decimateStream(arr, targetPoints = 800) {
+  if (!arr || !arr.length) return [];
+  const step = Math.ceil(arr.length / targetPoints);
+  return arr.filter((_, i) => i % step === 0);
+}
+
+/* ============================================
+   CROSSHAIR SYSTEM
+   All charts and GPS map listen to activity-crosshair
+   CustomEvent dispatched with { idx } (seconds-based index)
+   NEVER use label string — formatDurationLabel() bug rule
+   ============================================ */
+const registeredCharts = [];
+let crosshairMarker = null;
+let decimatedLatlng = [];
+
+function registerChart(chart) {
+  registeredCharts.push(chart);
+}
+
+function dispatchCrosshair(idx) {
+  document.dispatchEvent(new CustomEvent('activity-crosshair', { detail: { idx } }));
+}
+
+document.addEventListener('activity-crosshair', (e) => {
+  const idx = e.detail.idx;
+
+  // Update all charts
+  registeredCharts.forEach(chart => {
+    if (!chart || chart._destroyed) return;
+    // Clamp index to dataset length
+    const len = chart.data.datasets[0]?.data?.length || 0;
+    const clamped = Math.min(idx, len - 1);
+    chart.tooltip.setActiveElements(
+      chart.data.datasets.map((_, di) => ({ datasetIndex: di, index: clamped })),
+      { x: 0, y: 0 }
+    );
+    chart.update('none');
+  });
+
+  // Update GPS marker
+  if (crosshairMarker && decimatedLatlng.length) {
+    // Map from original stream index to decimated index
+    const originalLen = window._streamLen || decimatedLatlng.length;
+    const step = Math.ceil(originalLen / 800);
+    const decimIdx = Math.floor(idx / step);
+    const clamped = Math.min(decimIdx, decimatedLatlng.length - 1);
+    if (decimatedLatlng[clamped]) {
+      crosshairMarker.setLatLng(decimatedLatlng[clamped]);
+    }
+  }
+
+  // Highlight lap row
+  highlightLapRow(idx);
+});
+
+/* ============================================
+   LAP ROW HIGHLIGHT
+   ============================================ */
+let lapStartSeconds = []; // start_time (seconds from activity start) for each lap
+
+function highlightLapRow(streamIdx) {
+  if (!lapStartSeconds.length) return;
+  // Find which lap the current second belongs to
+  let lapIdx = 0;
+  for (let i = 0; i < lapStartSeconds.length; i++) {
+    if (streamIdx >= lapStartSeconds[i]) lapIdx = i;
+    else break;
+  }
+  document.querySelectorAll('#laps-tbody tr').forEach((row, i) => {
+    row.classList.toggle('lap-highlight', i === lapIdx);
+  });
+}
+
+/* ============================================
+   CHART FACTORY
+   Shared config for all time-series charts
+   ============================================ */
+function buildChartOptions(yLabel, colour, fillColour, onHover) {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        enabled: true,
+        backgroundColor: 'rgba(8,10,13,0.92)',
+        borderColor: 'rgba(255,255,255,0.1)',
+        borderWidth: 1,
+        padding: 8,
+        callbacks: {
+          title(items) {
+            // Show elapsed time from seconds-based index — NOT formatDurationLabel()
+            const secs = items[0]?.dataIndex ?? 0;
+            return fmtDuration(secs);
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        type: 'linear',
+        ticks: {
+          maxTicksLimit: 8,
+          callback(val) { return fmtDuration(val); }
+        },
+        grid: { color: 'rgba(255,255,255,0.04)' },
+        border: { color: 'rgba(255,255,255,0.08)' }
+      },
+      y: {
+        title: { display: false },
+        grid: { color: 'rgba(255,255,255,0.04)' },
+        border: { color: 'rgba(255,255,255,0.08)' },
+        ticks: { maxTicksLimit: 5 }
+      }
+    },
+    onHover: onHover || null
+  };
+}
+
+function createChart(canvasId, label, timeArr, dataArr, colour, fillColour, extraOptions) {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx) return null;
+
+  // Build (x, y) pairs using seconds-based x axis — avoids formatDurationLabel() issue
+  const points = timeArr.map((t, i) => ({ x: t, y: dataArr[i] ?? null }));
+
+  const chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      datasets: [{
+        label,
+        data: points,
+        borderColor: colour,
+        borderWidth: 1.5,
+        backgroundColor: fillColour || 'transparent',
+        fill: !!fillColour,
+        pointRadius: 0,
+        tension: 0.2
+      }]
+    },
+    options: {
+      ...buildChartOptions(label, colour, fillColour),
+      ...extraOptions,
+      onHover(event, elements, chart) {
+        if (!elements.length) return;
+        const idx = elements[0].index;
+        // idx here is index in dataset = seconds (since x = time[i] = seconds)
+        const actualSec = timeArr[idx] ?? idx;
+        dispatchCrosshair(actualSec);
+      }
+    }
+  });
+
+  registerChart(chart);
+  return chart;
+}
+
+/* ============================================
+   GPS MAP
+   ============================================ */
+let leafletMap = null;
+
+function initMap(latlng, powerArr, hrArr, sport, ftp, hrmax) {
+  if (!latlng || !latlng.length) return;
+
+  const mapEl = document.getElementById('activity-map');
+  if (!mapEl) return;
+
+  // Store original length for crosshair index mapping
+  window._streamLen = latlng.length;
+
+  // Decimate GPS
+  decimatedLatlng = decimateGps(latlng);
+  const decimPower = decimateStream(powerArr);
+  const decimHr    = decimateStream(hrArr);
+
+  // Initialise Leaflet
+  leafletMap = L.map('activity-map', { zoomControl: true, attributionControl: true });
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 19
+  }).addTo(leafletMap);
+
+  // Draw zone-coloured polyline segments
+  for (let i = 0; i < decimatedLatlng.length - 1; i++) {
+    const start = decimatedLatlng[i];
+    const end   = decimatedLatlng[i + 1];
+    if (!start || !end) continue;
+
+    let colour = '#9ca3af'; // default grey Z1
+    if (isCycling(sport) && ftp && decimPower[i] != null) {
+      colour = POWER_ZONE_COLOURS[getPowerZone(decimPower[i], ftp)];
+    } else if (isRunning(sport) && hrmax && decimHr[i] != null) {
+      colour = HR_ZONE_COLOURS[getHrZone(decimHr[i], hrmax)];
+    }
+
+    L.polyline([start, end], { color: colour, weight: 3, opacity: 0.85 }).addTo(leafletMap);
+  }
+
+  // Fit map to route
+  if (decimatedLatlng.length) {
+    leafletMap.fitBounds(L.latLngBounds(decimatedLatlng), { padding: [20, 20] });
+  }
+
+  // Crosshair marker (circle)
+  if (decimatedLatlng.length) {
+    crosshairMarker = L.circleMarker(decimatedLatlng[0], {
+      radius: 6,
+      color: '#ffffff',
+      fillColor: '#00e5ff',
+      fillOpacity: 1,
+      weight: 2
+    }).addTo(leafletMap);
+  }
+
+  // Render zone legend
+  renderZoneLegend(sport, ftp, hrmax);
+}
+
+function renderZoneLegend(sport, ftp, hrmax) {
+  const el = document.getElementById('zone-legend');
+  if (!el) return;
+
+  let zones, colours, title;
+  if (isCycling(sport) && ftp) {
+    zones   = ['Z1','Z2','Z3','Z4','Z5','Z6'];
+    colours = POWER_ZONE_COLOURS;
+    title   = `Power zones (FTP ${Math.round(ftp)}W)`;
+  } else if (isRunning(sport) && hrmax) {
+    zones   = ['Z1','Z2','Z3','Z4','Z5'];
+    colours = HR_ZONE_COLOURS;
+    title   = `HR zones (max ${Math.round(hrmax)} bpm)`;
+  } else {
+    return;
+  }
+
+  document.getElementById('map-title').textContent = `GPS Route — ${title}`;
+
+  el.innerHTML = zones.map((z, i) =>
+    `<span class="zone-pip" style="background:${colours[i]}"></span><span class="zone-label">${z}</span>`
+  ).join('');
+}
+
+/* ============================================
+   SUMMARY STRIP BUILDER
+   ============================================ */
+function buildSummaryStrip(data, athleteData) {
+  const el = document.getElementById('summary-strip');
+  if (!el) return;
+
+  const sport = data.sport_type;
+  const s     = data.streams || {};
+  const laps  = data.laps || [];
+
+  // Calculate totals from stream data
+  const totalSecs   = s.time ? s.time[s.time.length - 1] : null;
+  const totalDistM  = s.distance ? s.distance[s.distance.length - 1] : null;
+  const avgWatts    = avg(s.watts);
+  const avgHr       = avg(s.heartrate);
+  const maxHr       = max(s.heartrate);
+  const avgCadence  = avg(s.cadence);
+  const totalAltM   = s.altitude ? (max(s.altitude) - Math.min(...s.altitude.filter(v => v != null))) : null;
+
+  // Normalized Power (if watts available) — simple implementation
+  let np = null;
+  if (s.watts && s.watts.length >= 30) {
+    // 30s rolling average NP approximation
+    const w = s.watts;
+    let sum4 = 0, count = 0;
+    for (let i = 29; i < w.length; i++) {
+      const slice = w.slice(i - 29, i + 1);
+      const mean  = slice.reduce((a, b) => a + (b || 0), 0) / 30;
+      sum4 += Math.pow(mean, 4);
+      count++;
+    }
+    np = count ? Math.round(Math.pow(sum4 / count, 0.25)) : null;
+  }
+
+  // TSS approximation (if FTP known)
+  const ftp = athleteData?.ftp || athleteData?.icu_ftp;
+  let tss = null;
+  if (np && ftp && totalSecs) {
+    const if_ = np / ftp;
+    tss = Math.round((totalSecs * np * if_) / (ftp * 3600) * 100);
+  }
+
+  const metrics = [];
+
+  if (isCycling(sport)) {
+    if (totalSecs)  metrics.push({ label: 'Duration',  value: fmtDuration(totalSecs), cls: '' });
+    if (totalDistM) metrics.push({ label: 'Distance',  value: fmtDist(totalDistM),    cls: '' });
+    if (np)         metrics.push({ label: 'NP',        value: np + 'W',               cls: 'accent' });
+    if (tss)        metrics.push({ label: 'TSS',       value: tss,                    cls: 'accent' });
+    if (ftp && np)  metrics.push({ label: 'IF',        value: (np/ftp).toFixed(2),    cls: '' });
+    if (avgHr)      metrics.push({ label: 'Avg HR',    value: Math.round(avgHr) + ' bpm', cls: '' });
+    if (totalAltM)  metrics.push({ label: 'Elevation', value: Math.round(totalAltM) + 'm', cls: '' });
+  } else if (isRunning(sport)) {
+    if (totalSecs)  metrics.push({ label: 'Duration',  value: fmtDuration(totalSecs),  cls: '' });
+    if (totalDistM) metrics.push({ label: 'Distance',  value: fmtDist(totalDistM),     cls: '' });
+    if (s.velocity_smooth) {
+      const avgMps = avg(s.velocity_smooth);
+      if (avgMps)   metrics.push({ label: 'Pace',     value: fmtPace(avgMps),          cls: 'green' });
+    }
+    if (avgHr)      metrics.push({ label: 'Avg HR',   value: Math.round(avgHr) + ' bpm', cls: '' });
+    if (totalAltM)  metrics.push({ label: 'Elevation',value: Math.round(totalAltM) + 'm', cls: '' });
+  } else {
+    // Rowing / other
+    if (totalSecs)  metrics.push({ label: 'Duration', value: fmtDuration(totalSecs),  cls: '' });
+    if (totalDistM) metrics.push({ label: 'Distance', value: fmtDist(totalDistM),     cls: '' });
+    if (avgWatts)   metrics.push({ label: 'Avg Power',value: Math.round(avgWatts) + 'W', cls: 'orange' });
+    if (avgHr)      metrics.push({ label: 'Avg HR',   value: Math.round(avgHr) + ' bpm', cls: '' });
+  }
+
+  el.innerHTML = metrics.map(m =>
+    `<div class="summary-metric">
+      <div class="summary-metric-value ${m.cls}">${m.value}</div>
+      <div class="summary-metric-label">${m.label}</div>
+    </div>`
+  ).join('');
+}
+
+/* ============================================
+   LAP SPLITS TABLE
+   ============================================ */
+function buildLapsTable(laps, sport) {
+  if (!laps || !laps.length) {
+    document.getElementById('laps-section').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('laps-meta').textContent = `${laps.length} laps`;
+
+  const thead = document.getElementById('laps-thead');
+  const tbody = document.getElementById('laps-tbody');
+
+  // Column definitions based on sport
+  const cols = [
+    { label: 'Lap', key: 'lap' },
+    { label: 'Duration', key: 'elapsed_s', fmt: v => fmtDuration(v) },
+    { label: 'Distance', key: 'distance_m', fmt: v => fmtDist(v) }
+  ];
+
+  if (isCycling(sport)) {
+    cols.push({ label: 'Avg W', key: 'avg_watts', fmt: v => v ? Math.round(v) + 'W' : '—', cls: 'accent' });
+    cols.push({ label: 'NP', key: 'np_watts', fmt: v => v ? Math.round(v) + 'W' : '—' });
+    cols.push({ label: 'Avg HR', key: 'avg_hr', fmt: v => v ? Math.round(v) + ' bpm' : '—' });
+    cols.push({ label: 'Cad', key: 'avg_cadence', fmt: v => v ? Math.round(v) : '—' });
+  } else if (isRunning(sport)) {
+    cols.push({ label: 'Pace', key: 'avg_speed', fmt: v => v ? fmtPace(v) : '—', cls: 'green' });
+    cols.push({ label: 'Avg HR', key: 'avg_hr', fmt: v => v ? Math.round(v) + ' bpm' : '—' });
+    cols.push({ label: 'Cad', key: 'avg_cadence', fmt: v => v ? Math.round(v) : '—' });
+  } else {
+    cols.push({ label: 'Avg W', key: 'avg_watts', fmt: v => v ? Math.round(v) + 'W' : '—', cls: 'accent' });
+    cols.push({ label: 'Avg HR', key: 'avg_hr', fmt: v => v ? Math.round(v) + ' bpm' : '—' });
+    cols.push({ label: 'S/R', key: 'avg_cadence', fmt: v => v ? Math.round(v) : '—' });
+  }
+
+  thead.innerHTML = cols.map(c => `<th>${c.label}</th>`).join('');
+
+  // Build start-time index for crosshair sync
+  lapStartSeconds = laps.map(l => l.start_time ?? 0);
+
+  tbody.innerHTML = laps.map((lap, i) => {
+    const cells = cols.map(c => {
+      const raw = lap[c.key];
+      const val = c.fmt ? c.fmt(raw) : (raw ?? i + 1);
+      return `<td${c.cls ? ` class="${c.cls}"` : ''}>${val}</td>`;
+    }).join('');
+    return `<tr data-lap="${i}" onclick="dispatchCrosshair(${lapStartSeconds[i]})">${cells}</tr>`;
+  }).join('');
+}
+
+/* ============================================
+   SEGMENTS PANEL
+   ============================================ */
+function buildSegments(segments) {
+  const section = document.getElementById('segments-section');
+  const itemsEl = document.getElementById('segment-items');
+
+  if (!segments || !segments.length) {
+    itemsEl.innerHTML = `<div class="segments-empty">No qualifying segment achievements on this activity.<br><span style="font-size:10px;opacity:0.6">Showing only PR top 3, overall top 10, and age group top 10.</span></div>`;
+    document.getElementById('segments-meta').textContent = 'none qualifying';
+    return;
+  }
+
+  document.getElementById('segments-meta').textContent = `${segments.length} qualifying`;
+
+  itemsEl.innerHTML = segments.map(seg => {
+    const badges = [];
+    const pr = seg.pr_rank;
+    const kom = seg.kom_rank;
+    const qom = seg.qom_rank;
+
+    if (pr === 1) badges.push(`<span class="seg-badge pr-gold">🥇 PR</span>`);
+    else if (pr === 2) badges.push(`<span class="seg-badge pr-silver">🥈 2nd Best</span>`);
+    else if (pr === 3) badges.push(`<span class="seg-badge pr-bronze">🥉 3rd Best</span>`);
+
+    if (kom != null && kom <= 10) badges.push(`<span class="seg-badge top10">🏆 Top ${kom} Overall</span>`);
+    if (qom != null && qom <= 10) badges.push(`<span class="seg-badge ag-top10">👴 Top ${qom} AG</span>`);
+
+    const distStr = seg.distance_m ? fmtDist(seg.distance_m) : '';
+    const timeStr = seg.elapsed_time_s ? fmtDuration(seg.elapsed_time_s) : '';
+
+    return `<div class="segment-item">
+      <div>
+        <div class="segment-item-name">${seg.name || 'Unnamed Segment'}</div>
+        <div class="segment-item-meta">${[distStr, timeStr].filter(Boolean).join(' · ')}</div>
+      </div>
+      <div class="segment-item-badges">${badges.join('')}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ============================================
+   42-DAY OVERLAY
+   Fetches power-curve or pace-curve from API
+   ============================================ */
+async function buildOverlay(sport, streamData) {
+  const section = document.getElementById('overlay-section');
+
+  if (!isCycling(sport) && !isRunning(sport)) {
+    section.style.display = 'none';
+    return;
+  }
+
+  try {
+    const type = isCycling(sport) ? 'Ride' : 'Run';
+    const resp = await fetch(`${API_BASE}/${isCycling(sport) ? 'power-curve' : 'pace-curve'}?type=${type}&curves=all`);
+    if (!resp.ok) { section.style.display = 'none'; return; }
+    const curveData = await resp.json();
+
+    // curveData expected: { secs: [], values: [], secs_42d: [], values_42d: [] }
+    // or the existing Curves table format — adapt as needed
+    if (!curveData || (!curveData.secs && !curveData.durations)) {
+      section.style.display = 'none';
+      return;
+    }
+
+    section.style.display = 'block';
+
+    const durations = curveData.secs || curveData.durations || [];
+    const allTime   = curveData.values || curveData.all_time || [];
+    const last42    = curveData.values_42d || curveData.last_42d || [];
+
+    document.getElementById('overlay-title').textContent =
+      isCycling(sport) ? '42-Day Power Curve' : '42-Day Pace Curve';
+
+    const ctx = document.getElementById('chart-overlay');
+    if (!ctx) return;
+
+    const datasets = [];
+    const label42 = isCycling(sport) ? 'W' : 'min/km';
+
+    if (last42.length) {
+      datasets.push({
+        label: '42-Day Best',
+        data: durations.map((d, i) => ({ x: d, y: last42[i] ?? null })),
+        borderColor: '#00e5ff',
+        borderWidth: 2,
+        backgroundColor: 'rgba(0,229,255,0.06)',
+        fill: true,
+        pointRadius: 0,
+        tension: 0.3
+      });
+    }
+
+    if (allTime.length) {
+      datasets.push({
+        label: 'All Time',
+        data: durations.map((d, i) => ({ x: d, y: allTime[i] ?? null })),
+        borderColor: 'rgba(255,255,255,0.15)',
+        borderWidth: 1,
+        borderDash: [4, 4],
+        fill: false,
+        pointRadius: 0,
+        tension: 0.3
+      });
+    }
+
+    new Chart(ctx, {
+      type: 'line',
+      data: { datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            labels: { color: '#b8c0d0', font: { size: 10 }, boxWidth: 12 }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(8,10,13,0.92)',
+            borderColor: 'rgba(255,255,255,0.1)',
+            borderWidth: 1,
+            callbacks: {
+              title(items) { return fmtDuration(items[0]?.parsed?.x ?? 0); },
+              label(item) { return `${item.dataset.label}: ${Math.round(item.parsed.y)} ${label42}`; }
+            }
+          }
+        },
+        scales: {
+          x: {
+            type: 'linear',
+            ticks: { callback: v => fmtDuration(v), maxTicksLimit: 8 },
+            grid: { color: 'rgba(255,255,255,0.04)' },
+            border: { color: 'rgba(255,255,255,0.08)' }
+          },
+          y: {
+            grid: { color: 'rgba(255,255,255,0.04)' },
+            border: { color: 'rgba(255,255,255,0.08)' },
+            ticks: { maxTicksLimit: 5 }
+          }
+        }
+      }
+    });
+
+  } catch (err) {
+    console.warn('Overlay fetch failed:', err);
+    section.style.display = 'none';
+  }
+}
+
+/* ============================================
+   SPORT-SPECIFIC CHART BUILDER
+   ============================================ */
+function buildCharts(data, athleteData) {
+  const sport = data.sport_type;
+  const s     = data.streams || {};
+  const time  = s.time || [];
+
+  const ftp   = athleteData?.ftp || athleteData?.icu_ftp || null;
+  const hrmax = athleteData?.hr_max || athleteData?.max_hr || null;
+
+  if (isCycling(sport)) {
+    // Primary: Power
+    document.getElementById('primary-chart-title').textContent = 'Power';
+    if (s.watts && s.watts.length) {
+      const avgW = avg(s.watts);
+      document.getElementById('primary-chart-meta').textContent =
+        avgW ? `avg ${Math.round(avgW)}W${ftp ? ` · FTP ${Math.round(ftp)}W` : ''}` : '';
+      createChart('chart-primary', 'Power (W)', time, s.watts, '#00e5ff', 'rgba(0,229,255,0.08)');
+    }
+
+    // Speed
+    if (s.velocity_smooth && s.velocity_smooth.length) {
+      document.getElementById('row-speed').style.display = '';
+      const avgSpd = avg(s.velocity_smooth);
+      document.getElementById('speed-avg-meta').textContent = avgSpd ? fmtSpeed(avgSpd) : '';
+      createChart('chart-speed', 'Speed', time, s.velocity_smooth.map(v => v * 3.6),
+        '#fbbf24', 'rgba(251,191,36,0.06)');
+    }
+
+    // Cadence label
+    document.getElementById('cadence-chart-title').textContent = 'Cadence (rpm)';
+    if (s.cadence && s.cadence.length) {
+      const avgCad = avg(s.cadence);
+      document.getElementById('cadence-avg-meta').textContent = avgCad ? `avg ${Math.round(avgCad)} rpm` : '';
+    }
+
+    // GPS map
+    if (s.latlng && s.latlng.length) {
+      initMap(s.latlng, s.watts, s.heartrate, sport, ftp, hrmax);
+    } else {
+      document.getElementById('map-section').style.display = 'none';
+      document.getElementById('map-chart-row').style.gridTemplateColumns = '1fr';
+    }
+
+  } else if (isRunning(sport)) {
+    // Primary: Pace (inverted — lower is better)
+    document.getElementById('primary-chart-title').textContent = 'Pace';
+    if (s.velocity_smooth && s.velocity_smooth.length) {
+      const paceArr = s.velocity_smooth.map(v => v > 0 ? +(1000 / v / 60).toFixed(2) : null);
+      const avgMps  = avg(s.velocity_smooth);
+      document.getElementById('primary-chart-meta').textContent = avgMps ? fmtPace(avgMps) : '';
+      createChart('chart-primary', 'Pace (min/km)', time, paceArr, '#00ff87', 'rgba(0,255,135,0.08)', {
+        scales: {
+          y: {
+            reverse: true,
+            ticks: { maxTicksLimit: 5, callback: v => `${Math.floor(v)}:${String(Math.round((v%1)*60)).padStart(2,'0')}` }
+          }
+        }
+      });
+    }
+
+    // Cadence label
+    document.getElementById('cadence-chart-title').textContent = 'Cadence (spm)';
+    if (s.cadence && s.cadence.length) {
+      const avgCad = avg(s.cadence);
+      document.getElementById('cadence-avg-meta').textContent = avgCad ? `avg ${Math.round(avgCad)} spm` : '';
+    }
+
+    // GPS map
+    if (s.latlng && s.latlng.length) {
+      initMap(s.latlng, null, s.heartrate, sport, ftp, hrmax);
+    } else {
+      document.getElementById('map-section').style.display = 'none';
+      document.getElementById('map-chart-row').style.gridTemplateColumns = '1fr';
+    }
+
+  } else {
+    // Rowing / other
+    document.getElementById('primary-chart-title').textContent = 'Power';
+    if (s.watts && s.watts.length) {
+      const avgW = avg(s.watts);
+      document.getElementById('primary-chart-meta').textContent = avgW ? `avg ${Math.round(avgW)}W` : '';
+      createChart('chart-primary', 'Power (W)', time, s.watts, '#ff7043', 'rgba(255,112,67,0.08)');
+    } else if (s.velocity_smooth && s.velocity_smooth.length) {
+      // Show pace if no power
+      document.getElementById('primary-chart-title').textContent = 'Pace';
+      const paceArr = s.velocity_smooth.map(v => v > 0 ? +(1000 / v / 60).toFixed(2) : null);
+      createChart('chart-primary', 'Pace', time, paceArr, '#ff7043', 'rgba(255,112,67,0.08)');
+    }
+
+    // Cadence = stroke rate for rowing
+    document.getElementById('cadence-chart-title').textContent = 'Stroke Rate (s/m)';
+    if (s.cadence && s.cadence.length) {
+      const avgCad = avg(s.cadence);
+      document.getElementById('cadence-avg-meta').textContent = avgCad ? `avg ${Math.round(avgCad)} s/m` : '';
+    }
+
+    // No GPS for rowing — hide map, expand primary chart column
+    document.getElementById('map-section').style.display = 'none';
+    document.getElementById('map-chart-row').style.gridTemplateColumns = '1fr';
+  }
+
+  // HR chart — all sports
+  if (s.heartrate && s.heartrate.length) {
+    const avgHr = avg(s.heartrate);
+    const mxHr  = max(s.heartrate);
+    document.getElementById('hr-avg-meta').textContent =
+      `avg ${Math.round(avgHr || 0)} · max ${Math.round(mxHr || 0)} bpm`;
+    createChart('chart-hr', 'Heart Rate (bpm)', time, s.heartrate, '#ef4444', 'rgba(239,68,68,0.08)');
+  }
+
+  // Cadence chart — all sports
+  if (s.cadence && s.cadence.length) {
+    createChart('chart-cadence', 'Cadence', time, s.cadence, '#a78bfa', 'rgba(167,139,250,0.06)');
+  } else {
+    document.getElementById('cadence-card').style.display = 'none';
+    document.getElementById('row-hr-cad').style.gridTemplateColumns = '1fr';
+  }
+}
+
+/* ============================================
+   SPORT BADGE
+   ============================================ */
+function sportIcon(sport) {
+  if (isCycling(sport)) return '⬡';
+  if (isRunning(sport)) return '▷';
+  if (isRowing(sport))  return '⊕';
+  return '○';
+}
+
+function sportLabel(sport) {
+  if (!sport) return 'Activity';
+  if (sport === 'VirtualRide') return 'Virtual Ride';
+  if (sport === 'VirtualRun')  return 'Virtual Run';
+  return sport.replace(/([A-Z])/g, ' $1').trim();
+}
+
+/* ============================================
+   MAIN INIT
+   ============================================ */
+async function init() {
+  // Parse activity ID from URL
+  const params = new URLSearchParams(window.location.search);
+  let actId = params.get('id');
+  if (!actId) {
+    showError('No activity ID specified.', 'Please navigate here from an activity card.');
+    return;
+  }
+
+  // Normalise ID — ensure 'i' prefix
+  if (!actId.startsWith('i')) actId = 'i' + actId;
+
+  // Fetch stream JSON (static from CloudFront/S3)
+  let data;
+  try {
+    const resp = await fetch(`${CF_BASE}data/streams/${actId}.json`);
+    if (!resp.ok) {
+      showError('Activity data not available.', 'Stream data is only kept for the last 14 days. This activity may be older, or the daily sync hasn\'t run yet.');
+      return;
+    }
+    data = await resp.json();
+  } catch (err) {
+    showError('Failed to load activity data.', err.message);
+    return;
+  }
+
+  // Fetch athlete profile for FTP, HRmax
+  let athleteData = {};
+  try {
+    const ar = await fetch(`${API_BASE}/athlete`);
+    if (ar.ok) athleteData = await ar.json();
+  } catch (_) { /* non-fatal */ }
+
+  // Update sync status
+  const syncEl = document.getElementById('last-sync');
+  if (syncEl && data.synced_at) {
+    const d = new Date(data.synced_at);
+    syncEl.textContent = d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }) + ' sync';
+  }
+
+  const sport = data.sport_type || '';
+
+  // Render header
+  const badgeEl = document.getElementById('sport-badge');
+  badgeEl.textContent = `${sportIcon(sport)} ${sportLabel(sport)}`;
+  badgeEl.className = `activity-sport-badge ${sport}`;
+
+  document.getElementById('activity-name').textContent = data.name || 'Activity';
+  document.getElementById('activity-date').textContent  = fmtDate(data.start_time || data.synced_at);
+  document.getElementById('kudos-count').textContent = data.kudos_count ?? '0';
+
+  document.title = `${data.name || 'Activity'} — Training OS`;
+
+  // Build all sections
+  buildSummaryStrip(data, athleteData);
+  buildCharts(data, athleteData);
+  buildLapsTable(data.laps, sport);
+  buildSegments(data.segments);
+  buildOverlay(sport, data);
+
+  // Show content
+  document.getElementById('loading-state').classList.add('hidden');
+  document.getElementById('activity-content').classList.remove('hidden');
+}
+
+function showError(title, msg) {
+  document.getElementById('loading-state').classList.add('hidden');
+  document.getElementById('error-state').classList.remove('hidden');
+  document.getElementById('error-title').textContent = title;
+  document.getElementById('error-msg').textContent   = msg;
+}
+
+// Boot
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

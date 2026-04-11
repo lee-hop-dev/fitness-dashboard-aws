@@ -941,7 +941,8 @@ function formatDistanceLabel(meters) {
 }
 
 function getIntervalsActivityUrl(activityId) {
-  return `https://intervals.icu/activities/i${activityId}`;
+  const athleteId = '5718022';
+  return `https://intervals.icu/activities/${athleteId}/${activityId}`;
 }
 
 function renderActivityCards(activities) {

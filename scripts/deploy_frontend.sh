@@ -22,7 +22,8 @@ aws s3 sync "$DOCS_DIR/" "s3://$BUCKET/" \
   --exclude "data/segments.json" \
   --exclude "data/power_curves_90d.json" \
   --exclude "data/pace_curves_90d.json" \
-  --exclude "data/hr_curves_90d.json"
+  --exclude "data/hr_curves_90d.json" \
+  --exclude "data/streams/*"
 
 echo "Invalidating CloudFront cache ..."
 aws cloudfront create-invalidation \

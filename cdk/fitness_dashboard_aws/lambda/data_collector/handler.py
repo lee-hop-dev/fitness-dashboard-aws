@@ -537,16 +537,275 @@ def sync_segments(activities: list, access_token: str) -> dict:
     return segments
 
 
+# ── Phase 8: Activity stream sync ─────────────────────────────────────────────
+
+def _should_include_segment(effort: dict) -> bool:
+    """
+    Segment filter for Phase 8 stream JSON.
+    Include if: personal top-3 PR, overall Strava top-10, or age-group top-10.
+    Everything else is discarded at collection time — not stored, not sent to browser.
+    """
+    pr_rank  = effort.get("pr_rank")
+    kom_rank = effort.get("kom_rank")
+    qom_rank = effort.get("qom_rank")
+
+    personal_top3   = pr_rank  is not None and pr_rank  <= 3
+    overall_top10   = kom_rank is not None and kom_rank <= 10
+    age_group_top10 = qom_rank is not None and qom_rank <= 10
+
+    return personal_top3 or overall_top10 or age_group_top10
+
+
+def _fetch_stream_data(activity_id: str, api_key: str) -> dict:
+    """
+    Fetch raw activity streams from Intervals.icu.
+    Returns a dict keyed by stream type, each containing a 'data' array.
+    activity_id must include the 'i' prefix (e.g. 'i135229442').
+    """
+    streams_requested = [
+        "time", "watts", "heartrate", "cadence",
+        "velocity_smooth", "altitude", "latlng", "distance",
+    ]
+    params = {"stream_types": streams_requested}
+    raw = intervals_get(
+        f"athlete/{ATHLETE_ID}/activities/{activity_id}/streams",
+        api_key,
+        params=params,
+    )
+    # Intervals returns a list of {type, data[]} objects — normalise to dict
+    if isinstance(raw, list):
+        return {item["type"]: item.get("data", []) for item in raw if "type" in item}
+    if isinstance(raw, dict):
+        return raw
+    return {}
+
+
+def _fetch_kudos_count(strava_id: str, access_token: str) -> int:
+    """
+    Fetch kudos count from Strava for a single activity.
+    Stores count only — not the athlete list (PII consideration).
+    Returns 0 on any error so a failed kudos fetch never blocks stream writing.
+    """
+    try:
+        result = strava_get(f"activities/{strava_id}/kudos", access_token)
+        if isinstance(result, list):
+            return len(result)
+    except Exception as e:
+        logger.warning(f"Kudos fetch failed for strava_id={strava_id}: {e}")
+    return 0
+
+
+def _fetch_qualifying_segments(strava_id: str, access_token: str) -> list:
+    """
+    Fetch segment efforts for a Strava activity and filter to qualifying efforts only.
+    Qualifying: personal top-3 PR, overall top-10, or age-group top-10.
+    Returns a list of normalised segment dicts ready for the stream JSON.
+    """
+    data = strava_get(
+        f"activities/{strava_id}",
+        access_token,
+        params={"include_all_efforts": "true"},
+    )
+    if not data:
+        return []
+
+    efforts = data.get("segment_efforts", [])
+    segments = []
+    for effort in efforts:
+        if not _should_include_segment(effort):
+            continue
+        seg = effort.get("segment", {})
+        segments.append({
+            "name":           seg.get("name", ""),
+            "distance_m":     seg.get("distance", 0),
+            "elapsed_time_s": effort.get("elapsed_time", 0),
+            "pr_rank":        effort.get("pr_rank"),
+            "kom_rank":       effort.get("kom_rank"),
+            "qom_rank":       effort.get("qom_rank"),
+            "segment_id":     str(seg.get("id", "")),
+        })
+    logger.info(
+        f"Strava {strava_id}: {len(efforts)} total segment efforts, "
+        f"{len(segments)} qualifying (PR top-3 / overall top-10 / AG top-10)"
+    )
+    return segments
+
+
+def _fetch_laps(activity_id: str, api_key: str) -> list:
+    """
+    Fetch lap data from Intervals.icu for an activity.
+    Returns a list of normalised lap dicts. Returns [] gracefully on error.
+    activity_id must include the 'i' prefix.
+    """
+    try:
+        raw = intervals_get(
+            f"athlete/{ATHLETE_ID}/activities/{activity_id}/laps",
+            api_key,
+        )
+        if not isinstance(raw, list):
+            return []
+        laps = []
+        for i, lap in enumerate(raw, start=1):
+            laps.append({
+                "lap":         i,
+                "elapsed_s":   lap.get("elapsed_time", 0),
+                "avg_watts":   lap.get("average_watts"),
+                "avg_hr":      lap.get("average_heartrate"),
+                "avg_cadence": lap.get("average_cadence"),
+            })
+        return laps
+    except Exception as e:
+        logger.warning(f"Laps fetch failed for {activity_id}: {e}")
+        return []
+
+
+def sync_streams_14d(api_key: str, access_token: str) -> dict:
+    """
+    Phase 8 — Proactive 14-day stream sync.
+
+    For each activity in the last 14 days:
+      1. Fetch streams (power, HR, cadence, GPS etc) from Intervals.icu
+      2. Fetch kudos count from Strava (count only, one-time snapshot)
+      3. Fetch and filter segment efforts (PR top-3, overall top-10, AG top-10)
+      4. Fetch lap splits from Intervals.icu
+      5. Write combined payload to S3: data/streams/{activity_id}.json
+
+    Files are Lambda-managed — never overwritten by frontend deploys.
+    CloudFront serves them as static assets — no Lambda in the page load path.
+
+    Idempotent: safe to re-run; overwrites existing stream files.
+    Can be triggered on-demand via {"refresh_streams": true} event payload.
+    """
+    if not FRONTEND_BUCKET:
+        logger.warning("FRONTEND_BUCKET not set — stream files not written to S3")
+        return {"error": "FRONTEND_BUCKET not set"}
+
+    cutoff = datetime.now(timezone.utc) - timedelta(days=14)
+    cutoff_str = cutoff.strftime("%Y-%m-%d")
+
+    # Pull 14-day activities from DynamoDB
+    table = dynamodb.Table(ACTIVITIES_TABLE)
+    scan_result = table.scan(
+        FilterExpression="athlete_id = :aid AND start_date >= :cutoff",
+        ExpressionAttributeValues={
+            ":aid":    ATHLETE_ID,
+            ":cutoff": cutoff_str,
+        },
+        ProjectionExpression="activity_id, #t, strava_id, start_date",
+        ExpressionAttributeNames={"#t": "type"},
+    )
+    activities = scan_result.get("Items", [])
+    # Handle DynamoDB pagination in case of large result sets
+    while "LastEvaluatedKey" in scan_result:
+        scan_result = table.scan(
+            ExclusiveStartKey=scan_result["LastEvaluatedKey"],
+            FilterExpression="athlete_id = :aid AND start_date >= :cutoff",
+            ExpressionAttributeValues={
+                ":aid":    ATHLETE_ID,
+                ":cutoff": cutoff_str,
+            },
+            ProjectionExpression="activity_id, #t, strava_id, start_date",
+            ExpressionAttributeNames={"#t": "type"},
+        )
+        activities.extend(scan_result.get("Items", []))
+
+    logger.info(f"sync_streams_14d: found {len(activities)} activities since {cutoff_str}")
+
+    results = {"written": 0, "errors": 0, "skipped": 0}
+
+    for act in activities:
+        raw_id    = str(act.get("activity_id", ""))
+        strava_id = act.get("strava_id")
+        sport     = act.get("type", "")
+
+        # Intervals activity IDs are stored as numeric strings in DynamoDB
+        # — prefix with 'i' for all API calls and S3 key
+        activity_id = raw_id if raw_id.startswith("i") else f"i{raw_id}"
+
+        logger.info(f"Processing {activity_id} ({sport})")
+
+        try:
+            # 1. Streams from Intervals.icu
+            streams = _fetch_stream_data(activity_id, api_key)
+            if not streams:
+                logger.warning(f"No stream data returned for {activity_id} — skipping")
+                results["skipped"] += 1
+                continue
+
+            # 2. Kudos from Strava (count only, graceful on missing strava_id)
+            kudos_count = 0
+            if strava_id:
+                kudos_count = _fetch_kudos_count(str(strava_id), access_token)
+
+            # 3. Qualifying segments from Strava
+            segments = []
+            if strava_id:
+                segments = _fetch_qualifying_segments(str(strava_id), access_token)
+
+            # 4. Lap splits from Intervals.icu
+            laps = _fetch_laps(activity_id, api_key)
+
+            # 5. Assemble payload and write to S3
+            payload = {
+                "activity_id": activity_id,
+                "synced_at":   datetime.now(timezone.utc).isoformat() + "Z",
+                "sport_type":  sport,
+                "kudos_count": kudos_count,
+                "streams":     streams,
+                "laps":        laps,
+                "segments":    segments,
+            }
+
+            s3_client.put_object(
+                Bucket=FRONTEND_BUCKET,
+                Key=f"data/streams/{activity_id}.json",
+                Body=json.dumps(payload),
+                ContentType="application/json",
+            )
+            logger.info(
+                f"Wrote data/streams/{activity_id}.json — "
+                f"kudos={kudos_count}, laps={len(laps)}, segments={len(segments)}"
+            )
+            results["written"] += 1
+
+        except Exception as e:
+            logger.error(f"Stream sync failed for {activity_id}: {e}")
+            results["errors"] += 1
+
+    logger.info(f"sync_streams_14d complete: {json.dumps(results)}")
+    return results
+
+
 # ── Handler ───────────────────────────────────────────────────────────────────
 
 def handler(event, context):
     """
     Main Lambda handler.
     Triggered by EventBridge schedule (06:00 UTC daily).
-    Can also be invoked manually with event = {"force": true}.
+
+    Supported event payloads:
+      {}                          — normal daily sync (all functions)
+      {"backfill_days": 1095}     — backfill activities (3-year)
+      {"refresh_streams": true}   — re-fetch all 14d streams + kudos only
+                                    (used by ops dashboard Refresh button)
     """
     logger.info(f"Data collector triggered. Event: {json.dumps(event)}")
 
+    # ── refresh_streams: standalone stream re-fetch, skip routine sync ─────────
+    if event.get("refresh_streams"):
+        logger.info("refresh_streams mode: re-fetching all 14d activity streams")
+        try:
+            api_key = get_intervals_api_key()
+            strava_creds = get_strava_creds()
+            access_token = strava_get_access_token(strava_creds)
+            result = sync_streams_14d(api_key, access_token)
+            logger.info(f"refresh_streams complete: {json.dumps(result)}")
+            return {"statusCode": 200, "body": json.dumps({"refresh_streams": result})}
+        except Exception as e:
+            logger.error(f"refresh_streams failed: {e}")
+            return {"statusCode": 500, "body": json.dumps({"error": str(e)})}
+
+    # ── Normal daily sync ─────────────────────────────────────────────────────
     try:
         api_key = get_intervals_api_key()
         logger.info("Successfully retrieved API key from Secrets Manager")
@@ -620,6 +879,19 @@ def handler(event, context):
     except Exception as e:
         logger.error(f"Segments sync failed: {e}")
         results["segments_error"] = str(e)
+
+    # ── Phase 8: Activity streams (14-day proactive sync) ─────────────────────
+    try:
+        # Strava access token already obtained above for segments — reuse it.
+        # If segments block failed, get a fresh token here.
+        if "segments_error" in results:
+            strava_creds = get_strava_creds()
+            access_token = strava_get_access_token(strava_creds)
+        stream_result = sync_streams_14d(api_key, access_token)
+        results["streams"] = stream_result
+    except Exception as e:
+        logger.error(f"Streams sync failed: {e}")
+        results["streams_error"] = str(e)
 
     logger.info(f"Sync complete: {json.dumps(results)}")
     return {"statusCode": 200, "body": json.dumps(results)}

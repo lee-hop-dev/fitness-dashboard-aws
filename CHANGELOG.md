@@ -139,3 +139,20 @@ Console: https://eu-west-2.console.aws.amazon.com/lambda/home?region=eu-west-2#/
 **Result:** Dashboard live at CloudWatch → Dashboards → TrainingOS-Ops. Last sync timestamp and Trigger sync now button both working.
 
 **Deploy note:** CloudShell must be on `fix/power-chart-label-mismatch` branch. `main` branch does not have this code.
+
+---
+
+## Session: 2026-04-11 (continued) — Sync button fix
+
+**Issue:** Button in TrainingOS-Ops dashboard did nothing.
+
+**Root cause:** `cwdb-action` HTML tag is not processed by the CloudWatch dashboard iframe renderer despite being documented. Multiple syntax variations tried — all failed silently.
+
+**Fix:** Replaced `cwdb-action` with a plain `<a href>` link to a new `GET /trigger-sync` API Gateway endpoint backed by `fitness-dashboard-trigger-sync` Lambda. Opens in new tab, returns plain text confirmation, invokes `fitness-dashboard-data-collector` async.
+
+**Verified:** CloudWatch Logs confirm multiple invocations at 11:51 UTC triggered by button clicks from the dashboard.
+
+**Files changed:**
+- `cdk/fitness_dashboard_aws/api_stack.py` — added TriggerSyncRole, TriggerSyncFunction, GET /trigger-sync route
+- `cdk/fitness_dashboard_aws/lambda/trigger_sync/handler.py` — new Lambda
+- `cdk/fitness_dashboard_aws/lambda/sync_widget/handler.py` — button changed to plain href link

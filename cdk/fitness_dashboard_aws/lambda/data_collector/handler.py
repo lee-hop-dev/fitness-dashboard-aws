@@ -647,19 +647,30 @@ def _fetch_laps(activity_id: str, api_key: str) -> list:
         )
         if not isinstance(raw, dict):
             return []
-        intervals = raw.get("intervals", [])
+        intervals = raw.get("icu_intervals", [])
         if not isinstance(intervals, list):
             return []
         laps = []
-        for i, lap in enumerate(intervals, start=1):
-            # Skip non-lap intervals (e.g. type != "LAP" if field exists)
+        lap_num = 0
+        for interval in intervals:
+            # icu_intervals includes all interval types (RECOVERY, LAP, ACTIVE etc)
+            # Include all — frontend can filter/display as needed
+            lap_num += 1
             laps.append({
-                "lap":         i,
-                "elapsed_s":   lap.get("elapsed_time", 0),
-                "avg_watts":   lap.get("average_watts"),
-                "avg_hr":      lap.get("average_heartrate"),
-                "avg_cadence": lap.get("average_cadence"),
-                "distance_m":  lap.get("distance"),
+                "lap":         lap_num,
+                "type":        interval.get("type"),
+                "elapsed_s":   interval.get("elapsed_time", 0),
+                "distance_m":  interval.get("distance"),
+                "avg_watts":   interval.get("average_watts"),
+                "np_watts":    interval.get("weighted_average_watts"),
+                "avg_hr":      interval.get("average_heartrate"),
+                "max_hr":      interval.get("max_heartrate"),
+                "avg_cadence": interval.get("average_cadence"),
+                "avg_speed":   interval.get("average_speed"),
+                "zone":        interval.get("zone"),
+                "label":       interval.get("label"),
+                "start_time":  interval.get("start_time"),
+                "end_time":    interval.get("end_time"),
             })
         return laps
     except Exception as e:

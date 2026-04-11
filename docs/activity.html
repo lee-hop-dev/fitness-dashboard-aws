@@ -583,6 +583,13 @@ const HR_ZONE_COLOURS    = ['#9ca3af','#60a5fa','#34d399','#fbbf24','#ef4444'];
 Chart.defaults.color = '#b8c0d0';
 Chart.defaults.font.family = "'DM Mono', monospace";
 Chart.defaults.font.size = 10;
+// Built-in decimation plugin — further reduces rendered points on dense data
+Chart.defaults.plugins.decimation = {
+  enabled: true,
+  algorithm: 'lttb',  // Largest-Triangle-Three-Buckets — preserves visual shape
+  samples: 500,
+  threshold: 500
+};
 
 /* ============================================
    UTILITIES
@@ -667,7 +674,7 @@ function getHrZone(hr, hrmax) {
 }
 
 /* ============================================
-   GPS DECIMATION
+   DECIMATION — GPS and chart streams
    ============================================ */
 function decimateGps(latlng, targetPoints = 800) {
   if (!latlng || !latlng.length) return [];
@@ -679,6 +686,20 @@ function decimateStream(arr, targetPoints = 800) {
   if (!arr || !arr.length) return [];
   const step = Math.ceil(arr.length / targetPoints);
   return arr.filter((_, i) => i % step === 0);
+}
+
+// Downsample paired time+data arrays for chart rendering.
+// Target 1 point per 5 seconds (every 5th index at 1Hz).
+// Preserves the seconds-based x-axis — time values are kept as-is.
+function decimateChartData(timeArr, dataArr, targetPoints = 1000) {
+  if (!timeArr || !timeArr.length) return { time: [], data: [] };
+  const step = Math.max(1, Math.ceil(timeArr.length / targetPoints));
+  const time = [], data = [];
+  for (let i = 0; i < timeArr.length; i += step) {
+    time.push(timeArr[i]);
+    data.push(dataArr[i] ?? null);
+  }
+  return { time, data };
 }
 
 /* ============================================
@@ -814,7 +835,7 @@ function createChart(canvasId, label, timeArr, dataArr, colour, fillColour, extr
         backgroundColor: fillColour || 'transparent',
         fill: !!fillColour,
         pointRadius: 0,
-        tension: 0.2
+        tension: 0
       }]
     },
     options: {
@@ -861,20 +882,29 @@ function initMap(latlng, powerArr, hrArr, sport, ftp, hrmax) {
     maxZoom: 19
   }).addTo(leafletMap);
 
-  // Draw zone-coloured polyline segments
-  for (let i = 0; i < decimatedLatlng.length - 1; i++) {
-    const start = decimatedLatlng[i];
-    const end   = decimatedLatlng[i + 1];
-    if (!start || !end) continue;
+  // Draw zone-coloured polyline — group consecutive same-zone points into runs.
+  // Avoids creating hundreds of individual Leaflet objects (performance fix).
+  // One L.polyline per contiguous zone run — typically 20-60 total vs 800.
+  const getColour = (i) => {
+    if (isCycling(sport) && ftp && decimPower[i] != null)
+      return POWER_ZONE_COLOURS[getPowerZone(decimPower[i], ftp)];
+    if (isRunning(sport) && hrmax && decimHr[i] != null)
+      return HR_ZONE_COLOURS[getHrZone(decimHr[i], hrmax)];
+    return '#9ca3af';
+  };
 
-    let colour = '#9ca3af'; // default grey Z1
-    if (isCycling(sport) && ftp && decimPower[i] != null) {
-      colour = POWER_ZONE_COLOURS[getPowerZone(decimPower[i], ftp)];
-    } else if (isRunning(sport) && hrmax && decimHr[i] != null) {
-      colour = HR_ZONE_COLOURS[getHrZone(decimHr[i], hrmax)];
+  let runStart = 0;
+  let runColour = getColour(0);
+  for (let i = 1; i <= decimatedLatlng.length; i++) {
+    const colour = i < decimatedLatlng.length ? getColour(i) : null;
+    if (colour !== runColour || i === decimatedLatlng.length) {
+      const segment = decimatedLatlng.slice(runStart, i + 1).filter(Boolean);
+      if (segment.length >= 2) {
+        L.polyline(segment, { color: runColour, weight: 3, opacity: 0.85 }).addTo(leafletMap);
+      }
+      runStart = i;
+      runColour = colour;
     }
-
-    L.polyline([start, end], { color: colour, weight: 3, opacity: 0.85 }).addTo(leafletMap);
   }
 
   // Fit map to route
@@ -1218,7 +1248,8 @@ function buildCharts(data, athleteData) {
       const avgW = avg(s.watts);
       document.getElementById('primary-chart-meta').textContent =
         avgW ? `avg ${Math.round(avgW)}W${ftp ? ` · FTP ${Math.round(ftp)}W` : ''}` : '';
-      createChart('chart-primary', 'Power (W)', time, s.watts, '#00e5ff', 'rgba(0,229,255,0.08)');
+      const _pc = decimateChartData(time, s.watts);
+      createChart('chart-primary', 'Power (W)', _pc.time, _pc.data, '#00e5ff', 'rgba(0,229,255,0.08)');
     }
 
     // Speed
@@ -1226,8 +1257,8 @@ function buildCharts(data, athleteData) {
       document.getElementById('row-speed').style.display = '';
       const avgSpd = avg(s.velocity_smooth);
       document.getElementById('speed-avg-meta').textContent = avgSpd ? fmtSpeed(avgSpd) : '';
-      createChart('chart-speed', 'Speed', time, s.velocity_smooth.map(v => v * 3.6),
-        '#fbbf24', 'rgba(251,191,36,0.06)');
+      const _sc = decimateChartData(time, s.velocity_smooth.map(v => v * 3.6));
+      createChart('chart-speed', 'Speed', _sc.time, _sc.data, '#fbbf24', 'rgba(251,191,36,0.06)');
     }
 
     // Cadence label
@@ -1239,7 +1270,7 @@ function buildCharts(data, athleteData) {
 
     // GPS map
     if (s.latlng && s.latlng.length) {
-      initMap(s.latlng, s.watts, s.heartrate, sport, ftp, hrmax);
+      requestAnimationFrame(() => initMap(s.latlng, s.watts, s.heartrate, sport, ftp, hrmax));
     } else {
       document.getElementById('map-section').style.display = 'none';
       document.getElementById('map-chart-row').style.gridTemplateColumns = '1fr';
@@ -1252,7 +1283,8 @@ function buildCharts(data, athleteData) {
       const paceArr = s.velocity_smooth.map(v => v > 0 ? +(1000 / v / 60).toFixed(2) : null);
       const avgMps  = avg(s.velocity_smooth);
       document.getElementById('primary-chart-meta').textContent = avgMps ? fmtPace(avgMps) : '';
-      createChart('chart-primary', 'Pace (min/km)', time, paceArr, '#00ff87', 'rgba(0,255,135,0.08)', {
+      const _rpc = decimateChartData(time, paceArr);
+      createChart('chart-primary', 'Pace (min/km)', _rpc.time, _rpc.data, '#00ff87', 'rgba(0,255,135,0.08)', {
         scales: {
           y: {
             reverse: true,
@@ -1271,7 +1303,7 @@ function buildCharts(data, athleteData) {
 
     // GPS map
     if (s.latlng && s.latlng.length) {
-      initMap(s.latlng, null, s.heartrate, sport, ftp, hrmax);
+      requestAnimationFrame(() => initMap(s.latlng, null, s.heartrate, sport, ftp, hrmax));
     } else {
       document.getElementById('map-section').style.display = 'none';
       document.getElementById('map-chart-row').style.gridTemplateColumns = '1fr';
@@ -1283,12 +1315,14 @@ function buildCharts(data, athleteData) {
     if (s.watts && s.watts.length) {
       const avgW = avg(s.watts);
       document.getElementById('primary-chart-meta').textContent = avgW ? `avg ${Math.round(avgW)}W` : '';
-      createChart('chart-primary', 'Power (W)', time, s.watts, '#ff7043', 'rgba(255,112,67,0.08)');
+      const _rwpc = decimateChartData(time, s.watts);
+      createChart('chart-primary', 'Power (W)', _rwpc.time, _rwpc.data, '#ff7043', 'rgba(255,112,67,0.08)');
     } else if (s.velocity_smooth && s.velocity_smooth.length) {
       // Show pace if no power
       document.getElementById('primary-chart-title').textContent = 'Pace';
       const paceArr = s.velocity_smooth.map(v => v > 0 ? +(1000 / v / 60).toFixed(2) : null);
-      createChart('chart-primary', 'Pace', time, paceArr, '#ff7043', 'rgba(255,112,67,0.08)');
+      const _rwpacea = decimateChartData(time, paceArr);
+      createChart('chart-primary', 'Pace', _rwpacea.time, _rwpacea.data, '#ff7043', 'rgba(255,112,67,0.08)');
     }
 
     // Cadence = stroke rate for rowing
@@ -1309,12 +1343,14 @@ function buildCharts(data, athleteData) {
     const mxHr  = max(s.heartrate);
     document.getElementById('hr-avg-meta').textContent =
       `avg ${Math.round(avgHr || 0)} · max ${Math.round(mxHr || 0)} bpm`;
-    createChart('chart-hr', 'Heart Rate (bpm)', time, s.heartrate, '#ef4444', 'rgba(239,68,68,0.08)');
+    const _hr = decimateChartData(time, s.heartrate);
+    createChart('chart-hr', 'Heart Rate (bpm)', _hr.time, _hr.data, '#ef4444', 'rgba(239,68,68,0.08)');
   }
 
   // Cadence chart — all sports
   if (s.cadence && s.cadence.length) {
-    createChart('chart-cadence', 'Cadence', time, s.cadence, '#a78bfa', 'rgba(167,139,250,0.06)');
+    const _cad = decimateChartData(time, s.cadence);
+    createChart('chart-cadence', 'Cadence', _cad.time, _cad.data, '#a78bfa', 'rgba(167,139,250,0.06)');
   } else {
     document.getElementById('cadence-card').style.display = 'none';
     document.getElementById('row-hr-cad').style.gridTemplateColumns = '1fr';

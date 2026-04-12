@@ -703,9 +703,12 @@ def _fetch_laps(activity_id: str, api_key: str) -> tuple:
             return [], {}
         # Extract key metrics — icu_ftp is sport-specific FTP at activity time
         # athlete_max_hr is the athlete's configured max HR (consistent across sports)
+        # Also capture name and start_date_local for frontend display
         meta = {
-            "icu_ftp":        raw.get("icu_ftp"),
-            "athlete_max_hr": raw.get("athlete_max_hr"),
+            "icu_ftp":          raw.get("icu_ftp"),
+            "athlete_max_hr":   raw.get("athlete_max_hr"),
+            "name":             raw.get("name", ""),
+            "start_date_local": raw.get("start_date_local", ""),
         }
         intervals = raw.get("icu_intervals", [])
         if not isinstance(intervals, list):
@@ -846,15 +849,17 @@ def sync_streams_14d(api_key: str, access_token: str) -> dict:
             # Store icu_ftp (sport-specific FTP at activity time) and athlete_max_hr
             # for use by the frontend for power/HR zone colouring on GPS map.
             payload = {
-                "activity_id":    activity_id,
-                "synced_at":      datetime.now(timezone.utc).isoformat() + "Z",
-                "sport_type":     sport,
-                "kudos_count":    kudos_count,
-                "icu_ftp":        activity_meta.get("icu_ftp"),
-                "athlete_max_hr": activity_meta.get("athlete_max_hr"),
-                "streams":        streams,
-                "laps":           laps,
-                "segments":       segments,
+                "activity_id":      activity_id,
+                "synced_at":        datetime.now(timezone.utc).isoformat() + "Z",
+                "sport_type":       sport,
+                "name":             activity_meta.get("name", ""),
+                "start_date_local": activity_meta.get("start_date_local", ""),
+                "kudos_count":      kudos_count,
+                "icu_ftp":          activity_meta.get("icu_ftp"),
+                "athlete_max_hr":   activity_meta.get("athlete_max_hr"),
+                "streams":          streams,
+                "laps":             laps,
+                "segments":         segments,
             }
 
             s3_client.put_object(

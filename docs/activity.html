@@ -568,6 +568,31 @@ document.addEventListener('act-xhair', e => {
   }
 });
 
+/* ── GRADIENT FILL HELPER ── */
+function createGradientFill(ctx, chartArea, colorTop, colorBottom) {
+  if (!chartArea) return colorBottom;
+  const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+  gradient.addColorStop(0, colorTop);
+  gradient.addColorStop(1, colorBottom);
+  return gradient;
+}
+
+// Plugin that replaces a dataset's backgroundColor with a canvas gradient
+// before each draw. Dataset must have _gradientTop and _gradientBottom set.
+const gradientFillPlugin = {
+  id: 'gradientFill',
+  beforeDraw(chart) {
+    const {ctx, chartArea} = chart;
+    if (!chartArea) return;
+    chart.data.datasets.forEach(ds => {
+      if (ds._gradientTop && ds._gradientBottom) {
+        ds.backgroundColor = createGradientFill(ctx, chartArea, ds._gradientTop, ds._gradientBottom);
+      }
+    });
+  }
+};
+Chart.register(gradientFillPlugin);
+
 /* ── CHART FACTORY ── */
 // Zone-segment colouring plugin
 const zoneSegmentPlugin = {
@@ -607,9 +632,10 @@ function makeChart(canvasId, datasets, scalesOpts, timeArr, timeStep) {
   const baseScales = {
     x: {
       type:'linear',
-      ticks:{maxTicksLimit:6, callback:v=>fmtDuration(v)},
+      ticks:{maxTicksLimit:6, callback:v=>fmtDuration(v), maxRotation:0},
       grid:{color:'rgba(255,255,255,0.04)'},
-      border:{color:'rgba(255,255,255,0.08)'}
+      border:{color:'rgba(255,255,255,0.08)'},
+      afterFit: axis => { axis.paddingRight = 0; }
     },
     y: {
       grid:{color:'rgba(255,255,255,0.04)'},
@@ -623,7 +649,7 @@ function makeChart(canvasId, datasets, scalesOpts, timeArr, timeStep) {
     options:{
       responsive:true, maintainAspectRatio:false,
       animation:false,
-      layout:{padding:{right:0}},
+      layout:{padding:{right:0,left:0}},
       interaction:{mode:'index',intersect:false},
       plugins:{
         legend:{display:false},
@@ -915,8 +941,8 @@ function buildElevationChart(data, ftp, hrmax) {
     return METRICS.filter(m=>active[m.id]).map(m=>{
       if(m.id==='elev') return {
         label:'Elevation',data:decAlt.time.map((t,i)=>({x:t,y:decAlt.data[i]??null})),
-        borderColor:'rgba(160,160,160,0.5)',backgroundColor:'rgba(120,120,120,0.25)',
-        fill:true,borderWidth:1,pointRadius:0,tension:0.3,yAxisID:'yElev',order:10
+        borderColor:'rgba(180,180,180,0.6)',backgroundColor:'rgba(140,140,140,0.45)',
+        fill:true,borderWidth:1.5,pointRadius:0,tension:0.4,yAxisID:'yElev',order:10
       };
       const dec=decStreams[m.id]; if(!dec) return null;
       return {
@@ -929,14 +955,17 @@ function buildElevationChart(data, ftp, hrmax) {
 
   const elevVals=decAlt.data.filter(v=>v!=null);
   const eMin=Math.min(...elevVals), eMax=Math.max(...elevVals), ePad=(eMax-eMin)*0.15||5;
+  // Push yMin well below actual min so the filled area looks pronounced
+  const elevYMin = eMin - (eMax - eMin) * 0.6;
 
   function buildScales() {
     // Only include active axes — Chart.js reserves space for ALL defined axes
     // even with display:false. Omitting hidden axes prevents truncation.
     const sc = {
-      x:{type:'linear',ticks:{maxTicksLimit:8,callback:v=>fmtDuration(v)},
-        grid:{color:'rgba(255,255,255,0.04)'},border:{color:'rgba(255,255,255,0.08)'}},
-      yElev:{position:'left',min:eMin-ePad,grid:{color:'rgba(255,255,255,0.04)'},
+      x:{type:'linear',ticks:{maxTicksLimit:8,callback:v=>fmtDuration(v),maxRotation:0},
+        grid:{color:'rgba(255,255,255,0.04)'},border:{color:'rgba(255,255,255,0.08)'},
+        afterFit: axis => { axis.paddingRight = 0; }},
+      yElev:{position:'left',min:elevYMin,grid:{color:'rgba(255,255,255,0.04)'},
         border:{color:'rgba(255,255,255,0.08)'},
         ticks:{maxTicksLimit:4,callback:v=>Math.round(v)+'m',color:'rgba(120,120,120,0.8)'}}
     };
@@ -956,7 +985,9 @@ function buildElevationChart(data, ftp, hrmax) {
   if(!ctx) return;
   window._elevChart=new Chart(ctx,{
     type:'line',data:{datasets:buildDatasets()},
-    options:{responsive:true,maintainAspectRatio:false,animation:false,
+    options:{responsive:true,maintainAspectRatio:false,
+      animation:{duration:1200,easing:'easeInQuart'},
+      layout:{padding:{right:0,left:0}},
       interaction:{mode:'index',intersect:false},
       plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(8,10,13,0.92)',
         borderColor:'rgba(255,255,255,0.1)',borderWidth:1,
@@ -1006,7 +1037,9 @@ async function buildPrimaryTrace(data, ftp, hrmax) {
       data:  dec.time.map((t,i) => ({x:t, y:dec.data[i]??null})),
       borderColor: zc ? 'transparent' : '#00e5ff',
       _zoneColors: zc,
-      backgroundColor: 'transparent', fill: false,
+      backgroundColor: 'transparent', fill: true,
+      _gradientTop:    'rgba(0,255,135,0.35)',
+      _gradientBottom: 'rgba(0,255,135,0.0)',
       borderWidth: 2, pointRadius: 0, tension: 0, yAxisID: 'y'
     }], {
       y: { position:'left',
@@ -1188,8 +1221,9 @@ async function buildDurationCurve(canvasId, type, rawStream, ref, unit, tickFmt,
       scales: {
         x: {
           type: 'logarithmic',
-          ticks: {maxTicksLimit:8, callback:v=>fmtDuration(Math.round(v))},
-          grid: {color:'rgba(255,255,255,0.04)'}, border:{color:'rgba(255,255,255,0.08)'}
+          ticks: {maxTicksLimit:8, callback:v=>fmtDuration(Math.round(v)), maxRotation:0},
+          grid: {color:'rgba(255,255,255,0.04)'}, border:{color:'rgba(255,255,255,0.08)'},
+          afterFit: axis => { axis.paddingRight = 0; }
         },
         y: {
           reverse: reverseY||false,
@@ -1211,7 +1245,9 @@ function buildHrSection(data, hrmax) {
   const zoneColors=hrmax ? dec.data.map(v=>v!=null?HR_ZONE_COLOURS[getHrZone(v,hrmax)]:'#9ca3af') : null;
   const ds={label:'HR',data:dec.time.map((t,i)=>({x:t,y:dec.data[i]??null})),
     borderColor:zoneColors?'transparent':'#ef4444',_zoneColors:zoneColors,
-    backgroundColor:'transparent',fill:false,borderWidth:2,pointRadius:0,tension:0};
+    backgroundColor:'transparent',fill:true,
+    _gradientTop:'rgba(239,68,68,0.45)',_gradientBottom:'rgba(239,68,68,0.0)',
+    borderWidth:2,pointRadius:0,tension:0};
   makeChart('chart-hr',[ds],{},dec.time);
 
   // HR zone bars (time in zone %)
@@ -1267,8 +1303,9 @@ function buildCadenceSpeed(data) {
     makeChart('chart-speed', [{
       label:'Speed',
       data: dec.time.map((t,i) => ({x:t, y:dec.data[i]??null})),
-      borderColor:'#fbbf24', backgroundColor:'rgba(251,191,36,0.07)',
-      fill:true, borderWidth:1.5, pointRadius:0, tension:0
+      borderColor:'#fbbf24', backgroundColor:'transparent',
+      fill:true, _gradientTop:'rgba(251,191,36,0.45)', _gradientBottom:'rgba(251,191,36,0.0)',
+      borderWidth:1.5, pointRadius:0, tension:0
     }], {
       y:{ticks:{maxTicksLimit:5, callback:v=>v.toFixed(0)+' km/h'},
          grid:{color:'rgba(255,255,255,0.04)'}, border:{color:'rgba(255,255,255,0.08)'}}

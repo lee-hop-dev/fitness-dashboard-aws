@@ -683,14 +683,14 @@ def _fetch_strava_activity_data(strava_id: str, access_token: str) -> tuple:
     return segments, latlng_pairs
 
 
-def _fetch_laps(activity_id: str, api_key: str) -> list:
+def _fetch_laps(activity_id: str, api_key: str) -> tuple:
     """
-    Fetch lap/interval data from Intervals.icu for an activity.
-    Returns a list of normalised lap dicts. Returns [] gracefully on error.
+    Fetch lap/interval data and key activity metrics from Intervals.icu.
+    Returns (laps, meta) where meta contains icu_ftp and athlete_max_hr.
+    Single API call — reuses the activity detail endpoint already needed for laps.
     activity_id must include the 'i' prefix (e.g. 'i135229442').
 
     Correct endpoint: /api/v1/activity/{id}?intervals=true
-    Returns activity detail with an 'intervals' array containing lap data.
     Ref: https://forum.intervals.icu/t/solved-how-to-fetch-lap-interval-data-via-api/126341
     """
     try:
@@ -700,7 +700,13 @@ def _fetch_laps(activity_id: str, api_key: str) -> list:
             params={"intervals": "true"},
         )
         if not isinstance(raw, dict):
-            return []
+            return [], {}
+        # Extract key metrics — icu_ftp is sport-specific FTP at activity time
+        # athlete_max_hr is the athlete's configured max HR (consistent across sports)
+        meta = {
+            "icu_ftp":        raw.get("icu_ftp"),
+            "athlete_max_hr": raw.get("athlete_max_hr"),
+        }
         intervals = raw.get("icu_intervals", [])
         if not isinstance(intervals, list):
             return []
@@ -726,10 +732,10 @@ def _fetch_laps(activity_id: str, api_key: str) -> list:
                 "start_time":  interval.get("start_time"),
                 "end_time":    interval.get("end_time"),
             })
-        return laps
+        return laps, meta
     except Exception as e:
         logger.warning(f"Laps fetch failed for {activity_id}: {e}")
-        return []
+        return [], {}
 
 
 def sync_streams_14d(api_key: str, access_token: str) -> dict:
@@ -833,18 +839,22 @@ def sync_streams_14d(api_key: str, access_token: str) -> dict:
                 del streams["latlng"]
                 logger.info(f"{activity_id}: removed Intervals latlng (no Strava polyline available)")
 
-            # 4. Lap splits from Intervals.icu
-            laps = _fetch_laps(activity_id, api_key)
+            # 4. Lap splits + activity metrics from Intervals.icu (single call)
+            laps, activity_meta = _fetch_laps(activity_id, api_key)
 
             # 5. Assemble payload and write to S3
+            # Store icu_ftp (sport-specific FTP at activity time) and athlete_max_hr
+            # for use by the frontend for power/HR zone colouring on GPS map.
             payload = {
-                "activity_id": activity_id,
-                "synced_at":   datetime.now(timezone.utc).isoformat() + "Z",
-                "sport_type":  sport,
-                "kudos_count": kudos_count,
-                "streams":     streams,
-                "laps":        laps,
-                "segments":    segments,
+                "activity_id":    activity_id,
+                "synced_at":      datetime.now(timezone.utc).isoformat() + "Z",
+                "sport_type":     sport,
+                "kudos_count":    kudos_count,
+                "icu_ftp":        activity_meta.get("icu_ftp"),
+                "athlete_max_hr": activity_meta.get("athlete_max_hr"),
+                "streams":        streams,
+                "laps":           laps,
+                "segments":       segments,
             }
 
             s3_client.put_object(

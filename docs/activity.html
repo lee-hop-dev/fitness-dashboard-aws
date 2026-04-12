@@ -1827,12 +1827,12 @@ async function init() {
     if (mr.ok) activityMeta = await mr.json();
   } catch (_) { /* non-fatal — name and date degrade gracefully */ }
 
-  // Extract FTP and HRmax from the activity record.
-  // These are stored per-activity from Intervals.icu: icu_ftp, max_heartrate.
-  // athlete_max_hr is the athlete's configured max HR on the activity.
-  // Use activity-time FTP (icu_ftp) — most accurate for zone colouring.
-  const actFtp   = activityMeta?.icu_ftp || activityMeta?.icu_pm_ftp || null;
-  const actHrmax = activityMeta?.athlete_max_hr || activityMeta?.max_heartrate || null;
+  // FTP and HRmax are stored directly in the stream JSON by sync_streams_14d().
+  // icu_ftp = sport-specific FTP at activity time (cycling FTP for rides, run FTP for runs).
+  // athlete_max_hr = athlete configured max HR (consistent across sports).
+  // No extra API call needed — already in the stream payload.
+  const actFtp   = data.icu_ftp   || null;
+  const actHrmax = data.athlete_max_hr || null;
 
   // Lap start_time from Intervals.icu icu_intervals is an integer —
   // seconds from activity start. Same coordinate system as time[] stream array.

@@ -390,21 +390,19 @@
       </div>
 
       <!-- 5. SPLIT: Power/Pace trace | Zone distribution -->
-      <!-- Power/Pace trace with 42d best -->
-      <div class="act-card" id="power-row">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <span class="act-card-title" id="primary-trace-title">Power</span>
-          <span style="font-size:9px;font-family:var(--font-mono);color:var(--text-muted)" id="power-row-meta"></span>
+      <!-- 5. SPLIT: Primary trace (left) | Duration curve + 90d best (right) -->
+      <div class="split-row" id="power-row">
+        <div class="act-card">
+          <div class="act-card-title" id="primary-trace-title">Power Trace</div>
+          <div class="chart-wrap cw-220">
+            <canvas id="chart-primary"></canvas>
+          </div>
         </div>
-        <div class="chart-wrap cw-220">
-          <canvas id="chart-primary"></canvas>
-        </div>
-      </div>
-      <!-- Speed trace (cycling only) -->
-      <div class="act-card" id="speed-trace-row" style="display:none">
-        <div class="act-card-title">Speed</div>
-        <div class="chart-wrap cw-180">
-          <canvas id="chart-speed-trace"></canvas>
+        <div class="act-card">
+          <div class="act-card-title" id="curve-title">Power Curve</div>
+          <div class="chart-wrap cw-220">
+            <canvas id="chart-curve"></canvas>
+          </div>
         </div>
       </div>
 
@@ -433,7 +431,7 @@
         <div class="act-card" id="speed-card">
           <div class="act-card-title">Speed</div>
           <div class="chart-wrap cw-180">
-            <canvas id="chart-speed-cad-row"></canvas>
+            <canvas id="chart-speed"></canvas>
           </div>
         </div>
       </div>
@@ -984,131 +982,176 @@ function toggleMetric(id,btn) {
   if(window._rebuildElevChart) window._rebuildElevChart();
 }
 
-/* ── PRIMARY TRACE: Power-duration curve with 90d best overlay ── */
+/* ── PRIMARY TRACE: time-series trace, zone-coloured ── */
 async function buildPrimaryTrace(data, ftp, hrmax) {
-  const s=data.streams||{}, time=s.time||[], sport=data.sport_type;
-  const isCyc=isCycling(sport), isRun=isRunning(sport);
-  const hasPower = isCyc && s.watts?.length;
-  const hasPace  = isRun && s.velocity_smooth?.length;
-  const hasSpeed = isCyc && s.velocity_smooth?.length;
+  const s = data.streams||{}, time = s.time||[], sport = data.sport_type;
+  const isCyc = isCycling(sport), isRun = isRunning(sport);
 
-  if (!hasPower && !hasPace) {
-    document.getElementById('power-row').style.display='none';
+  if (!s.watts?.length && !s.velocity_smooth?.length) {
+    document.getElementById('power-row').style.display = 'none';
     return;
   }
 
-  // ── Build activity power/pace as time-series trace ──
-  const datasets = [];
-
-  if (hasPower) {
+  if (isCyc && s.watts?.length) {
+    // ── Left: Power time-series, zone-coloured ──
     document.getElementById('primary-trace-title').textContent = 'Power';
-
-    // Load 90d power curve from static S3 file (same source as cycling.html)
-    try {
-      const r = await fetch(`${CF_BASE}data/power_curves_90d.json`);
-      if (r.ok) {
-        const cd = await r.json();
-        const curve = cd?.list?.[0];
-        if (curve?.secs?.length && curve?.values?.length) {
-          // 90d best — x=duration(s), y=watts — shown as background reference
-          datasets.push({
-            label: '90d Best',
-            data: curve.secs.map((s,i) => ({x:s, y:curve.values[i]??null})),
-            borderColor: 'rgba(255,255,255,0.2)',
-            backgroundColor: 'rgba(255,255,255,0.05)',
-            fill: true, borderWidth: 1.5, pointRadius: 0, tension: 0.3,
-            borderDash: [4,3], yAxisID: 'y', order: 10
-          });
-        }
-      }
-    } catch(_) {}
-
-    // Activity power time-series — zone coloured
+    document.getElementById('curve-title').textContent = '90-Day Power Curve';
     const dec = decimateChartData(time, s.watts);
-    const zc = ftp ? dec.data.map(v=>v!=null?POWER_ZONE_COLOURS[getPowerZone(v,ftp)]:'#9ca3af') : null;
-    datasets.push({
+    const zc  = ftp ? dec.data.map(v => v!=null ? POWER_ZONE_COLOURS[getPowerZone(v,ftp)] : '#9ca3af') : null;
+    makeChart('chart-primary', [{
       label: 'Power',
-      data: dec.time.map((t,i) => ({x:t, y:dec.data[i]??null})),
+      data:  dec.time.map((t,i) => ({x:t, y:dec.data[i]??null})),
       borderColor: zc ? 'transparent' : '#00e5ff',
       _zoneColors: zc,
       backgroundColor: 'transparent', fill: false,
-      borderWidth: 2, pointRadius: 0, tension: 0, yAxisID: 'y', order: 1
-    });
-
-    makeChart('chart-primary', datasets, {
-      y: {
-        position: 'left',
-        grid: {color:'rgba(255,255,255,0.04)'}, border: {color:'rgba(255,255,255,0.08)'},
-        ticks: {maxTicksLimit:5, color:'#00e5ff', callback: v=>Math.round(v)+'W'}
-      }
+      borderWidth: 2, pointRadius: 0, tension: 0, yAxisID: 'y'
+    }], {
+      y: { position:'left',
+           grid:{color:'rgba(255,255,255,0.04)'}, border:{color:'rgba(255,255,255,0.08)'},
+           ticks:{maxTicksLimit:5, color:'#00e5ff', callback:v=>Math.round(v)+'W'} }
     }, time);
 
-    // Speed in separate card
-    if (hasSpeed) {
-      document.getElementById('speed-trace-row').style.display = '';
-      const sdec = decimateChartData(time, s.velocity_smooth.map(v=>v!=null?+(v*3.6).toFixed(2):null));
-      makeChart('chart-speed-trace', [{
-        label:'Speed',
-        data: sdec.time.map((t,i)=>({x:t,y:sdec.data[i]??null})),
-        borderColor:'#fbbf24', backgroundColor:'rgba(251,191,36,0.07)',
-        fill:true, borderWidth:1.5, pointRadius:0, tension:0
-      }], {
-        y: {grid:{color:'rgba(255,255,255,0.04)'}, border:{color:'rgba(255,255,255,0.08)'},
-          ticks:{maxTicksLimit:5, callback:v=>v.toFixed(0)+' km/h'}}
-      }, sdec.time);
-    }
+    // ── Right: Power-duration curve — x=duration(s), y=watts ──
+    await buildDurationCurve('chart-curve', 'power', s.watts, ftp, 'W',
+      v => Math.round(v)+'W', '#00e5ff');
 
-  } else if (hasPace) {
+  } else if (isRun && s.velocity_smooth?.length) {
+    // ── Left: Pace time-series, zone-coloured by HR ──
     document.getElementById('primary-trace-title').textContent = 'Pace';
+    document.getElementById('curve-title').textContent = '90-Day Pace Curve';
+    const paceArr = s.velocity_smooth.map(v => v>0 ? +(1000/v/60).toFixed(3) : null);
+    const dec = decimateChartData(time, paceArr);
+    const zc  = hrmax ? (() => {
+      const dhr = decimateChartData(time, s.heartrate||[]);
+      return dhr.data.map(v => v!=null ? HR_ZONE_COLOURS[getHrZone(v,hrmax)] : '#9ca3af');
+    })() : null;
+    makeChart('chart-primary', [{
+      label: 'Pace',
+      data:  dec.time.map((t,i) => ({x:t, y:dec.data[i]??null})),
+      borderColor: zc ? 'transparent' : '#00ff87',
+      _zoneColors: zc,
+      backgroundColor: 'transparent', fill: false,
+      borderWidth: 2, pointRadius: 0, tension: 0, yAxisID: 'y'
+    }], {
+      y: { position:'left', reverse:true,
+           grid:{color:'rgba(255,255,255,0.04)'}, border:{color:'rgba(255,255,255,0.08)'},
+           ticks:{maxTicksLimit:5, color:'#00ff87',
+             callback:v=>`${Math.floor(v)}:${String(Math.round((v%1)*60)).padStart(2,'0')}`} }
+    }, time);
 
-    // Load 90d pace curve
-    try {
-      const r = await fetch(`${CF_BASE}data/pace_curves_90d.json`);
-      if (r.ok) {
-        const cd = await r.json();
-        const curve = cd?.list?.[0];
-        if (curve?.secs?.length && curve?.values?.length) {
-          // Pace curve: values are in m/s, convert to min/km for display
-          // x=distance(m), y=min/km — reverse axis (lower=faster)
-          datasets.push({
-            label: '90d Best',
-            data: curve.secs.map((s,i) => ({
-              x: s,
-              y: curve.values[i]>0 ? +(1000/curve.values[i]/60).toFixed(3) : null
-            })),
-            borderColor: 'rgba(255,255,255,0.2)',
-            backgroundColor: 'rgba(255,255,255,0.05)',
-            fill: true, borderWidth: 1.5, pointRadius: 0, tension: 0.3,
-            borderDash: [4,3], yAxisID: 'y', order: 10
-          });
+    // ── Right: Pace-duration curve — x=duration(s), y=min/km ──
+    await buildDurationCurve('chart-curve', 'pace', s.velocity_smooth, null, 'min/km',
+      v => `${Math.floor(v)}:${String(Math.round((v%1)*60)).padStart(2,'0')}`, '#00ff87', true);
+  }
+}
+
+/* ── DURATION CURVE with 90d best behind it ──
+   Builds a power or pace curve from the activity stream:
+   for each duration bucket, find the best (highest power / fastest pace)
+   sustained average over that window.
+   Then fetches the 90d best from S3 and renders it behind.
+   x = duration in seconds, y = watts or min/km
+── */
+async function buildDurationCurve(canvasId, type, rawStream, ref, unit, tickFmt, colour, reverseY) {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx || !rawStream?.length) return;
+
+  // Duration buckets: 5s through to activity length, logarithmically spaced
+  const maxDur = rawStream.length;
+  const buckets = [];
+  for (let s=5; s<=maxDur; s = s<60 ? s+5 : s<300 ? s+15 : s<3600 ? s+30 : s+120) {
+    buckets.push(s);
+  }
+
+  // For each bucket, calculate best sustained average
+  const activityBest = buckets.map(dur => {
+    if (dur > rawStream.length) return null;
+    let best = 0;
+    for (let i=0; i<=rawStream.length-dur; i++) {
+      const slice = rawStream.slice(i, i+dur);
+      const valid = slice.filter(v=>v!=null&&v>0);
+      if (valid.length < dur*0.8) continue; // need 80% coverage
+      const mean = valid.reduce((a,b)=>a+b,0) / valid.length;
+      if (mean > best) best = mean;
+    }
+    if (best === 0) return null;
+    // Convert m/s to min/km for pace
+    if (type === 'pace') return best > 0 ? +(1000/best/60).toFixed(3) : null;
+    return Math.round(best);
+  });
+
+  const datasets = [];
+
+  // 90d best from static S3 file
+  try {
+    const filename = type === 'power' ? 'power_curves_90d.json' : 'pace_curves_90d.json';
+    const r = await fetch(`${CF_BASE}data/${filename}`);
+    if (r.ok) {
+      const cd = await r.json();
+      const curve = cd?.list?.[0];
+      if (curve?.secs?.length && curve?.values?.length) {
+        // Map 90d best onto our bucket x-axis
+        const best90 = buckets.map(dur => {
+          const idx = curve.secs.findIndex(s => s >= dur);
+          if (idx === -1) return null;
+          const v = curve.values[idx];
+          if (!v) return null;
+          if (type === 'pace') return v > 0 ? +(1000/v/60).toFixed(3) : null;
+          return Math.round(v);
+        });
+        datasets.push({
+          label: '90d Best',
+          data: buckets.map((d,i) => ({x:d, y:best90[i]??null})),
+          borderColor: 'rgba(255,255,255,0.25)',
+          backgroundColor: 'rgba(255,255,255,0.05)',
+          fill: true, borderWidth: 1.5, pointRadius: 0, tension: 0.3,
+          borderDash: [4,3], order: 10
+        });
+      }
+    }
+  } catch(_) {}
+
+  // Activity best curve on top
+  datasets.push({
+    label: 'This Activity',
+    data: buckets.map((d,i) => ({x:d, y:activityBest[i]??null})),
+    borderColor: colour,
+    backgroundColor: colour.replace(')', ',0.1)').replace('rgb','rgba'),
+    fill: false, borderWidth: 2, pointRadius: 0, tension: 0.3,
+    order: 1
+  });
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {datasets},
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      layout: {padding:{right:0}},
+      interaction: {mode:'index', intersect:false},
+      plugins: {
+        legend: {display:true, labels:{color:'#b8c0d0', font:{size:9}, boxWidth:12}},
+        tooltip: {
+          backgroundColor:'rgba(8,10,13,0.92)', borderColor:'rgba(255,255,255,0.1)', borderWidth:1,
+          callbacks: {
+            title: items => fmtDuration(Math.round(items[0]?.parsed?.x??0)),
+            label: item => `${item.dataset.label}: ${tickFmt(item.parsed.y)}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'logarithmic',
+          ticks: {maxTicksLimit:8, callback:v=>fmtDuration(v)},
+          grid: {color:'rgba(255,255,255,0.04)'}, border:{color:'rgba(255,255,255,0.08)'}
+        },
+        y: {
+          reverse: reverseY||false,
+          grid:{color:'rgba(255,255,255,0.04)'}, border:{color:'rgba(255,255,255,0.08)'},
+          ticks:{maxTicksLimit:5, color:colour, callback:tickFmt}
         }
       }
-    } catch(_) {}
-
-    // Activity pace time-series — zone coloured by HR
-    const paceArr = s.velocity_smooth.map(v=>v>0?+(1000/v/60).toFixed(3):null);
-    const dec = decimateChartData(time, paceArr);
-    const zc = hrmax ? (() => {
-      const dhr = decimateChartData(time, s.heartrate||[]);
-      return dhr.data.map(v=>v!=null?HR_ZONE_COLOURS[getHrZone(v,hrmax)]:'#9ca3af');
-    })() : null;
-    datasets.push({
-      label:'Pace',
-      data: dec.time.map((t,i)=>({x:t,y:dec.data[i]??null})),
-      borderColor: zc?'transparent':'#00ff87', _zoneColors:zc,
-      backgroundColor:'transparent', fill:false,
-      borderWidth:2, pointRadius:0, tension:0, yAxisID:'y', order:1
-    });
-
-    makeChart('chart-primary', datasets, {
-      y: {
-        reverse: true,
-        grid:{color:'rgba(255,255,255,0.04)'}, border:{color:'rgba(255,255,255,0.08)'},
-        ticks:{maxTicksLimit:5, color:'#00ff87',
-          callback: v=>`${Math.floor(v)}:${String(Math.round((v%1)*60)).padStart(2,'0')}`}
-      }
-    }, time);
-  }
+    }
+  });
 }
 
 
@@ -1146,33 +1189,47 @@ function buildHrSection(data, hrmax) {
   }).join('');
 }
 
-/* ── CADENCE + SPEED CHARTS ── */
+/* ── CADENCE + SPEED CHARTS ──
+   Cycling: cadence (left) | speed (right)
+   Running: cadence full width (speed card hidden)
+── */
 function buildCadenceSpeed(data) {
   const s=data.streams||{}, time=s.time||[], sport=data.sport_type;
-  const isCyc=isCycling(sport);
+  const isCyc=isCycling(sport), isRun=isRunning(sport);
 
-  if(s.cadence?.length) {
-    document.getElementById('cadence-title').textContent=isCyc?'Cadence (rpm)':isRunning(sport)?'Cadence (spm)':'Stroke Rate';
-    const dec=decimateChartData(time,s.cadence);
-    makeChart('chart-cadence',[{label:'Cadence',
-      data:dec.time.map((t,i)=>({x:t,y:dec.data[i]??null})),
-      borderColor:'#a78bfa',backgroundColor:'rgba(167,139,250,0.06)',
-      fill:true,borderWidth:1.5,pointRadius:0,tension:0}],{},dec.time);
-  } else document.getElementById('cad-speed-row').querySelector('.act-card').style.display='none';
-
-  if(isCyc && s.velocity_smooth?.length) {
-    const speedArr=s.velocity_smooth.map(v=>v!=null?+(v*3.6).toFixed(2):null);
-    const dec=decimateChartData(time,speedArr);
-    makeChart('chart-speed',[{label:'Speed',
-      data:dec.time.map((t,i)=>({x:t,y:dec.data[i]??null})),
-      borderColor:'#fbbf24',backgroundColor:'rgba(251,191,36,0.06)',
-      fill:true,borderWidth:1.5,pointRadius:0,tension:0}],{
-      y:{ticks:{maxTicksLimit:5,callback:v=>v.toFixed(0)+' km/h'},
-        grid:{color:'rgba(255,255,255,0.04)'},border:{color:'rgba(255,255,255,0.08)'}}
-    },dec.time);
+  // Cadence
+  if (s.cadence?.length) {
+    document.getElementById('cadence-title').textContent =
+      isCyc ? 'Cadence (rpm)' : isRun ? 'Cadence (spm)' : 'Stroke Rate';
+    const dec = decimateChartData(time, s.cadence);
+    makeChart('chart-cadence', [{
+      label:'Cadence',
+      data: dec.time.map((t,i) => ({x:t, y:dec.data[i]??null})),
+      borderColor:'#a78bfa', backgroundColor:'rgba(167,139,250,0.07)',
+      fill:true, borderWidth:1.5, pointRadius:0, tension:0
+    }], {}, dec.time);
   } else {
+    // No cadence — hide left card
+    document.getElementById('cad-speed-row').querySelector('.act-card').style.display='none';
+  }
+
+  // Speed — cycling only
+  if (isCyc && s.velocity_smooth?.length) {
+    const speedArr = s.velocity_smooth.map(v => v!=null ? +(v*3.6).toFixed(2) : null);
+    const dec = decimateChartData(time, speedArr);
+    makeChart('chart-speed', [{
+      label:'Speed',
+      data: dec.time.map((t,i) => ({x:t, y:dec.data[i]??null})),
+      borderColor:'#fbbf24', backgroundColor:'rgba(251,191,36,0.07)',
+      fill:true, borderWidth:1.5, pointRadius:0, tension:0
+    }], {
+      y:{ticks:{maxTicksLimit:5, callback:v=>v.toFixed(0)+' km/h'},
+         grid:{color:'rgba(255,255,255,0.04)'}, border:{color:'rgba(255,255,255,0.08)'}}
+    }, dec.time);
+  } else {
+    // Hide speed card, expand cadence to full width
     document.getElementById('speed-card').style.display='none';
-    if(!isCyc) document.getElementById('cad-speed-row').style.gridTemplateColumns='1fr';
+    document.getElementById('cad-speed-row').style.gridTemplateColumns='1fr';
   }
 }
 

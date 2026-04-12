@@ -173,8 +173,8 @@
 }
 
 /* Override Leaflet colours for dark theme */
-.leaflet-container { background: #0f1117; }
-.leaflet-tile { filter: brightness(0.75) saturate(0.6); }
+.leaflet-container { background: #f8f8f6; }
+.leaflet-tile { filter: brightness(0.95); }
 .leaflet-control-attribution {
   background: rgba(8,10,13,0.85) !important;
   color: var(--text-faint) !important;
@@ -389,6 +389,36 @@
   margin-top: 1px;
 }
 
+/* Elevation + metric overlay chart */
+.elevation-chart-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+  margin-bottom: 12px;
+}
+.chart-wrap.elevation { height: 160px; }
+
+/* Collapsible stream table toggle */
+.stream-table-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  padding: 10px 0 0;
+}
+.stream-table-toggle:hover { color: var(--text-secondary); }
+.stream-table-chevron { transition: transform 0.2s ease; font-size: 10px; }
+.stream-table-chevron.open { transform: rotate(90deg); }
+.stream-table-body { display: none; margin-top: 10px; }
+.stream-table-body.open { display: block; }
+
 /* Stream data table */
 .stream-table-card {
   background: var(--bg-surface);
@@ -585,18 +615,32 @@
         </div>
       </div>
 
-      <!-- Stream data table -->
-      <div class="stream-table-card" id="stream-table-section">
+      <!-- Elevation + metric overlay chart -->
+      <div class="elevation-chart-card" id="elevation-chart-section">
         <div class="chart-header">
-          <span class="chart-title" id="stream-table-title">Activity Data</span>
-          <span class="chart-meta" id="stream-table-meta"></span>
+          <span class="chart-title" id="elevation-chart-title">Elevation Profile</span>
+          <span class="chart-meta" id="elevation-chart-meta"></span>
         </div>
+        <div class="chart-wrap elevation">
+          <canvas id="chart-elevation"></canvas>
+        </div>
+      </div>
+
+      <!-- Stream data table (collapsible) -->
+      <div class="stream-table-card" id="stream-table-section">
+        <div class="stream-table-toggle" onclick="toggleStreamTable(this)">
+          <span class="stream-table-chevron">▶</span>
+          <span id="stream-table-title">Activity Data</span>
+          <span id="stream-table-meta" style="font-weight:400;letter-spacing:0;text-transform:none;margin-left:4px"></span>
+        </div>
+        <div class="stream-table-body" id="stream-table-body">
         <div class="stream-table-wrap">
           <table class="stream-table" id="stream-table">
             <thead><tr id="stream-thead"></tr></thead>
             <tbody id="stream-tbody"></tbody>
           </table>
         </div>
+        </div><!-- /stream-table-body -->
       </div>
 
       <!-- 42-day overlay (cycling + running) -->
@@ -1006,9 +1050,13 @@ function initMap(latlng, powerArr, hrArr, sport, ftp, hrmax) {
     preferCanvas: true
   });
 
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    maxZoom: 19,
+  // CartoDB Voyager — closest free equivalent to Strava's map aesthetic.
+  // Clean minimal style: light grey roads, minimal labels, white background.
+  // No API key required. Uses OpenStreetMap data.
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 20,
     crossOrigin: true
   }).addTo(leafletMap);
 
@@ -1218,6 +1266,145 @@ function buildSummaryStrip(data, athleteData) {
       ${m.sub ? `<div class="summary-metric-sub">${m.sub}</div>` : ''}
     </div>`
   ).join('');
+}
+
+/* ============================================
+   ELEVATION + METRIC OVERLAY CHART
+   Dual Y-axis: elevation (filled area) + primary metric (line)
+   Same visual language as Strava's elevation profile
+   ============================================ */
+function buildElevationChart(data, sport, athleteData) {
+  const s    = data.streams || {};
+  const time = s.time || [];
+  const alt  = s.altitude || s.fixed_altitude || [];
+
+  const section = document.getElementById('elevation-chart-section');
+  if (!alt.length || !time.length) {
+    if (section) section.style.display = 'none';
+    return;
+  }
+
+  // Downsample to 500 points for performance
+  const dec = decimateChartData(time, alt, 500);
+
+  const datasets = [{
+    label: 'Elevation (m)',
+    data: dec.time.map((t, i) => ({ x: t, y: dec.data[i] ?? null })),
+    borderColor: 'rgba(34,197,94,0.8)',
+    backgroundColor: 'rgba(34,197,94,0.15)',
+    fill: true,
+    borderWidth: 1.5,
+    pointRadius: 0,
+    tension: 0,
+    yAxisID: 'yElev',
+    order: 2
+  }];
+
+  // Overlay: power for cycling, pace for running, power for rowing
+  let overlayLabel = null;
+  let overlayData  = null;
+  let overlayColor = null;
+  let overlayYId   = 'yMetric';
+  let reverseMetric = false;
+
+  if (isCycling(sport) && s.watts && s.watts.length) {
+    overlayLabel = 'Power (W)';
+    overlayData  = decimateChartData(time, s.watts, 500);
+    overlayColor = 'rgba(0,229,255,0.9)';
+    document.getElementById('elevation-chart-title').textContent = 'Elevation & Power';
+    document.getElementById('elevation-chart-meta').textContent = 'cyan = power · green = elevation';
+  } else if (isRunning(sport) && s.velocity_smooth && s.velocity_smooth.length) {
+    const paceArr = s.velocity_smooth.map(v => v > 0 ? +(1000 / v / 60).toFixed(2) : null);
+    overlayLabel  = 'Pace (min/km)';
+    overlayData   = decimateChartData(time, paceArr, 500);
+    overlayColor  = 'rgba(0,255,135,0.9)';
+    reverseMetric = true;
+    document.getElementById('elevation-chart-title').textContent = 'Elevation & Pace';
+    document.getElementById('elevation-chart-meta').textContent = 'green line = pace · area = elevation';
+  } else if (s.watts && s.watts.length) {
+    overlayLabel = 'Power (W)';
+    overlayData  = decimateChartData(time, s.watts, 500);
+    overlayColor = 'rgba(255,112,67,0.9)';
+    document.getElementById('elevation-chart-title').textContent = 'Elevation & Power';
+  }
+
+  if (overlayData) {
+    datasets.push({
+      label: overlayLabel,
+      data: overlayData.time.map((t, i) => ({ x: t, y: overlayData.data[i] ?? null })),
+      borderColor: overlayColor,
+      backgroundColor: 'transparent',
+      fill: false,
+      borderWidth: 1.5,
+      pointRadius: 0,
+      tension: 0,
+      yAxisID: overlayYId,
+      order: 1
+    });
+  }
+
+  const ctx = document.getElementById('chart-elevation');
+  if (!ctx) return;
+
+  const elevMin = Math.min(...dec.data.filter(v => v != null));
+  const elevMax = Math.max(...dec.data.filter(v => v != null));
+  const elevPad = (elevMax - elevMin) * 0.1 || 5;
+
+  new Chart(ctx, {
+    type: 'line',
+    data: { datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(8,10,13,0.92)',
+          borderColor: 'rgba(255,255,255,0.1)',
+          borderWidth: 1,
+          callbacks: {
+            title: items => fmtDuration(Math.round(items[0]?.parsed?.x ?? 0))
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'linear',
+          ticks: { maxTicksLimit: 8, callback: v => fmtDuration(v) },
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          border: { color: 'rgba(255,255,255,0.08)' }
+        },
+        yElev: {
+          position: 'left',
+          min: elevMin - elevPad,
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          border: { color: 'rgba(255,255,255,0.08)' },
+          ticks: { maxTicksLimit: 4, callback: v => Math.round(v) + 'm', color: 'rgba(34,197,94,0.8)' }
+        },
+        yMetric: {
+          position: 'right',
+          reverse: reverseMetric,
+          grid: { display: false },
+          border: { display: false },
+          ticks: {
+            maxTicksLimit: 4,
+            color: overlayColor || 'transparent',
+            callback: reverseMetric
+              ? v => `${Math.floor(v)}:${String(Math.round((v%1)*60)).padStart(2,'0')}`
+              : v => Math.round(v)
+          }
+        }
+      }
+    }
+  });
+}
+
+function toggleStreamTable(el) {
+  const chevron = el.querySelector('.stream-table-chevron');
+  const body    = document.getElementById('stream-table-body');
+  chevron.classList.toggle('open');
+  body.classList.toggle('open');
 }
 
 /* ============================================
@@ -1749,6 +1936,7 @@ async function init() {
   // Build all sections — pass normalised laps array
   buildSummaryStrip(data, athleteData);
   buildCharts(data, athleteData);
+  buildElevationChart(data, sport, athleteData);
   buildStreamTable(data, sport);
   buildLapsTable(laps, sport);
   buildSegments(data.segments);

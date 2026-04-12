@@ -1827,6 +1827,13 @@ async function init() {
     if (mr.ok) activityMeta = await mr.json();
   } catch (_) { /* non-fatal — name and date degrade gracefully */ }
 
+  // Extract FTP and HRmax from the activity record.
+  // These are stored per-activity from Intervals.icu: icu_ftp, max_heartrate.
+  // athlete_max_hr is the athlete's configured max HR on the activity.
+  // Use activity-time FTP (icu_ftp) — most accurate for zone colouring.
+  const actFtp   = activityMeta?.icu_ftp || activityMeta?.icu_pm_ftp || null;
+  const actHrmax = activityMeta?.athlete_max_hr || activityMeta?.max_heartrate || null;
+
   // Lap start_time from Intervals.icu icu_intervals is an integer —
   // seconds from activity start. Same coordinate system as time[] stream array.
   // Use directly for crosshair sync — no conversion needed.
@@ -1855,6 +1862,11 @@ async function init() {
   document.title = `${actName} — Training OS`;
 
   // Build all sections — pass normalised laps array
+  // Merge activity-level FTP/HRmax into athleteData so all functions get them
+  // Activity-time icu_ftp is more accurate than athlete profile for zone colouring
+  if (actFtp)   athleteData.icu_ftp   = actFtp;
+  if (actHrmax) athleteData.athlete_max_hr = actHrmax;
+
   buildSummaryStrip(data, athleteData);
   buildCharts(data, athleteData);
   buildElevationChart(data, sport, athleteData);

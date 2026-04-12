@@ -389,7 +389,7 @@
   margin-top: 1px;
 }
 
-/* Elevation + metric overlay chart */
+/* Elevation + all-metric chart */
 .elevation-chart-card {
   background: var(--bg-surface);
   border: 1px solid var(--border);
@@ -397,76 +397,31 @@
   padding: 18px 20px;
   margin-bottom: 12px;
 }
-.chart-wrap.elevation { height: 160px; }
+.chart-wrap.elevation { height: 220px; }
 
-/* Collapsible stream table toggle */
-.stream-table-toggle {
+/* Metric toggle buttons */
+.metric-toggles {
   display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  user-select: none;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  padding: 10px 0 0;
 }
-.stream-table-toggle:hover { color: var(--text-secondary); }
-.stream-table-chevron { transition: transform 0.2s ease; font-size: 10px; }
-.stream-table-chevron.open { transform: rotate(90deg); }
-.stream-table-body { display: none; margin-top: 10px; }
-.stream-table-body.open { display: block; }
-
-/* Stream data table */
-.stream-table-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 18px 20px;
-  margin-bottom: 12px;
-}
-.stream-table-wrap {
-  max-height: 320px;
-  overflow-y: auto;
-  margin-top: 12px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-}
-.stream-table {
-  width: 100%;
-  border-collapse: collapse;
+.metric-toggle {
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid;
+  font-size: 10px;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  background: transparent;
+  opacity: 0.4;
 }
-.stream-table th {
-  position: sticky;
-  top: 0;
-  background: var(--bg-elevated);
-  text-align: right;
-  padding: 7px 10px;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  border-bottom: 1px solid var(--border-bright);
-  z-index: 1;
-}
-.stream-table th:first-child { text-align: left; }
-.stream-table td {
-  text-align: right;
-  padding: 5px 10px;
-  color: var(--text-secondary);
-  border-bottom: 1px solid rgba(255,255,255,0.03);
-  transition: background var(--transition);
-  white-space: nowrap;
-}
-.stream-table td:first-child { text-align: left; color: var(--text-muted); }
-.stream-table tr:hover td { background: var(--bg-hover); cursor: pointer; }
-.stream-table tr.stream-highlight td { background: var(--bg-active); color: var(--accent); }
-.stream-table tr.stream-highlight td:first-child { color: var(--accent); }
+.metric-toggle.active { opacity: 1; }
+.metric-toggle:hover { opacity: 0.8; }
+
+
 
 /* Responsive */
 @media (max-width: 900px) {
@@ -616,31 +571,15 @@
       </div>
 
       <!-- Elevation + metric overlay chart -->
+      <!-- Elevation + all metrics chart with toggleable overlays -->
       <div class="elevation-chart-card" id="elevation-chart-section">
         <div class="chart-header">
-          <span class="chart-title" id="elevation-chart-title">Elevation Profile</span>
-          <span class="chart-meta" id="elevation-chart-meta"></span>
+          <span class="chart-title" id="elevation-chart-title">Activity Profile</span>
+          <div class="metric-toggles" id="metric-toggles"></div>
         </div>
         <div class="chart-wrap elevation">
           <canvas id="chart-elevation"></canvas>
         </div>
-      </div>
-
-      <!-- Stream data table (collapsible) -->
-      <div class="stream-table-card" id="stream-table-section">
-        <div class="stream-table-toggle" onclick="toggleStreamTable(this)">
-          <span class="stream-table-chevron">▶</span>
-          <span id="stream-table-title">Activity Data</span>
-          <span id="stream-table-meta" style="font-weight:400;letter-spacing:0;text-transform:none;margin-left:4px"></span>
-        </div>
-        <div class="stream-table-body" id="stream-table-body">
-        <div class="stream-table-wrap">
-          <table class="stream-table" id="stream-table">
-            <thead><tr id="stream-thead"></tr></thead>
-            <tbody id="stream-tbody"></tbody>
-          </table>
-        </div>
-        </div><!-- /stream-table-body -->
       </div>
 
       <!-- 42-day overlay (cycling + running) -->
@@ -1284,75 +1223,140 @@ function buildElevationChart(data, sport, athleteData) {
     return;
   }
 
-  // Downsample to 500 points for performance
-  const dec = decimateChartData(time, alt, 500);
+  // Define all metrics for this sport — elevation always shown, others togglable
+  const isCyc = isCycling(sport);
+  const isRun = isRunning(sport);
 
-  const datasets = [{
-    label: 'Elevation (m)',
-    data: dec.time.map((t, i) => ({ x: t, y: dec.data[i] ?? null })),
-    borderColor: 'rgba(34,197,94,0.8)',
-    backgroundColor: 'rgba(34,197,94,0.15)',
-    fill: true,
-    borderWidth: 1.5,
-    pointRadius: 0,
-    tension: 0,
-    yAxisID: 'yElev',
-    order: 2
-  }];
+  // Each metric: key in streams, label, color, yAxis id, formatter, reverse y-axis
+  const METRICS = [
+    { id: 'elev',  label: 'Elevation', color: 'rgba(34,197,94,0.7)',   bg: 'rgba(34,197,94,0.12)',  key: null,              yId: 'yElev',  fmt: v => Math.round(v) + 'm',                              reverse: false, fill: true,  always: true  },
+    { id: 'power', label: 'Power',     color: '#00e5ff',               bg: null,                    key: 'watts',           yId: 'yR1',    fmt: v => Math.round(v) + 'W',                              reverse: false, fill: false, always: false, show: isCyc || (!isRun && !!s.watts?.length) },
+    { id: 'pace',  label: 'Pace',      color: '#00ff87',               bg: null,                    key: 'velocity_smooth', yId: 'yR1',    fmt: v => v>0 ? fmtPace(v) : '—',                          reverse: true,  fill: false, always: false, show: isRun },
+    { id: 'hr',    label: 'HR',        color: '#ef4444',               bg: null,                    key: 'heartrate',       yId: 'yR2',    fmt: v => Math.round(v) + ' bpm',                           reverse: false, fill: false, always: false, show: true  },
+    { id: 'cad',   label: isCyc ? 'Cadence' : isRun ? 'Cadence' : 'S/Rate', color: '#a78bfa', bg: null, key: 'cadence', yId: 'yR3', fmt: v => Math.round(v) + (isCyc ? ' rpm' : isRun ? ' spm' : '/m'), reverse: false, fill: false, always: false, show: true  },
+  ].filter(m => m.always || m.show);
 
-  // Overlay: power for cycling, pace for running, power for rowing
-  let overlayLabel = null;
-  let overlayData  = null;
-  let overlayColor = null;
-  let overlayYId   = 'yMetric';
-  let reverseMetric = false;
+  // Active state — all on by default except cadence (starts off for cleanliness)
+  // Expose on window so toggleMetric() can update it
+  window._activeMetrics = window._activeMetrics || {};
+  const active = window._activeMetrics;
+  METRICS.forEach(m => {
+    if (active[m.id] === undefined) {
+      active[m.id] = m.always ? true : m.id !== 'cad';
+    }
+  });
 
-  if (isCycling(sport) && s.watts && s.watts.length) {
-    overlayLabel = 'Power (W)';
-    overlayData  = decimateChartData(time, s.watts, 500);
-    overlayColor = 'rgba(0,229,255,0.9)';
-    document.getElementById('elevation-chart-title').textContent = 'Elevation & Power';
-    document.getElementById('elevation-chart-meta').textContent = 'cyan = power · green = elevation';
-  } else if (isRunning(sport) && s.velocity_smooth && s.velocity_smooth.length) {
-    const paceArr = s.velocity_smooth.map(v => v > 0 ? +(1000 / v / 60).toFixed(2) : null);
-    overlayLabel  = 'Pace (min/km)';
-    overlayData   = decimateChartData(time, paceArr, 500);
-    overlayColor  = 'rgba(0,255,135,0.9)';
-    reverseMetric = true;
-    document.getElementById('elevation-chart-title').textContent = 'Elevation & Pace';
-    document.getElementById('elevation-chart-meta').textContent = 'green line = pace · area = elevation';
-  } else if (s.watts && s.watts.length) {
-    overlayLabel = 'Power (W)';
-    overlayData  = decimateChartData(time, s.watts, 500);
-    overlayColor = 'rgba(255,112,67,0.9)';
-    document.getElementById('elevation-chart-title').textContent = 'Elevation & Power';
+  // Decimate altitude for elevation fill
+  const decAlt = decimateChartData(time, alt, 600);
+
+  // Decimate each metric stream
+  const decStreams = {};
+  METRICS.forEach(m => {
+    if (!m.key || !s[m.key]) return;
+    let raw = s[m.key];
+    // Convert velocity to pace for running
+    if (m.id === 'pace') raw = raw.map(v => v > 0 ? +(1000 / v / 60).toFixed(3) : null);
+    decStreams[m.id] = decimateChartData(time, raw, 600);
+  });
+
+  // Build toggle buttons
+  const togglesEl = document.getElementById('metric-toggles');
+  if (togglesEl) {
+    togglesEl.innerHTML = METRICS.filter(m => !m.always).map(m =>
+      `<button class="metric-toggle ${active[m.id] ? 'active' : ''}"
+        data-metric="${m.id}"
+        style="color:${m.color};border-color:${m.color}"
+        onclick="toggleMetric('${m.id}', this)">${m.label}</button>`
+    ).join('');
   }
 
-  if (overlayData) {
-    datasets.push({
-      label: overlayLabel,
-      data: overlayData.time.map((t, i) => ({ x: t, y: overlayData.data[i] ?? null })),
-      borderColor: overlayColor,
-      backgroundColor: 'transparent',
-      fill: false,
-      borderWidth: 1.5,
-      pointRadius: 0,
-      tension: 0,
-      yAxisID: overlayYId,
-      order: 1
+  // Build Chart.js datasets
+  function buildDatasets() {
+    const sets = [];
+    METRICS.forEach(m => {
+      if (!active[m.id]) return;
+      let pts;
+      if (m.id === 'elev') {
+        pts = decAlt.time.map((t, i) => ({ x: t, y: decAlt.data[i] ?? null }));
+      } else {
+        const dec = decStreams[m.id];
+        if (!dec) return;
+        pts = dec.time.map((t, i) => ({ x: t, y: dec.data[i] ?? null }));
+      }
+      sets.push({
+        label: m.label,
+        data: pts,
+        borderColor: m.color,
+        backgroundColor: m.bg || 'transparent',
+        fill: m.fill,
+        borderWidth: m.id === 'elev' ? 1 : 1.5,
+        pointRadius: 0,
+        tension: 0,
+        yAxisID: m.yId,
+        order: m.id === 'elev' ? 10 : 1
+      });
     });
+    return sets;
+  }
+
+  // Y-axis config per axis id
+  function buildScales() {
+    const elevVals = decAlt.data.filter(v => v != null);
+    const elevMin  = Math.min(...elevVals);
+    const elevMax  = Math.max(...elevVals);
+    const elevPad  = (elevMax - elevMin) * 0.15 || 5;
+    return {
+      x: {
+        type: 'linear',
+        ticks: { maxTicksLimit: 8, callback: v => fmtDuration(v) },
+        grid: { color: 'rgba(255,255,255,0.04)' },
+        border: { color: 'rgba(255,255,255,0.08)' }
+      },
+      yElev: {
+        position: 'left',
+        min: elevMin - elevPad,
+        grid: { color: 'rgba(255,255,255,0.04)' },
+        border: { color: 'rgba(255,255,255,0.08)' },
+        ticks: { maxTicksLimit: 4, callback: v => Math.round(v) + 'm', color: 'rgba(34,197,94,0.7)' }
+      },
+      yR1: {
+        position: 'right',
+        reverse: METRICS.find(m => m.yId === 'yR1')?.reverse || false,
+        display: METRICS.some(m => m.yId === 'yR1' && active[m.id]),
+        grid: { display: false },
+        border: { display: false },
+        ticks: {
+          maxTicksLimit: 4,
+          color: METRICS.find(m => m.yId === 'yR1')?.color || 'transparent',
+          callback: v => {
+            const m = METRICS.find(m => m.yId === 'yR1');
+            return m ? m.fmt(m.id === 'pace' ? v : v) : v;
+          }
+        }
+      },
+      yR2: {
+        position: 'right',
+        display: active['hr'] || false,
+        grid: { display: false },
+        border: { display: false },
+        ticks: { maxTicksLimit: 4, color: '#ef4444', callback: v => Math.round(v) }
+      },
+      yR3: {
+        position: 'right',
+        display: active['cad'] || false,
+        grid: { display: false },
+        border: { display: false },
+        ticks: { maxTicksLimit: 4, color: '#a78bfa', callback: v => Math.round(v) }
+      }
+    };
   }
 
   const ctx = document.getElementById('chart-elevation');
   if (!ctx) return;
 
-  const elevMin = Math.min(...dec.data.filter(v => v != null));
-  const elevMax = Math.max(...dec.data.filter(v => v != null));
-  const elevPad = (elevMax - elevMin) * 0.1 || 5;
-
-  new Chart(ctx, {
+  window._elevChart = new Chart(ctx, {
     type: 'line',
-    data: { datasets },
+    data: { datasets: buildDatasets() },
     options: {
       responsive: true,
       maintainAspectRatio: false,
@@ -1368,130 +1372,28 @@ function buildElevationChart(data, sport, athleteData) {
           }
         }
       },
-      scales: {
-        x: {
-          type: 'linear',
-          ticks: { maxTicksLimit: 8, callback: v => fmtDuration(v) },
-          grid: { color: 'rgba(255,255,255,0.04)' },
-          border: { color: 'rgba(255,255,255,0.08)' }
-        },
-        yElev: {
-          position: 'left',
-          min: elevMin - elevPad,
-          grid: { color: 'rgba(255,255,255,0.04)' },
-          border: { color: 'rgba(255,255,255,0.08)' },
-          ticks: { maxTicksLimit: 4, callback: v => Math.round(v) + 'm', color: 'rgba(34,197,94,0.8)' }
-        },
-        yMetric: {
-          position: 'right',
-          reverse: reverseMetric,
-          grid: { display: false },
-          border: { display: false },
-          ticks: {
-            maxTicksLimit: 4,
-            color: overlayColor || 'transparent',
-            callback: reverseMetric
-              ? v => `${Math.floor(v)}:${String(Math.round((v%1)*60)).padStart(2,'0')}`
-              : v => Math.round(v)
-          }
-        }
-      }
+      scales: buildScales()
     }
   });
+
+  // Store rebuild function for toggle updates
+  window._rebuildElevChart = () => {
+    if (!window._elevChart) return;
+    window._elevChart.data.datasets = buildDatasets();
+    window._elevChart.options.scales = buildScales();
+    window._elevChart.update();
+  };
 }
 
-function toggleStreamTable(el) {
-  const chevron = el.querySelector('.stream-table-chevron');
-  const body    = document.getElementById('stream-table-body');
-  chevron.classList.toggle('open');
-  body.classList.toggle('open');
+function toggleMetric(id, btn) {
+  btn.classList.toggle('active');
+  // _activeMetrics is set by buildElevationChart and updated here
+  if (window._activeMetrics) {
+    window._activeMetrics[id] = btn.classList.contains('active');
+  }
+  if (window._rebuildElevChart) window._rebuildElevChart();
 }
 
-/* ============================================
-   STREAM DATA TABLE
-   Scrollable per-sample table: Time | Elevation | sport cols
-   One row per decimated point (every ~5s). Hover syncs crosshair.
-   ============================================ */
-function buildStreamTable(data, sport) {
-  const s    = data.streams || {};
-  const time = s.time || [];
-
-  if (!time.length) {
-    document.getElementById('stream-table-section').style.display = 'none';
-    return;
-  }
-
-  // Downsample to one row every 10 seconds for readability (time[i] % 10 === 0)
-  const step    = Math.max(1, Math.ceil(time.length / 300)); // max ~300 rows
-  const indices = time.map((t, i) => i).filter(i => i % step === 0);
-
-  document.getElementById('stream-table-meta').textContent = `${indices.length} samples`;
-
-  // Column definitions — sport conditional
-  const cols = [
-    { label: 'Time',      key: 'time',             fmt: v => fmtDuration(v),              cls: '' },
-    { label: 'Elevation', key: 'altitude',          fmt: v => v != null ? Math.round(v) + 'm' : '—', cls: '' },
-  ];
-
-  if (isCycling(sport)) {
-    document.getElementById('stream-table-title').textContent = 'Cycling Data';
-    cols.push(
-      { label: 'Speed',    key: 'velocity_smooth', fmt: v => v != null ? (v*3.6).toFixed(1) + ' km/h' : '—', cls: '' },
-      { label: 'Power',    key: 'watts',           fmt: v => v != null ? Math.round(v) + 'W' : '—',          cls: 'accent' },
-      { label: 'HR',       key: 'heartrate',       fmt: v => v != null ? Math.round(v) + ' bpm' : '—',       cls: '' },
-      { label: 'Cadence',  key: 'cadence',         fmt: v => v != null ? Math.round(v) + ' rpm' : '—',       cls: '' },
-    );
-  } else if (isRunning(sport)) {
-    document.getElementById('stream-table-title').textContent = 'Running Data';
-    cols.push(
-      { label: 'Pace',     key: 'velocity_smooth', fmt: v => v && v > 0 ? fmtPace(v) : '—',                 cls: 'green' },
-      { label: 'HR',       key: 'heartrate',       fmt: v => v != null ? Math.round(v) + ' bpm' : '—',       cls: '' },
-      { label: 'Cadence',  key: 'cadence',         fmt: v => v != null ? Math.round(v) + ' spm' : '—',       cls: '' },
-    );
-  } else {
-    document.getElementById('stream-table-title').textContent = 'Activity Data';
-    cols.push(
-      { label: 'Pace',     key: 'velocity_smooth', fmt: v => v && v > 0 ? fmtDuration(Math.round(500/v)) + '/500m' : '—', cls: 'orange' },
-      { label: 'Power',    key: 'watts',           fmt: v => v != null ? Math.round(v) + 'W' : '—',          cls: 'orange' },
-      { label: 'HR',       key: 'heartrate',       fmt: v => v != null ? Math.round(v) + ' bpm' : '—',       cls: '' },
-      { label: 'S/Rate',   key: 'cadence',         fmt: v => v != null ? Math.round(v) + '/m' : '—',         cls: '' },
-    );
-  }
-
-  // Hide elevation column if no altitude data
-  if (!s.altitude || !s.altitude.length) {
-    cols.splice(1, 1);
-  }
-
-  document.getElementById('stream-thead').innerHTML =
-    cols.map(c => `<th>${c.label}</th>`).join('');
-
-  const tbody = document.getElementById('stream-tbody');
-  tbody.innerHTML = indices.map(idx => {
-    const t = time[idx];
-    const cells = cols.map(c => {
-      const val = c.key === 'time' ? t : (s[c.key]?.[idx] ?? null);
-      return `<td${c.cls ? ` class="${c.cls}"` : ''}>${c.fmt(val)}</td>`;
-    }).join('');
-    return `<tr data-sec="${t}" onclick="dispatchCrosshair(${t})">${cells}</tr>`;
-  }).join('');
-
-  // Wire crosshair → highlight nearest row in table
-  document.addEventListener('activity-crosshair', (e) => {
-    const sec = e.detail.idx;
-    let nearest = null, minDiff = Infinity;
-    tbody.querySelectorAll('tr').forEach(row => {
-      const rowSec = parseInt(row.dataset.sec ?? '0');
-      const diff = Math.abs(rowSec - sec);
-      if (diff < minDiff) { minDiff = diff; nearest = row; }
-    });
-    tbody.querySelectorAll('tr').forEach(r => r.classList.remove('stream-highlight'));
-    if (nearest) {
-      nearest.classList.add('stream-highlight');
-      nearest.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    }
-  });
-}
 
 /* ============================================
    LAP SPLITS TABLE
@@ -1937,7 +1839,6 @@ async function init() {
   buildSummaryStrip(data, athleteData);
   buildCharts(data, athleteData);
   buildElevationChart(data, sport, athleteData);
-  buildStreamTable(data, sport);
   buildLapsTable(laps, sport);
   buildSegments(data.segments);
   buildOverlay(sport, data);

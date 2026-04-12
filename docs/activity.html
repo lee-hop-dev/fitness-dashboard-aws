@@ -751,8 +751,18 @@ function getHrZone(hr, hrmax) {
    ============================================ */
 function decimateGps(latlng, targetPoints = 800) {
   if (!latlng || !latlng.length) return [];
-  const step = Math.ceil(latlng.length / targetPoints);
-  return latlng.filter((_, i) => i % step === 0);
+  // Filter out null, undefined, [0,0] and malformed entries before decimating.
+  // Intervals.icu VirtualRide latlng may contain nulls or zero-island coords.
+  const valid = latlng.filter(pt =>
+    Array.isArray(pt) &&
+    pt.length >= 2 &&
+    pt[0] != null && pt[1] != null &&
+    !(pt[0] === 0 && pt[1] === 0) &&
+    isFinite(pt[0]) && isFinite(pt[1])
+  );
+  if (!valid.length) return [];
+  const step = Math.ceil(valid.length / targetPoints);
+  return valid.filter((_, i) => i % step === 0);
 }
 
 function decimateStream(arr, targetPoints = 800) {
@@ -956,10 +966,20 @@ function initMap(latlng, powerArr, hrArr, sport, ftp, hrmax) {
   // Store original length for crosshair index mapping
   window._streamLen = latlng.length;
 
-  // Decimate GPS
+  // Decimate GPS — filters out null/zero/invalid points
   decimatedLatlng = decimateGps(latlng);
   const decimPower = decimateStream(powerArr);
   const decimHr    = decimateStream(hrArr);
+
+  // If no valid GPS points after filtering (e.g. VirtualRide with synthetic coords),
+  // hide the map section and expand the primary chart to full width
+  if (!decimatedLatlng.length) {
+    const mapSection = document.getElementById('map-section');
+    if (mapSection) mapSection.style.display = 'none';
+    const mapRow = document.getElementById('map-chart-row');
+    if (mapRow) mapRow.style.gridTemplateColumns = '1fr';
+    return;
+  }
 
   // Initialise Leaflet
   leafletMap = L.map('activity-map', {
@@ -969,9 +989,10 @@ function initMap(latlng, powerArr, hrArr, sport, ftp, hrmax) {
     preferCanvas: true
   });
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    maxZoom: 19
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 19,
+    crossOrigin: true
   }).addTo(leafletMap);
 
   // Force Leaflet to re-measure the container immediately after init.
@@ -1004,11 +1025,22 @@ function initMap(latlng, powerArr, hrArr, sport, ftp, hrmax) {
     }
   }
 
-  // Fit map to route — defer one tick so tiles have started loading
+  // Fit map to route — defer so layout reflow settles before measuring
   if (decimatedLatlng.length) {
     setTimeout(() => {
-      leafletMap.invalidateSize(false);
-      leafletMap.fitBounds(L.latLngBounds(decimatedLatlng), { padding: [20, 20] });
+      try {
+        leafletMap.invalidateSize(false);
+        const bounds = L.latLngBounds(decimatedLatlng);
+        if (bounds.isValid()) {
+          leafletMap.fitBounds(bounds, { padding: [20, 20] });
+        } else {
+          // Fallback: centre on first valid point, reasonable zoom
+          leafletMap.setView(decimatedLatlng[0], 13);
+        }
+      } catch (e) {
+        console.warn('fitBounds failed:', e.message);
+        if (decimatedLatlng[0]) leafletMap.setView(decimatedLatlng[0], 13);
+      }
     }, 50);
   }
 

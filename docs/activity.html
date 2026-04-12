@@ -1278,7 +1278,7 @@ async function init() {
     const sl=document.getElementById('strava-link');
     if(sr&&sl) {
       sl.href=`https://www.strava.com/activities/${data.strava_id}`;
-      sl.innerHTML='<img src="https://www.strava.com/favicon.ico" style="width:14px;height:14px;vertical-align:middle;margin-right:5px" onerror="this.style.display='none'">View on Strava →';
+      sl.innerHTML='<img src="https://www.strava.com/favicon.ico" style="width:14px;height:14px;vertical-align:middle;margin-right:5px" onerror="this.style.display=&quot;none&quot;">View on Strava →';
       sr.style.display='flex';
     }
   }

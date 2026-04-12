@@ -855,6 +855,7 @@ def sync_streams_14d(api_key: str, access_token: str) -> dict:
                 "name":             activity_meta.get("name", ""),
                 "start_date_local": activity_meta.get("start_date_local", ""),
                 "kudos_count":      kudos_count,
+                "strava_id":        str(strava_id) if strava_id else None,
                 "icu_ftp":          activity_meta.get("icu_ftp"),
                 "athlete_max_hr":   activity_meta.get("athlete_max_hr"),
                 "streams":          streams,

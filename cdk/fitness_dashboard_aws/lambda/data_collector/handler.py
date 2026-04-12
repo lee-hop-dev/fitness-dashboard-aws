@@ -47,6 +47,45 @@ STRAVA_SECRET_NAME = os.environ.get(
 FRONTEND_BUCKET = os.environ.get("FRONTEND_BUCKET", "")
 
 
+def _decode_polyline(encoded: str) -> list:
+    """
+    Decode a Google-encoded polyline string into [[lat, lng], ...] pairs.
+    Strava map.polyline uses this format. No external library required.
+    Returns list of [lat, lng] float pairs.
+    """
+    coords = []
+    index = 0
+    lat = 0
+    lng = 0
+    while index < len(encoded):
+        # Decode latitude delta
+        result, shift, b = 0, 0, 0
+        while True:
+            b = ord(encoded[index]) - 63
+            index += 1
+            result |= (b & 0x1F) << shift
+            shift += 5
+            if b < 0x20:
+                break
+        dlat = ~(result >> 1) if result & 1 else result >> 1
+        lat += dlat
+
+        # Decode longitude delta
+        result, shift, b = 0, 0, 0
+        while True:
+            b = ord(encoded[index]) - 63
+            index += 1
+            result |= (b & 0x1F) << shift
+            shift += 5
+            if b < 0x20:
+                break
+        dlng = ~(result >> 1) if result & 1 else result >> 1
+        lng += dlng
+
+        coords.append([lat / 1e5, lng / 1e5])
+    return coords
+
+
 def paginate_query(table, **kwargs) -> list:
     """Exhaust DynamoDB Query pagination and return all matching items."""
     items = []
@@ -593,11 +632,15 @@ def _fetch_kudos_count(strava_id: str, access_token: str) -> int:
     return 0
 
 
-def _fetch_qualifying_segments(strava_id: str, access_token: str) -> list:
+def _fetch_strava_activity_data(strava_id: str, access_token: str) -> tuple:
     """
-    Fetch segment efforts for a Strava activity and filter to qualifying efforts only.
-    Qualifying: personal top-3 PR, overall top-10, or age-group top-10.
-    Returns a list of normalised segment dicts ready for the stream JSON.
+    Fetch Strava activity — extracts both qualifying segment efforts and GPS polyline
+    from a single API call. Returns (segments, latlng_pairs).
+
+    segments: list of qualifying segment dicts (PR top-3 / overall top-10 / AG top-10)
+    latlng_pairs: list of [lat, lng] pairs decoded from map.polyline, or [] if unavailable
+
+    Replaces _fetch_qualifying_segments — combines into one Strava call for efficiency.
     """
     data = strava_get(
         f"activities/{strava_id}",
@@ -605,8 +648,19 @@ def _fetch_qualifying_segments(strava_id: str, access_token: str) -> list:
         params={"include_all_efforts": "true"},
     )
     if not data:
-        return []
+        return [], []
 
+    # Decode GPS polyline — Strava map.polyline is the full-resolution track
+    latlng_pairs = []
+    polyline = data.get("map", {}).get("polyline") or ""
+    if polyline:
+        try:
+            latlng_pairs = _decode_polyline(polyline)
+            logger.info(f"Strava {strava_id}: decoded {len(latlng_pairs)} GPS points from polyline")
+        except Exception as e:
+            logger.warning(f"Polyline decode failed for strava_id={strava_id}: {e}")
+
+    # Filter segment efforts
     efforts = data.get("segment_efforts", [])
     segments = []
     for effort in efforts:
@@ -626,7 +680,7 @@ def _fetch_qualifying_segments(strava_id: str, access_token: str) -> list:
         f"Strava {strava_id}: {len(efforts)} total segment efforts, "
         f"{len(segments)} qualifying (PR top-3 / overall top-10 / AG top-10)"
     )
-    return segments
+    return segments, latlng_pairs
 
 
 def _fetch_laps(activity_id: str, api_key: str) -> list:
@@ -756,10 +810,28 @@ def sync_streams_14d(api_key: str, access_token: str) -> dict:
             if strava_id:
                 kudos_count = _fetch_kudos_count(str(strava_id), access_token)
 
-            # 3. Qualifying segments from Strava
+            # 3. Qualifying segments + GPS polyline from Strava (single API call)
             segments = []
+            strava_latlng = []
             if strava_id:
-                segments = _fetch_qualifying_segments(str(strava_id), access_token)
+                segments, strava_latlng = _fetch_strava_activity_data(
+                    str(strava_id), access_token
+                )
+
+            # Replace Intervals latlng stream (latitude-only) with Strava polyline
+            # Strava map.polyline provides proper [lat, lng] pairs.
+            # Intervals.icu latlng stream only contains latitudes — confirmed via API.
+            if strava_latlng:
+                streams["latlng"] = strava_latlng
+                logger.info(
+                    f"{activity_id}: replaced Intervals latlng with "
+                    f"{len(strava_latlng)} Strava GPS pairs"
+                )
+            elif "latlng" in streams:
+                # No Strava polyline — remove broken Intervals latlng
+                # (latitudes-only data would render as straight lines)
+                del streams["latlng"]
+                logger.info(f"{activity_id}: removed Intervals latlng (no Strava polyline available)")
 
             # 4. Lap splits from Intervals.icu
             laps = _fetch_laps(activity_id, api_key)

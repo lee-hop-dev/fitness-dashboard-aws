@@ -379,6 +379,65 @@
 .not-available-icon { font-size: 40px; margin-bottom: 4px; }
 .not-available strong { color: var(--text-secondary); font-size: 15px; display: block; margin-bottom: 4px; }
 
+/* Summary metric sub-label */
+.summary-metric-sub {
+  font-size: 9px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-top: 1px;
+}
+
+/* Stream data table */
+.stream-table-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+  margin-bottom: 12px;
+}
+.stream-table-wrap {
+  max-height: 320px;
+  overflow-y: auto;
+  margin-top: 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+.stream-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.stream-table th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-elevated);
+  text-align: right;
+  padding: 7px 10px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-bright);
+  z-index: 1;
+}
+.stream-table th:first-child { text-align: left; }
+.stream-table td {
+  text-align: right;
+  padding: 5px 10px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  transition: background var(--transition);
+  white-space: nowrap;
+}
+.stream-table td:first-child { text-align: left; color: var(--text-muted); }
+.stream-table tr:hover td { background: var(--bg-hover); cursor: pointer; }
+.stream-table tr.stream-highlight td { background: var(--bg-active); color: var(--accent); }
+.stream-table tr.stream-highlight td:first-child { color: var(--accent); }
+
 /* Responsive */
 @media (max-width: 900px) {
   .map-chart-row { grid-template-columns: 1fr; }
@@ -523,6 +582,20 @@
           <div class="chart-wrap">
             <canvas id="chart-speed"></canvas>
           </div>
+        </div>
+      </div>
+
+      <!-- Stream data table -->
+      <div class="stream-table-card" id="stream-table-section">
+        <div class="chart-header">
+          <span class="chart-title" id="stream-table-title">Activity Data</span>
+          <span class="chart-meta" id="stream-table-meta"></span>
+        </div>
+        <div class="stream-table-wrap">
+          <table class="stream-table" id="stream-table">
+            <thead><tr id="stream-thead"></tr></thead>
+            <tbody id="stream-tbody"></tbody>
+          </table>
         </div>
       </div>
 
@@ -789,9 +862,10 @@ function buildChartOptions(yLabel, colour, fillColour, onHover) {
         padding: 8,
         callbacks: {
           title(items) {
-            // Show elapsed time from seconds-based index — NOT formatDurationLabel()
-            const secs = items[0]?.dataIndex ?? 0;
-            return fmtDuration(secs);
+            // Use parsed.x — the actual elapsed seconds stored in {x,y} data point.
+            // dataIndex is the decimated array index, NOT elapsed seconds.
+            const secs = items[0]?.parsed?.x ?? 0;
+            return fmtDuration(Math.round(secs));
           }
         }
       }
@@ -824,6 +898,18 @@ function createChart(canvasId, label, timeArr, dataArr, colour, fillColour, extr
   // Build (x, y) pairs using seconds-based x axis — avoids formatDurationLabel() issue
   const points = timeArr.map((t, i) => ({ x: t, y: dataArr[i] ?? null }));
 
+  const baseOpts = buildChartOptions(label, colour, fillColour);
+  const extra    = extraOptions || {};
+
+  // Deep-merge scales: extra.scales.y overrides only y, x-axis is always preserved.
+  // Shallow spread would nuke the x-axis if extraOptions contains a scales key.
+  const mergedScales = {
+    ...baseOpts.scales,
+    ...(extra.scales || {}),
+    x: { ...baseOpts.scales.x, ...(extra.scales?.x || {}) },
+    y: { ...baseOpts.scales.y, ...(extra.scales?.y || {}) }
+  };
+
   const chart = new Chart(ctx, {
     type: 'line',
     data: {
@@ -839,14 +925,15 @@ function createChart(canvasId, label, timeArr, dataArr, colour, fillColour, extr
       }]
     },
     options: {
-      ...buildChartOptions(label, colour, fillColour),
-      ...extraOptions,
+      ...baseOpts,
+      ...extra,
+      scales: mergedScales,
       onHover(event, elements, chart) {
         if (!elements.length) return;
         const idx = elements[0].index;
-        // idx here is index in dataset = seconds (since x = time[i] = seconds)
-        const actualSec = timeArr[idx] ?? idx;
-        dispatchCrosshair(actualSec);
+        // Use the stored x value (actual elapsed seconds) — not array index
+        const actualSec = points[idx]?.x ?? timeArr[idx] ?? idx;
+        dispatchCrosshair(Math.round(actualSec));
       }
     }
   });
@@ -994,39 +1081,167 @@ function buildSummaryStrip(data, athleteData) {
     tss = Math.round((totalSecs * np * if_) / (ftp * 3600) * 100);
   }
 
+  // Build rich sport-specific metric cards
   const metrics = [];
 
   if (isCycling(sport)) {
-    if (totalSecs)  metrics.push({ label: 'Duration',  value: fmtDuration(totalSecs), cls: '' });
-    if (totalDistM) metrics.push({ label: 'Distance',  value: fmtDist(totalDistM),    cls: '' });
-    if (np)         metrics.push({ label: 'NP',        value: np + 'W',               cls: 'accent' });
-    if (tss)        metrics.push({ label: 'TSS',       value: tss,                    cls: 'accent' });
-    if (ftp && np)  metrics.push({ label: 'IF',        value: (np/ftp).toFixed(2),    cls: '' });
-    if (avgHr)      metrics.push({ label: 'Avg HR',    value: Math.round(avgHr) + ' bpm', cls: '' });
-    if (totalAltM)  metrics.push({ label: 'Elevation', value: Math.round(totalAltM) + 'm', cls: '' });
+    const maxWatts  = max(s.watts);
+    const workKj    = avgWatts && totalSecs ? Math.round(avgWatts * totalSecs / 1000) : null;
+    const weight    = athleteData?.weight || athleteData?.icu_weight || null;
+    const wkg       = np && weight ? (np / weight).toFixed(2) : null;
+
+    metrics.push(
+      { label: 'Duration',  value: fmtDuration(totalSecs),        cls: '',       sub: '' },
+      { label: 'Distance',  value: fmtDist(totalDistM),            cls: '',       sub: '' },
+    );
+    if (np)         metrics.push({ label: 'NP',         value: np + 'W',                     cls: 'accent', sub: ftp ? `IF ${(np/ftp).toFixed(2)}` : '' });
+    if (tss)        metrics.push({ label: 'TSS',        value: tss,                           cls: 'accent', sub: '' });
+    if (avgWatts)   metrics.push({ label: 'Avg Power',  value: Math.round(avgWatts) + 'W',   cls: '',       sub: maxWatts ? `max ${Math.round(maxWatts)}W` : '' });
+    if (wkg)        metrics.push({ label: 'W/kg',       value: wkg,                           cls: 'accent', sub: 'normalised' });
+    if (avgHr)      metrics.push({ label: 'Avg HR',     value: Math.round(avgHr) + ' bpm',   cls: '',       sub: maxHr ? `max ${Math.round(maxHr)}` : '' });
+    if (avgCadence) metrics.push({ label: 'Cadence',    value: Math.round(avgCadence) + ' rpm', cls: '',    sub: 'average' });
+    if (totalAltM)  metrics.push({ label: 'Elevation',  value: Math.round(totalAltM) + 'm',  cls: '',       sub: 'gain' });
+    if (workKj)     metrics.push({ label: 'Work',       value: workKj + ' kJ',               cls: '',       sub: '' });
+
   } else if (isRunning(sport)) {
-    if (totalSecs)  metrics.push({ label: 'Duration',  value: fmtDuration(totalSecs),  cls: '' });
-    if (totalDistM) metrics.push({ label: 'Distance',  value: fmtDist(totalDistM),     cls: '' });
-    if (s.velocity_smooth) {
-      const avgMps = avg(s.velocity_smooth);
-      if (avgMps)   metrics.push({ label: 'Pace',     value: fmtPace(avgMps),          cls: 'green' });
+    const avgMps     = s.velocity_smooth ? avg(s.velocity_smooth) : null;
+    // Best lap pace: find lap with highest avg_speed
+    const lapSpeeds  = laps.filter(l => l.avg_speed).map(l => l.avg_speed);
+    const bestLapMps = lapSpeeds.length ? Math.max(...lapSpeeds) : null;
+    // Elevation gain (cumulative climb from altitude stream)
+    let climbM = 0;
+    if (s.altitude) {
+      for (let i = 1; i < s.altitude.length; i++) {
+        const diff = (s.altitude[i] ?? 0) - (s.altitude[i-1] ?? 0);
+        if (diff > 0) climbM += diff;
+      }
+      climbM = Math.round(climbM);
     }
-    if (avgHr)      metrics.push({ label: 'Avg HR',   value: Math.round(avgHr) + ' bpm', cls: '' });
-    if (totalAltM)  metrics.push({ label: 'Elevation',value: Math.round(totalAltM) + 'm', cls: '' });
+
+    metrics.push(
+      { label: 'Duration',       value: fmtDuration(totalSecs),          cls: '',      sub: '' },
+      { label: 'Distance',       value: fmtDist(totalDistM),              cls: '',      sub: '' },
+    );
+    if (avgMps)      metrics.push({ label: 'Avg Pace',    value: fmtPace(avgMps),                cls: 'green', sub: '' });
+    if (bestLapMps)  metrics.push({ label: 'Best Lap',    value: fmtPace(bestLapMps),            cls: 'green', sub: 'pace' });
+    if (avgHr)       metrics.push({ label: 'Avg HR',      value: Math.round(avgHr) + ' bpm',     cls: '',      sub: maxHr ? `max ${Math.round(maxHr)}` : '' });
+    if (avgCadence)  metrics.push({ label: 'Cadence',     value: Math.round(avgCadence) + ' spm', cls: '',     sub: 'average' });
+    if (climbM)      metrics.push({ label: 'Climb',       value: climbM + 'm',                   cls: '',      sub: 'elevation gain' });
+    if (totalAltM)   metrics.push({ label: 'Elevation',   value: Math.round(totalAltM) + 'm',    cls: '',      sub: 'net' });
+
   } else {
     // Rowing / other
-    if (totalSecs)  metrics.push({ label: 'Duration', value: fmtDuration(totalSecs),  cls: '' });
-    if (totalDistM) metrics.push({ label: 'Distance', value: fmtDist(totalDistM),     cls: '' });
-    if (avgWatts)   metrics.push({ label: 'Avg Power',value: Math.round(avgWatts) + 'W', cls: 'orange' });
-    if (avgHr)      metrics.push({ label: 'Avg HR',   value: Math.round(avgHr) + ' bpm', cls: '' });
+    const avgSR      = avgCadence; // cadence = stroke rate for rowing
+    const workKj     = avgWatts && totalSecs ? Math.round(avgWatts * totalSecs / 1000) : null;
+    // Avg split (/500m) from avg velocity
+    const avgMps     = s.velocity_smooth ? avg(s.velocity_smooth) : null;
+    const splitStr   = avgMps && avgMps > 0
+      ? fmtDuration(Math.round(500 / avgMps)) + '/500m' : null;
+
+    metrics.push(
+      { label: 'Duration',  value: fmtDuration(totalSecs),         cls: '',       sub: '' },
+      { label: 'Distance',  value: fmtDist(totalDistM),             cls: '',       sub: '' },
+    );
+    if (avgWatts)  metrics.push({ label: 'Avg Power', value: Math.round(avgWatts) + 'W',   cls: 'orange', sub: '' });
+    if (splitStr)  metrics.push({ label: 'Avg Split', value: splitStr,                     cls: 'orange', sub: '' });
+    if (avgSR)     metrics.push({ label: 'Stroke Rate',value: Math.round(avgSR) + ' s/m',  cls: '',       sub: 'average' });
+    if (avgHr)     metrics.push({ label: 'Avg HR',    value: Math.round(avgHr) + ' bpm',   cls: '',       sub: maxHr ? `max ${Math.round(maxHr)}` : '' });
+    if (workKj)    metrics.push({ label: 'Work',      value: workKj + ' kJ',               cls: '',       sub: '' });
   }
 
   el.innerHTML = metrics.map(m =>
     `<div class="summary-metric">
       <div class="summary-metric-value ${m.cls}">${m.value}</div>
       <div class="summary-metric-label">${m.label}</div>
+      ${m.sub ? `<div class="summary-metric-sub">${m.sub}</div>` : ''}
     </div>`
   ).join('');
+}
+
+/* ============================================
+   STREAM DATA TABLE
+   Scrollable per-sample table: Time | Elevation | sport cols
+   One row per decimated point (every ~5s). Hover syncs crosshair.
+   ============================================ */
+function buildStreamTable(data, sport) {
+  const s    = data.streams || {};
+  const time = s.time || [];
+
+  if (!time.length) {
+    document.getElementById('stream-table-section').style.display = 'none';
+    return;
+  }
+
+  // Downsample to one row every 10 seconds for readability (time[i] % 10 === 0)
+  const step    = Math.max(1, Math.ceil(time.length / 300)); // max ~300 rows
+  const indices = time.map((t, i) => i).filter(i => i % step === 0);
+
+  document.getElementById('stream-table-meta').textContent = `${indices.length} samples`;
+
+  // Column definitions — sport conditional
+  const cols = [
+    { label: 'Time',      key: 'time',             fmt: v => fmtDuration(v),              cls: '' },
+    { label: 'Elevation', key: 'altitude',          fmt: v => v != null ? Math.round(v) + 'm' : '—', cls: '' },
+  ];
+
+  if (isCycling(sport)) {
+    document.getElementById('stream-table-title').textContent = 'Cycling Data';
+    cols.push(
+      { label: 'Speed',    key: 'velocity_smooth', fmt: v => v != null ? (v*3.6).toFixed(1) + ' km/h' : '—', cls: '' },
+      { label: 'Power',    key: 'watts',           fmt: v => v != null ? Math.round(v) + 'W' : '—',          cls: 'accent' },
+      { label: 'HR',       key: 'heartrate',       fmt: v => v != null ? Math.round(v) + ' bpm' : '—',       cls: '' },
+      { label: 'Cadence',  key: 'cadence',         fmt: v => v != null ? Math.round(v) + ' rpm' : '—',       cls: '' },
+    );
+  } else if (isRunning(sport)) {
+    document.getElementById('stream-table-title').textContent = 'Running Data';
+    cols.push(
+      { label: 'Pace',     key: 'velocity_smooth', fmt: v => v && v > 0 ? fmtPace(v) : '—',                 cls: 'green' },
+      { label: 'HR',       key: 'heartrate',       fmt: v => v != null ? Math.round(v) + ' bpm' : '—',       cls: '' },
+      { label: 'Cadence',  key: 'cadence',         fmt: v => v != null ? Math.round(v) + ' spm' : '—',       cls: '' },
+    );
+  } else {
+    document.getElementById('stream-table-title').textContent = 'Activity Data';
+    cols.push(
+      { label: 'Pace',     key: 'velocity_smooth', fmt: v => v && v > 0 ? fmtDuration(Math.round(500/v)) + '/500m' : '—', cls: 'orange' },
+      { label: 'Power',    key: 'watts',           fmt: v => v != null ? Math.round(v) + 'W' : '—',          cls: 'orange' },
+      { label: 'HR',       key: 'heartrate',       fmt: v => v != null ? Math.round(v) + ' bpm' : '—',       cls: '' },
+      { label: 'S/Rate',   key: 'cadence',         fmt: v => v != null ? Math.round(v) + '/m' : '—',         cls: '' },
+    );
+  }
+
+  // Hide elevation column if no altitude data
+  if (!s.altitude || !s.altitude.length) {
+    cols.splice(1, 1);
+  }
+
+  document.getElementById('stream-thead').innerHTML =
+    cols.map(c => `<th>${c.label}</th>`).join('');
+
+  const tbody = document.getElementById('stream-tbody');
+  tbody.innerHTML = indices.map(idx => {
+    const t = time[idx];
+    const cells = cols.map(c => {
+      const val = c.key === 'time' ? t : (s[c.key]?.[idx] ?? null);
+      return `<td${c.cls ? ` class="${c.cls}"` : ''}>${c.fmt(val)}</td>`;
+    }).join('');
+    return `<tr data-sec="${t}" onclick="dispatchCrosshair(${t})">${cells}</tr>`;
+  }).join('');
+
+  // Wire crosshair → highlight nearest row in table
+  document.addEventListener('activity-crosshair', (e) => {
+    const sec = e.detail.idx;
+    let nearest = null, minDiff = Infinity;
+    tbody.querySelectorAll('tr').forEach(row => {
+      const rowSec = parseInt(row.dataset.sec ?? '0');
+      const diff = Math.abs(rowSec - sec);
+      if (diff < minDiff) { minDiff = diff; nearest = row; }
+    });
+    tbody.querySelectorAll('tr').forEach(r => r.classList.remove('stream-highlight'));
+    if (nearest) {
+      nearest.classList.add('stream-highlight');
+      nearest.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  });
 }
 
 /* ============================================
@@ -1095,7 +1310,23 @@ function buildSegments(segments) {
 
   document.getElementById('segments-meta').textContent = `${segments.length} qualifying`;
 
-  itemsEl.innerHTML = segments.map(seg => {
+  // Sort: PR rank 1 first, then 2, then 3, then overall top-10 (asc), then AG top-10 (asc)
+  const sorted = [...segments].sort((a, b) => {
+    const prA  = a.pr_rank  ?? 99;
+    const prB  = b.pr_rank  ?? 99;
+    const komA = a.kom_rank ?? 99;
+    const komB = b.kom_rank ?? 99;
+    const qomA = a.qom_rank ?? 99;
+    const qomB = b.qom_rank ?? 99;
+    // Primary: PR rank (lower = better, null = last)
+    if (prA !== prB) return prA - prB;
+    // Secondary: overall leaderboard rank
+    if (komA !== komB) return komA - komB;
+    // Tertiary: age group rank
+    return qomA - qomB;
+  });
+
+  itemsEl.innerHTML = sorted.map(seg => {
     const badges = [];
     const pr = seg.pr_rank;
     const kom = seg.kom_rank;
@@ -1270,7 +1501,7 @@ function buildCharts(data, athleteData) {
 
     // GPS map
     if (s.latlng && s.latlng.length) {
-      requestAnimationFrame(() => initMap(s.latlng, s.watts, s.heartrate, sport, ftp, hrmax));
+      window._pendingMap = () => initMap(s.latlng, s.watts, s.heartrate, sport, ftp, hrmax);
     } else {
       document.getElementById('map-section').style.display = 'none';
       document.getElementById('map-chart-row').style.gridTemplateColumns = '1fr';
@@ -1303,7 +1534,7 @@ function buildCharts(data, athleteData) {
 
     // GPS map
     if (s.latlng && s.latlng.length) {
-      requestAnimationFrame(() => initMap(s.latlng, null, s.heartrate, sport, ftp, hrmax));
+      window._pendingMap = () => initMap(s.latlng, null, s.heartrate, sport, ftp, hrmax);
     } else {
       document.getElementById('map-section').style.display = 'none';
       document.getElementById('map-chart-row').style.gridTemplateColumns = '1fr';
@@ -1456,13 +1687,24 @@ async function init() {
   // Build all sections — pass normalised laps array
   buildSummaryStrip(data, athleteData);
   buildCharts(data, athleteData);
+  buildStreamTable(data, sport);
   buildLapsTable(laps, sport);
   buildSegments(data.segments);
   buildOverlay(sport, data);
 
-  // Show content
+  // Show content first — Leaflet requires a visible, sized container
   document.getElementById('loading-state').classList.add('hidden');
   document.getElementById('activity-content').classList.remove('hidden');
+
+  // Now that the container is visible and has dimensions, init the map
+  if (window._pendingMap) {
+    requestAnimationFrame(() => {
+      window._pendingMap();
+      window._pendingMap = null;
+      // Invalidate after a short delay to handle any layout reflow
+      setTimeout(() => { if (leafletMap) leafletMap.invalidateSize(); }, 150);
+    });
+  }
 }
 
 function showError(title, msg) {

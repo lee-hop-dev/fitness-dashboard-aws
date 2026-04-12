@@ -189,23 +189,25 @@
 .metric-toggle:hover  { opacity: 0.7; }
 
 /* ── HR ZONE BARS ── */
-.hr-zone-bars { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
-.hz-row { display: grid; grid-template-columns: 60px 1fr 40px; align-items: center; gap: 8px; }
-.hz-label { font-size: 10px; font-family: var(--font-mono); color: var(--text-muted); text-align: right; }
-.hz-bar-bg { height: 12px; background: var(--bg-elevated); border-radius: 3px; overflow: hidden; }
-.hz-bar-fill { height: 100%; border-radius: 3px; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); }
-.hz-pct { font-size: 10px; font-family: var(--font-mono); color: var(--text-secondary); }
-
-/* ── POWER/PACE ZONE DISTRIBUTION ── */
-.zone-dist-bars { display: flex; align-items: flex-end; gap: 4px; height: 100px; margin-top: 8px; }
-.zd-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.zd-bar-wrap { flex: 1; display: flex; align-items: flex-end; width: 100%; }
-.zd-bar {
-  width: 100%; border-radius: 3px 3px 0 0;
-  transition: height 0.8s cubic-bezier(0.4,0,0.2,1);
+.hr-zone-bars { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; }
+.hz-row {
+  display: grid; grid-template-columns: 1fr 100px 36px;
+  align-items: center; gap: 8px;
+  padding: 6px 10px;
+  background: var(--bg-elevated); border-radius: var(--radius-sm);
+  border-left: 3px solid transparent;
+  transition: background var(--transition);
 }
-.zd-label { font-size: 9px; font-family: var(--font-mono); color: var(--text-muted); }
-.zd-pct { font-size: 9px; font-family: var(--font-mono); color: var(--text-secondary); }
+.hz-row:hover { background: var(--bg-hover); }
+.hz-zone { font-size: 10px; font-family: var(--font-mono); font-weight: 700; color: var(--text-secondary); }
+.hz-zone-name { font-size: 9px; color: var(--text-muted); margin-top: 1px; }
+.hz-bar-bg { height: 8px; background: var(--bg-surface); border-radius: 4px; overflow: hidden; }
+.hz-bar-fill { height: 100%; border-radius: 4px; transition: width 1s cubic-bezier(0.4,0,0.2,1); }
+.hz-stats { text-align: right; }
+.hz-pct { font-size: 11px; font-family: var(--font-mono); font-weight: 700; color: var(--text-primary); }
+.hz-mins { font-size: 9px; font-family: var(--font-mono); color: var(--text-muted); }
+
+
 
 /* ── SEGMENTS ── */
 .seg-items { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
@@ -388,16 +390,13 @@
       </div>
 
       <!-- 5. SPLIT: Power/Pace trace | Zone distribution -->
-      <div class="split-row" id="power-row">
-        <div class="act-card">
-          <div class="act-card-title" id="primary-trace-title">Power</div>
-          <div class="chart-wrap cw-200">
-            <canvas id="chart-primary"></canvas>
-          </div>
+      <div class="act-card" id="power-row">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <span class="act-card-title" id="primary-trace-title">Power &amp; Pace</span>
+          <span style="font-size:9px;font-family:var(--font-mono);color:var(--text-muted)" id="power-row-meta"></span>
         </div>
-        <div class="act-card">
-          <div class="act-card-title" id="zone-dist-title">Power Zones</div>
-          <div class="zone-dist-bars" id="zone-dist-bars"></div>
+        <div class="chart-wrap cw-220">
+          <canvas id="chart-primary"></canvas>
         </div>
       </div>
 
@@ -773,21 +772,27 @@ function buildSummaryCards(data, ftp) {
   if(totalSecs)  cards.push({val:fmtDuration(totalSecs), lbl:'Duration',  cls:'c-accent'});
   if(totalDistM) cards.push({val:fmtDist(totalDistM),    lbl:'Distance',  cls:'c-accent'});
 
+  const avgMps=avg(s.velocity_smooth);
+  const workKj=avgWatts&&totalSecs?Math.round(avgWatts*totalSecs/1000):null;
+
   if(isCycling(sport)) {
-    if(np)     cards.push({val:np+'W',            lbl:'NP',       cls:'c-accent', vcls:'accent'});
-    if(ifVal)  cards.push({val:ifVal,              lbl:'IF',       cls:'c-yellow', vcls:'yellow'});
-    if(tss)    cards.push({val:tss,                lbl:'TSS',      cls:'c-orange', vcls:'orange'});
-    if(avgWatts) cards.push({val:Math.round(avgWatts)+'W', lbl:'Avg Power', cls:'c-accent'});
-    if(avgHr)  cards.push({val:Math.round(avgHr)+'', lbl:'Avg HR', cls:'c-red', vcls:'red', sub:maxHr?`max ${Math.round(maxHr)}`:'', });
-    if(avgCad) cards.push({val:Math.round(avgCad)+'', lbl:'Avg Cadence', cls:'c-purple', sub:'rpm'});
+    if(np)      cards.push({val:np+'W',                    lbl:'NP',        cls:'c-accent', vcls:'accent'});
+    if(ifVal)   cards.push({val:ifVal,                     lbl:'IF',        cls:'c-yellow', vcls:'yellow'});
+    if(tss)     cards.push({val:tss,                       lbl:'TSS',       cls:'c-orange', vcls:'orange'});
+    if(workKj)  cards.push({val:workKj+' kJ',              lbl:'Work',      cls:'c-orange', vcls:'orange'});
+    if(avgWatts)cards.push({val:Math.round(avgWatts)+'W',  lbl:'Avg Power', cls:'c-accent'});
+    if(avgMps)  cards.push({val:(avgMps*3.6).toFixed(1)+' km/h', lbl:'Avg Speed', cls:'c-yellow', vcls:'yellow'});
+    if(avgHr)   cards.push({val:Math.round(avgHr)+'',      lbl:'Avg HR',    cls:'c-red',    vcls:'red',    sub:maxHr?`max ${Math.round(maxHr)}`:''});
+    if(avgCad)  cards.push({val:Math.round(avgCad)+'',     lbl:'Cadence',   cls:'c-purple', sub:'rpm'});
   } else if(isRunning(sport)) {
-    const avgMps=avg(s.velocity_smooth);
-    if(avgMps) cards.push({val:fmtPace(avgMps), lbl:'Avg Pace', cls:'c-green', vcls:'green'});
-    if(avgHr)  cards.push({val:Math.round(avgHr)+'', lbl:'Avg HR', cls:'c-red', vcls:'red', sub:maxHr?`max ${Math.round(maxHr)}`:'', });
-    if(avgCad) cards.push({val:Math.round(avgCad)+'', lbl:'Cadence', cls:'c-purple', sub:'spm'});
+    if(avgMps)  cards.push({val:fmtPace(avgMps),           lbl:'Avg Pace',  cls:'c-green',  vcls:'green'});
+    if(tss)     cards.push({val:tss,                       lbl:'TSS',       cls:'c-orange', vcls:'orange'});
+    if(avgHr)   cards.push({val:Math.round(avgHr)+'',      lbl:'Avg HR',    cls:'c-red',    vcls:'red',    sub:maxHr?`max ${Math.round(maxHr)}`:''});
+    if(avgCad)  cards.push({val:Math.round(avgCad)+'',     lbl:'Cadence',   cls:'c-purple', sub:'spm'});
   } else {
-    if(avgWatts) cards.push({val:Math.round(avgWatts)+'W', lbl:'Avg Power', cls:'c-orange', vcls:'orange'});
-    if(avgHr)    cards.push({val:Math.round(avgHr)+'', lbl:'Avg HR', cls:'c-red', vcls:'red'});
+    if(avgWatts)cards.push({val:Math.round(avgWatts)+'W',  lbl:'Avg Power', cls:'c-orange', vcls:'orange'});
+    if(workKj)  cards.push({val:workKj+' kJ',              lbl:'Work',      cls:'c-orange'});
+    if(avgHr)   cards.push({val:Math.round(avgHr)+'',      lbl:'Avg HR',    cls:'c-red',    vcls:'red'});
   }
 
   document.getElementById('summary-cards').innerHTML = cards.map(c=>
@@ -898,8 +903,8 @@ function buildElevationChart(data, ftp, hrmax) {
     return METRICS.filter(m=>active[m.id]).map(m=>{
       if(m.id==='elev') return {
         label:'Elevation',data:decAlt.time.map((t,i)=>({x:t,y:decAlt.data[i]??null})),
-        borderColor:'rgba(34,197,94,0.7)',backgroundColor:'rgba(34,197,94,0.12)',
-        fill:true,borderWidth:1,pointRadius:0,tension:0,yAxisID:'yElev',order:10
+        borderColor:'rgba(160,160,160,0.5)',backgroundColor:'rgba(120,120,120,0.25)',
+        fill:true,borderWidth:1,pointRadius:0,tension:0.3,yAxisID:'yElev',order:10
       };
       const dec=decStreams[m.id]; if(!dec) return null;
       return {
@@ -965,64 +970,101 @@ function toggleMetric(id,btn) {
   if(window._rebuildElevChart) window._rebuildElevChart();
 }
 
-/* ── PRIMARY TRACE CHART (zone coloured) ── */
-function buildPrimaryTrace(data, ftp, hrmax) {
+/* ── PRIMARY TRACE: Power+Pace dual axis with 42d best overlay ── */
+async function buildPrimaryTrace(data, ftp, hrmax) {
   const s=data.streams||{}, time=s.time||[], sport=data.sport_type;
   const isCyc=isCycling(sport), isRun=isRunning(sport);
+  const hasPower=isCyc&&s.watts?.length;
+  const hasPace=s.velocity_smooth?.length;
 
-  if(isCyc && s.watts?.length) {
-    document.getElementById('primary-trace-title').textContent='Power';
-    document.getElementById('zone-dist-title').textContent='Power Zones';
+  if(!hasPower&&!hasPace) { document.getElementById('power-row').style.display='none'; return; }
+
+  document.getElementById('primary-trace-title').textContent = isCyc ? 'Power & Speed' : 'Pace';
+
+  const datasets=[];
+
+  // ── 42-day best as grey background ──
+  try {
+    const type=isCyc?'Ride':'Run';
+    const endpoint=isCyc?'power-curve':'pace-curve';
+    const r=await fetch(`${API_BASE}/${endpoint}?type=${type}&curves=all`);
+    if(r.ok) {
+      const cd=await r.json();
+      const durations=cd.secs||cd.durations||[];
+      const best42=cd.values_42d||cd.last_42d||[];
+      if(durations.length&&best42.length) {
+        datasets.push({
+          label:'42d Best',
+          data:durations.map((d,i)=>({x:d,y:best42[i]??null})),
+          borderColor:'rgba(255,255,255,0.12)',
+          backgroundColor:'rgba(255,255,255,0.04)',
+          fill:true, borderWidth:1, pointRadius:0, tension:0.3,
+          yAxisID:isCyc?'yPow':'yPace', order:10,
+          borderDash:[3,3]
+        });
+      }
+    }
+  } catch(_) {}
+
+  // ── Power trace (cycling) ──
+  if(hasPower) {
     const dec=decimateChartData(time,s.watts);
-    const zoneColors=ftp ? dec.data.map(v=>v!=null?POWER_ZONE_COLOURS[getPowerZone(v,ftp)]:'#9ca3af') : null;
-    const ds={label:'Power',data:dec.time.map((t,i)=>({x:t,y:dec.data[i]??null})),
-      borderColor:zoneColors?'transparent':'#00e5ff',_zoneColors:zoneColors,
-      backgroundColor:'transparent',fill:false,borderWidth:2,pointRadius:0,tension:0};
-    makeChart('chart-primary',[ds],{},dec.time, dec.time[1]&&dec.time[0]?dec.time[1]-dec.time[0]:1);
-    buildZoneDist(s.watts, ftp, POWER_ZONE_COLOURS, POWER_ZONE_NAMES, 6, v=>getPowerZone(v,ftp));
-  } else if(isRun && s.velocity_smooth?.length) {
-    document.getElementById('primary-trace-title').textContent='Pace';
-    document.getElementById('zone-dist-title').textContent='HR Zones by Pace';
-    const paceArr=s.velocity_smooth.map(v=>v>0?+(1000/v/60).toFixed(3):null);
-    const dec=decimateChartData(time,paceArr);
-    const zoneColors=hrmax ? (() => {
-      const decHr=decimateChartData(time,s.heartrate||[]);
-      return decHr.data.map(v=>v!=null?HR_ZONE_COLOURS[getHrZone(v,hrmax)]:'#9ca3af');
-    })() : null;
-    const ds={label:'Pace',data:dec.time.map((t,i)=>({x:t,y:dec.data[i]??null})),
-      borderColor:zoneColors?'transparent':'#00ff87',_zoneColors:zoneColors,
-      backgroundColor:'transparent',fill:false,borderWidth:2,pointRadius:0,tension:0};
-    makeChart('chart-primary',[ds],{
-      y:{reverse:true,ticks:{maxTicksLimit:5,callback:v=>`${Math.floor(v)}:${String(Math.round((v%1)*60)).padStart(2,'0')}`},
-        grid:{color:'rgba(255,255,255,0.04)'},border:{color:'rgba(255,255,255,0.08)'}}
-    },dec.time);
-    buildZoneDist(s.heartrate||[], hrmax, HR_ZONE_COLOURS, HR_ZONE_NAMES, 5, v=>getHrZone(v,hrmax));
-  } else {
-    document.getElementById('power-row').style.display='none';
+    const zc=ftp?dec.data.map(v=>v!=null?POWER_ZONE_COLOURS[getPowerZone(v,ftp)]:'#9ca3af'):null;
+    datasets.push({
+      label:'Power',
+      data:dec.time.map((t,i)=>({x:t,y:dec.data[i]??null})),
+      borderColor:zc?'transparent':'#00e5ff', _zoneColors:zc,
+      backgroundColor:'transparent', fill:false,
+      borderWidth:2, pointRadius:0, tension:0, yAxisID:'yPow', order:1
+    });
   }
-}
 
-/* ── ZONE DISTRIBUTION BARS ── */
-function buildZoneDist(rawArr, ref, colours, names, numZones, zoneFn) {
-  if(!rawArr?.length||!ref) {
-    document.getElementById('zone-dist-bars').innerHTML=
-      '<div style="color:var(--text-muted);font-size:10px;font-family:var(--font-mono)">No zone data</div>';
-    return;
+  // ── Pace/Speed trace ──
+  if(hasPace) {
+    let raw, yId, reverse, color, tickFmt;
+    if(isRun) {
+      raw=s.velocity_smooth.map(v=>v>0?+(1000/v/60).toFixed(3):null);
+      yId='yPace'; reverse=true; color='#00ff87';
+      tickFmt=v=>`${Math.floor(v)}:${String(Math.round((v%1)*60)).padStart(2,'0')}`;
+    } else {
+      raw=s.velocity_smooth.map(v=>v!=null?+(v*3.6).toFixed(2):null);
+      yId='ySpeed'; reverse=false; color='#fbbf24';
+      tickFmt=v=>v.toFixed(0)+' km/h';
+    }
+    const dec=decimateChartData(time,raw);
+    const zc=(!isCyc&&hrmax)?dec.data.map(v=>v!=null?HR_ZONE_COLOURS[getHrZone(v,hrmax)]:'#9ca3af'):null;
+    datasets.push({
+      label:isRun?'Pace':'Speed',
+      data:dec.time.map((t,i)=>({x:t,y:dec.data[i]??null})),
+      borderColor:zc?'transparent':color, _zoneColors:zc,
+      backgroundColor:'transparent', fill:false,
+      borderWidth:2, pointRadius:0, tension:0, yAxisID:yId, order:2
+    });
+    // Store tickFmt and reverse on window for scale building
+    window._paceTickFmt=tickFmt;
+    window._paceReverse=reverse;
+    window._paceYId=yId;
+    window._paceColor=color;
   }
-  const counts=new Array(numZones).fill(0);
-  rawArr.filter(v=>v!=null&&v>0).forEach(v=>{ const z=Math.min(zoneFn(v),numZones-1); counts[z]++; });
-  const total=counts.reduce((a,b)=>a+b,0)||1;
-  const el=document.getElementById('zone-dist-bars');
-  el.innerHTML=counts.map((c,i)=>{
-    const pct=Math.round(c/total*100);
-    return `<div class="zd-col">
-      <div class="zd-bar-wrap" style="height:80px">
-        <div class="zd-bar" style="height:${pct}%;background:${colours[i]};width:100%;min-height:${pct?2:0}px"></div>
-      </div>
-      <div class="zd-label">Z${i+1}</div>
-      <div class="zd-pct">${pct}%</div>
-    </div>`;
-  }).join('');
+
+  const scales={
+    x:{type:'linear',ticks:{maxTicksLimit:8,callback:v=>fmtDuration(v)},
+      grid:{color:'rgba(255,255,255,0.04)'},border:{color:'rgba(255,255,255,0.08)'}},
+  };
+  if(hasPower) scales.yPow={
+    position:'left',
+    grid:{color:'rgba(255,255,255,0.04)'},border:{color:'rgba(255,255,255,0.08)'},
+    ticks:{maxTicksLimit:5,color:'#00e5ff',callback:v=>Math.round(v)+'W'}
+  };
+  if(hasPace) scales[window._paceYId||'yPace']={
+    position:'right',
+    reverse:window._paceReverse||false,
+    grid:{display:false},border:{display:false},
+    ticks:{maxTicksLimit:5,color:window._paceColor||'#fbbf24',
+      callback:window._paceTickFmt||(v=>v)}
+  };
+
+  makeChart('chart-primary', datasets, scales, time);
 }
 
 /* ── HR TRACE + ZONE BARS ── */
@@ -1045,10 +1087,16 @@ function buildHrSection(data, hrmax) {
   const total=counts.reduce((a,b)=>a+b,0)||1;
   hzEl.innerHTML=counts.map((c,i)=>{
     const pct=Math.round(c/total*100), mins=Math.round(c/60);
-    return `<div class="hz-row">
-      <div class="hz-label">${HR_ZONE_NAMES[i].split(' ')[0]+' '+HR_ZONE_NAMES[i].split(' ')[1]}</div>
+    return `<div class="hz-row" style="border-left-color:${HR_ZONE_COLOURS[i]}">
+      <div>
+        <div class="hz-zone">Z${i+1}</div>
+        <div class="hz-zone-name">${HR_ZONE_NAMES[i]}</div>
+      </div>
       <div class="hz-bar-bg"><div class="hz-bar-fill" style="width:${pct}%;background:${HR_ZONE_COLOURS[i]}"></div></div>
-      <div class="hz-pct">${mins}m</div>
+      <div class="hz-stats">
+        <div class="hz-pct">${pct}%</div>
+        <div class="hz-mins">${mins}m</div>
+      </div>
     </div>`;
   }).join('');
 }

@@ -751,9 +751,23 @@ function getHrZone(hr, hrmax) {
    ============================================ */
 function decimateGps(latlng, targetPoints = 800) {
   if (!latlng || !latlng.length) return [];
-  // Filter out null, undefined, [0,0] and malformed entries before decimating.
-  // Intervals.icu VirtualRide latlng may contain nulls or zero-island coords.
-  const valid = latlng.filter(pt =>
+
+  // Intervals.icu returns latlng as a flat interleaved array [lat0, lng0, lat1, lng1, ...]
+  // NOT as nested [[lat,lng],...] pairs. Re-pair if the first element is a number.
+  let pairs;
+  if (typeof latlng[0] === 'number') {
+    // Flat interleaved — re-pair into [[lat,lng],...]
+    pairs = [];
+    for (let i = 0; i + 1 < latlng.length; i += 2) {
+      pairs.push([latlng[i], latlng[i + 1]]);
+    }
+  } else {
+    // Already nested pairs
+    pairs = latlng;
+  }
+
+  // Filter out null, [0,0], and non-finite entries
+  const valid = pairs.filter(pt =>
     Array.isArray(pt) &&
     pt.length >= 2 &&
     pt[0] != null && pt[1] != null &&
@@ -963,8 +977,11 @@ function initMap(latlng, powerArr, hrArr, sport, ftp, hrmax) {
   const mapEl = document.getElementById('activity-map');
   if (!mapEl) return;
 
-  // Store original length for crosshair index mapping
-  window._streamLen = latlng.length;
+  // Store original GPS pair count for crosshair index mapping.
+  // latlng may be flat [lat,lng,lat,lng,...] so pair count = length/2 if flat.
+  window._streamLen = (typeof latlng[0] === 'number')
+    ? Math.floor(latlng.length / 2)
+    : latlng.length;
 
   // Decimate GPS — filters out null/zero/invalid points
   decimatedLatlng = decimateGps(latlng);

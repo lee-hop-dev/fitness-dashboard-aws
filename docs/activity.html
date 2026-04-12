@@ -962,12 +962,22 @@ function initMap(latlng, powerArr, hrArr, sport, ftp, hrmax) {
   const decimHr    = decimateStream(hrArr);
 
   // Initialise Leaflet
-  leafletMap = L.map('activity-map', { zoomControl: true, attributionControl: true });
+  leafletMap = L.map('activity-map', {
+    zoomControl: true,
+    attributionControl: true,
+    // Prevent Leaflet reading container size before layout is settled
+    preferCanvas: true
+  });
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     maxZoom: 19
   }).addTo(leafletMap);
+
+  // Force Leaflet to re-measure the container immediately after init.
+  // The container is visible at this point (initMap called post-reveal)
+  // but CSS layout may not have fully committed. invalidateSize resets dimensions.
+  leafletMap.invalidateSize(false);
 
   // Draw zone-coloured polyline — group consecutive same-zone points into runs.
   // Avoids creating hundreds of individual Leaflet objects (performance fix).
@@ -994,9 +1004,12 @@ function initMap(latlng, powerArr, hrArr, sport, ftp, hrmax) {
     }
   }
 
-  // Fit map to route
+  // Fit map to route — defer one tick so tiles have started loading
   if (decimatedLatlng.length) {
-    leafletMap.fitBounds(L.latLngBounds(decimatedLatlng), { padding: [20, 20] });
+    setTimeout(() => {
+      leafletMap.invalidateSize(false);
+      leafletMap.fitBounds(L.latLngBounds(decimatedLatlng), { padding: [20, 20] });
+    }, 50);
   }
 
   // Crosshair marker (circle)
@@ -1696,14 +1709,14 @@ async function init() {
   document.getElementById('loading-state').classList.add('hidden');
   document.getElementById('activity-content').classList.remove('hidden');
 
-  // Now that the container is visible and has dimensions, init the map
+  // Init map after content is visible — use double-rAF to guarantee
+  // the browser has painted and CSS layout has fully committed before
+  // Leaflet measures the container. Single rAF fires before paint.
   if (window._pendingMap) {
-    requestAnimationFrame(() => {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
       window._pendingMap();
       window._pendingMap = null;
-      // Invalidate after a short delay to handle any layout reflow
-      setTimeout(() => { if (leafletMap) leafletMap.invalidateSize(); }, 150);
-    });
+    }));
   }
 }
 

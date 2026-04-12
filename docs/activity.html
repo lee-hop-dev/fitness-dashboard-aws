@@ -1123,7 +1123,7 @@ function buildSummaryStrip(data, athleteData) {
   }
 
   // TSS approximation (if FTP known)
-  const ftp = athleteData?.ftp || athleteData?.icu_ftp;
+  const ftp = athleteData?.icu_ftp || athleteData?.ftp;
   let tss = null;
   if (np && ftp && totalSecs) {
     const if_ = np / ftp;
@@ -1229,11 +1229,11 @@ function buildElevationChart(data, sport, athleteData) {
 
   // Each metric: key in streams, label, color, yAxis id, formatter, reverse y-axis
   const METRICS = [
-    { id: 'elev',  label: 'Elevation', color: 'rgba(34,197,94,0.7)',   bg: 'rgba(34,197,94,0.12)',  key: null,              yId: 'yElev',  fmt: v => Math.round(v) + 'm',                              reverse: false, fill: true,  always: true  },
-    { id: 'power', label: 'Power',     color: '#00e5ff',               bg: null,                    key: 'watts',           yId: 'yR1',    fmt: v => Math.round(v) + 'W',                              reverse: false, fill: false, always: false, show: isCyc || (!isRun && !!s.watts?.length) },
-    { id: 'pace',  label: 'Pace',      color: '#00ff87',               bg: null,                    key: 'velocity_smooth', yId: 'yR1',    fmt: v => v>0 ? fmtPace(v) : '—',                          reverse: true,  fill: false, always: false, show: isRun },
-    { id: 'hr',    label: 'HR',        color: '#ef4444',               bg: null,                    key: 'heartrate',       yId: 'yR2',    fmt: v => Math.round(v) + ' bpm',                           reverse: false, fill: false, always: false, show: true  },
-    { id: 'cad',   label: isCyc ? 'Cadence' : isRun ? 'Cadence' : 'S/Rate', color: '#a78bfa', bg: null, key: 'cadence', yId: 'yR3', fmt: v => Math.round(v) + (isCyc ? ' rpm' : isRun ? ' spm' : '/m'), reverse: false, fill: false, always: false, show: true  },
+    { id: 'elev',  label: 'Elevation', color: 'rgba(34,197,94,0.7)',   bg: 'rgba(34,197,94,0.12)',  key: null,              yId: 'yElev',  fmt: v => Math.round(v) + 'm',                                                      reverse: false, fill: true,  always: true  },
+    { id: 'power', label: 'Power',     color: '#00e5ff',               bg: null,                    key: 'watts',           yId: 'yR1',    fmt: v => Math.round(v) + 'W',                                                      reverse: false, fill: false, always: false, show: isCyc || (!isRun && !!s.watts?.length) },
+    { id: 'pace',  label: isCyc ? 'Speed' : 'Pace', color: '#fbbf24', bg: null,                    key: 'velocity_smooth', yId: 'yR4',    fmt: v => v != null && v > 0 ? (isCyc ? (v*3.6).toFixed(1)+' km/h' : fmtPace(v)) : '—', reverse: isRun, fill: false, always: false, show: true },
+    { id: 'hr',    label: 'HR',        color: '#ef4444',               bg: null,                    key: 'heartrate',       yId: 'yR2',    fmt: v => Math.round(v) + ' bpm',                                                   reverse: false, fill: false, always: false, show: true  },
+    { id: 'cad',   label: isCyc ? 'Cadence' : isRun ? 'Cadence' : 'S/Rate', color: '#a78bfa', bg: null, key: 'cadence',   yId: 'yR3',    fmt: v => Math.round(v) + (isCyc ? ' rpm' : isRun ? ' spm' : '/m'),                reverse: false, fill: false, always: false, show: true  },
   ].filter(m => m.always || m.show);
 
   // Active state — all on by default except cadence (starts off for cleanliness)
@@ -1347,6 +1347,21 @@ function buildElevationChart(data, sport, athleteData) {
         grid: { display: false },
         border: { display: false },
         ticks: { maxTicksLimit: 4, color: '#a78bfa', callback: v => Math.round(v) }
+      },
+      yR4: {
+        position: 'right',
+        reverse: METRICS.find(m => m.id === 'pace')?.reverse || false,
+        display: active['pace'] || false,
+        grid: { display: false },
+        border: { display: false },
+        ticks: {
+          maxTicksLimit: 4,
+          color: '#fbbf24',
+          callback: v => {
+            const m = METRICS.find(mm => mm.id === 'pace');
+            return m ? m.fmt(v) : v;
+          }
+        }
       }
     };
   }
@@ -1620,8 +1635,12 @@ function buildCharts(data, athleteData) {
   const s     = data.streams || {};
   const time  = s.time || [];
 
-  const ftp   = athleteData?.ftp || athleteData?.icu_ftp || null;
-  const hrmax = athleteData?.hr_max || athleteData?.max_hr || null;
+  // Intervals.icu athlete profile field names:
+  // FTP: icu_ftp (from athlete object) or icu_ftp (stored by collector)
+  // HRmax: athlete_max_hr (Intervals field) — fallback to max_hr, hr_max
+  const ftp   = athleteData?.icu_ftp || athleteData?.ftp || null;
+  const hrmax = athleteData?.athlete_max_hr || athleteData?.max_hr
+             || athleteData?.hr_max || athleteData?.icu_hr_max || null;
 
   if (isCycling(sport)) {
     // Primary: Power

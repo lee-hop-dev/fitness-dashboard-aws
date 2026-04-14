@@ -807,46 +807,57 @@ function buildSummaryCards(data, ftp) {
   }
 
   const cards = [];
+  // 1. Duration
   if(totalSecs)  cards.push({val:fmtDuration(totalSecs), lbl:'Duration',  cls:'c-accent'});
+  // 2. Distance
   if(totalDistM) cards.push({val:fmtDist(totalDistM),    lbl:'Distance',  cls:'c-accent'});
 
   const avgMps=avg(s.velocity_smooth);
   const workKj=avgWatts&&totalSecs?Math.round(avgWatts*totalSecs/1000):null;
 
   if(isCycling(sport)) {
-    if(np)      cards.push({val:np+'W',                    lbl:'NP',        cls:'c-accent', vcls:'accent'});
-    if(ifVal)   cards.push({val:ifVal,                     lbl:'IF',        cls:'c-yellow', vcls:'yellow'});
-    if(tss)     cards.push({val:tss,                       lbl:'TSS',       cls:'c-orange', vcls:'orange'});
-    if(workKj)  cards.push({val:workKj+' kJ',              lbl:'Work',      cls:'c-orange', vcls:'orange'});
-    if(avgWatts)cards.push({val:Math.round(avgWatts)+'W',  lbl:'Avg Power', cls:'c-accent'});
+    // 3. Avg Speed
     if(avgMps)  cards.push({val:(avgMps*3.6).toFixed(1)+' km/h', lbl:'Avg Speed', cls:'c-yellow', vcls:'yellow'});
+    // 4. Avg HR
     if(avgHr)   cards.push({val:Math.round(avgHr)+'',      lbl:'Avg HR',    cls:'c-red',    vcls:'red',    sub:maxHr?`max ${Math.round(maxHr)}`:''});
+    // 5. Avg Power
+    if(avgWatts)cards.push({val:Math.round(avgWatts)+'W',  lbl:'Avg Power', cls:'c-accent'});
+    // 6. Cadence
     if(avgCad)  cards.push({val:Math.round(avgCad)+'',     lbl:'Cadence',   cls:'c-purple', sub:'rpm'});
-  } else if(isRunning(sport)) {
-    if(avgMps)  cards.push({val:fmtPace(avgMps),           lbl:'Avg Pace',  cls:'c-green',  vcls:'green'});
+    // 7. TSS
     if(tss)     cards.push({val:tss,                       lbl:'TSS',       cls:'c-orange', vcls:'orange'});
+    // 8. NP
+    if(np)      cards.push({val:np+'W',                    lbl:'NP',        cls:'c-accent', vcls:'accent'});
+    // 9. Elevation (placeholder - not yet implemented)
+    // 10. Work KJ
+    if(workKj)  cards.push({val:workKj+' kJ',              lbl:'Work',      cls:'c-orange', vcls:'orange'});
+    // Removed IF - not in requested order
+  } else if(isRunning(sport)) {
+    // 3. Avg Pace
+    if(avgMps)  cards.push({val:fmtPace(avgMps),           lbl:'Avg Pace',  cls:'c-green',  vcls:'green'});
+    // 4. Avg HR
     if(avgHr)   cards.push({val:Math.round(avgHr)+'',      lbl:'Avg HR',    cls:'c-red',    vcls:'red',    sub:maxHr?`max ${Math.round(maxHr)}`:''});
+    // 5. Avg Power (usually n/a for running, but some have it)
+    if(avgWatts)cards.push({val:Math.round(avgWatts)+'W',  lbl:'Avg Power', cls:'c-accent'});
+    // 6. Cadence
     if(avgCad)  cards.push({val:Math.round(avgCad)+'',     lbl:'Cadence',   cls:'c-purple', sub:'spm'});
+    // 7. TSS
+    if(tss)     cards.push({val:tss,                       lbl:'TSS',       cls:'c-orange', vcls:'orange'});
+    // 8. NP (usually n/a for running)
+    if(np)      cards.push({val:np+'W',                    lbl:'NP',        cls:'c-accent', vcls:'accent'});
+    // 9. Elevation (placeholder)
+    // 10. Work KJ (usually n/a for running)
+    if(workKj)  cards.push({val:workKj+' kJ',              lbl:'Work',      cls:'c-orange', vcls:'orange'});
   } else {
-    if(avgWatts)cards.push({val:Math.round(avgWatts)+'W',  lbl:'Avg Power', cls:'c-orange', vcls:'orange'});
-    if(workKj)  cards.push({val:workKj+' kJ',              lbl:'Work',      cls:'c-orange'});
+    // Rowing or other
+    // 3. Speed (n/a for rowing)
+    // 4. Avg HR
     if(avgHr)   cards.push({val:Math.round(avgHr)+'',      lbl:'Avg HR',    cls:'c-red',    vcls:'red'});
+    // 5. Avg Power
+    if(avgWatts)cards.push({val:Math.round(avgWatts)+'W',  lbl:'Avg Power', cls:'c-orange', vcls:'orange'});
+    // 10. Work KJ
+    if(workKj)  cards.push({val:workKj+' kJ',              lbl:'Work',      cls:'c-orange'});
   }
-
-  document.getElementById('summary-cards').innerHTML = cards.map(c=>
-    `<div class="sc ${c.cls}">
-      <div class="sc-val ${c.vcls||''}">${c.val}</div>
-      <div class="sc-lbl">${c.lbl}</div>
-      ${c.sub?`<div class="sc-sub">${c.sub}</div>`:''}
-    </div>`
-  ).join('');
-}
-
-/* ── WORKOUT STATS PANEL ── */
-function buildWorkoutStats(data, ftp) {
-  const s = data.streams||{};
-  const time = s.time||[];
-  const totalSecs = time.length ? time[time.length-1] : null;
   const sport = data.sport_type;
   const avgWatts = avg(s.watts);
   const avgHr    = avg(s.heartrate);

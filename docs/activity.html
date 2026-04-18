@@ -207,8 +207,6 @@
 .hz-pct { font-size: 11px; font-family: var(--font-mono); font-weight: 700; color: var(--text-primary); }
 .hz-mins { font-size: 9px; font-family: var(--font-mono); color: var(--text-muted); }
 
-
-
 /* ── SEGMENTS ── */
 .seg-items { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
 .seg-item {
@@ -252,7 +250,7 @@
 .laps-table td.acc { color: var(--accent); font-weight: 700; }
 .laps-table td.grn { color: var(--green);  font-weight: 700; }
 
-/* ── STRAVA SOCIAL ── */
+/* ── STRAVA / INTERVALS SOCIAL ── */
 .strava-row {
   display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
   padding: 10px 0; border-top: 1px solid var(--border); margin-top: 8px;
@@ -263,6 +261,12 @@
   color: #fc4c02; text-decoration: none; font-weight: 600;
 }
 .strava-link:hover { text-decoration: underline; }
+.intervals-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; font-family: var(--font-mono);
+  color: #5b8dee; text-decoration: none; font-weight: 600;
+}
+.intervals-link:hover { text-decoration: underline; }
 
 /* ── NOT AVAILABLE ── */
 .not-avail {
@@ -385,12 +389,14 @@
             <a class="strava-link" id="strava-link" href="#" target="_blank" rel="noopener">
               View on Strava →
             </a>
+            <a class="intervals-link" id="intervals-link" href="#" target="_blank" rel="noopener" style="display:none">
+              View on Intervals.icu →
+            </a>
           </div>
         </div>
       </div>
 
-      <!-- 5. SPLIT: Power/Pace trace | Zone distribution -->
-      <!-- 5. SPLIT: Primary trace (left) | Duration curve + 90d best (right) -->
+      <!-- 5. SPLIT: Primary trace | Duration curve -->
       <div class="split-row" id="power-row">
         <div class="act-card">
           <div class="act-card-title" id="primary-trace-title">Power Trace</div>
@@ -420,7 +426,7 @@
         </div>
       </div>
 
-      <!-- 7. SPLIT: Cadence | Speed (cycling) / Cadence full width (running) -->
+      <!-- 7. SPLIT: Cadence | Speed -->
       <div class="split-row" id="cad-speed-row">
         <div class="act-card">
           <div class="act-card-title" id="cadence-title">Cadence</div>
@@ -488,8 +494,13 @@ function fmtDist(m) {
 }
 function fmtDate(iso) {
   if (!iso) return '—';
-  // Handle both full ISO and date-only strings
-  const d = new Date(iso.length <= 10 ? iso + 'T00:00:00' : iso);
+  // start_date_local is wall-clock local time — strip any UTC offset marker
+  // (trailing Z or +HH:MM / -HH:MM) before constructing Date so the browser
+  // never applies an additional UTC→local timezone conversion.
+  // Without this, BST (UTC+1) browsers shift the date back 1 hour, rolling
+  // activities that started late in the day onto the previous calendar date.
+  const clean = iso.replace(/Z$/, '').replace(/[+-]\d{2}:\d{2}$/, '');
+  const d = new Date(clean.length <= 10 ? clean + 'T00:00:00' : clean);
   if (isNaN(d)) return iso;
   return d.toLocaleDateString('en-GB', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
 }
@@ -523,8 +534,6 @@ function getPowerZone(w, ftp) {
   if(p<=1.05)return 3; if(p<=1.20)return 4; return 5;
 }
 function getHrZone(hr, hmax) {
-  // Zones based on % of max HR (standard 5-zone model)
-  // Z1 < 60%, Z2 60-70%, Z3 70-80%, Z4 80-90%, Z5 > 90%
   if (!hmax||!hr) return 0;
   const p=hr/hmax;
   if(p<0.60) return 0;
@@ -558,7 +567,6 @@ document.addEventListener('act-xhair', e => {
     const idx = Math.min(Math.floor(sec/step), _decimatedLatlng.length-1);
     _crosshairMarker.setLatLng(_decimatedLatlng[idx]);
   }
-  // Highlight nearest lap row
   if (_lapStartSec.length) {
     let li=0;
     _lapStartSec.forEach((s,i)=>{ if(sec>=s) li=i; });
@@ -577,8 +585,6 @@ function createGradientFill(ctx, chartArea, colorTop, colorBottom) {
   return gradient;
 }
 
-// Plugin that replaces a dataset's backgroundColor with a canvas gradient
-// before each draw. Dataset must have _gradientTop and _gradientBottom set.
 const gradientFillPlugin = {
   id: 'gradientFill',
   beforeDraw(chart) {
@@ -594,7 +600,6 @@ const gradientFillPlugin = {
 Chart.register(gradientFillPlugin);
 
 /* ── CHART FACTORY ── */
-// Zone-segment colouring plugin
 const zoneSegmentPlugin = {
   id: 'zoneSegment',
   beforeDatasetDraw(chart, args) {
@@ -621,7 +626,7 @@ const zoneSegmentPlugin = {
       ctx.stroke();
     }
     ctx.restore();
-    return false; // prevent default draw
+    return false;
   }
 };
 Chart.register(zoneSegmentPlugin);
@@ -640,7 +645,8 @@ function makeChart(canvasId, datasets, scalesOpts, timeArr, timeStep) {
     y: {
       grid:{color:'rgba(255,255,255,0.04)'},
       border:{color:'rgba(255,255,255,0.08)'},
-      ticks:{maxTicksLimit:5}
+      ticks:{maxTicksLimit:5},
+      afterFit: axis => { axis.width = 50; }
     }
   };
   const chart = new Chart(ctx, {
@@ -762,7 +768,6 @@ function initMap(latlng, powerArr, hrArr, sport, ftp, hrmax) {
     radius:6,color:'#fff',fillColor:'#00e5ff',fillOpacity:1,weight:2
   }).addTo(_leafletMap);
 
-  // Zone legend
   const legendEl = document.getElementById('zone-legend');
   const mapTitleEl = document.getElementById('map-title');
   if(isCycling(sport)&&ftp) {
@@ -789,9 +794,9 @@ function buildSummaryCards(data, ftp) {
   const avgCad  = avg(s.cadence);
   const avgWatts= avg(s.watts);
   const sport   = data.sport_type;
+  const avgMps  = avg(s.velocity_smooth);
 
-  // NP
-  let np=null;
+  let np=null, tss=null, ifVal=null;
   if(s.watts?.length>=30) {
     const w=s.watts; let sum4=0,cnt=0;
     for(let i=29;i<w.length;i++){
@@ -800,65 +805,52 @@ function buildSummaryCards(data, ftp) {
     }
     np=cnt?Math.round(Math.pow(sum4/cnt,0.25)):null;
   }
-  let tss=null, ifVal=null;
   if(np&&ftp&&totalSecs) {
     ifVal=+(np/ftp).toFixed(2);
     tss=Math.round((totalSecs*np*ifVal)/(ftp*3600)*100);
   }
 
+  const workKj=avgWatts&&totalSecs?Math.round(avgWatts*totalSecs/1000):null;
   const cards = [];
-  // 1. Duration
+
   if(totalSecs)  cards.push({val:fmtDuration(totalSecs), lbl:'Duration',  cls:'c-accent'});
-  // 2. Distance
   if(totalDistM) cards.push({val:fmtDist(totalDistM),    lbl:'Distance',  cls:'c-accent'});
 
-  const avgMps=avg(s.velocity_smooth);
-  const workKj=avgWatts&&totalSecs?Math.round(avgWatts*totalSecs/1000):null;
-
   if(isCycling(sport)) {
-    // 3. Avg Speed
     if(avgMps)  cards.push({val:(avgMps*3.6).toFixed(1)+' km/h', lbl:'Avg Speed', cls:'c-yellow', vcls:'yellow'});
-    // 4. Avg HR
     if(avgHr)   cards.push({val:Math.round(avgHr)+'',      lbl:'Avg HR',    cls:'c-red',    vcls:'red',    sub:maxHr?`max ${Math.round(maxHr)}`:''});
-    // 5. Avg Power
     if(avgWatts)cards.push({val:Math.round(avgWatts)+'W',  lbl:'Avg Power', cls:'c-accent'});
-    // 6. Cadence
     if(avgCad)  cards.push({val:Math.round(avgCad)+'',     lbl:'Cadence',   cls:'c-purple', sub:'rpm'});
-    // 7. TSS
     if(tss)     cards.push({val:tss,                       lbl:'TSS',       cls:'c-orange', vcls:'orange'});
-    // 8. NP
     if(np)      cards.push({val:np+'W',                    lbl:'NP',        cls:'c-accent', vcls:'accent'});
-    // 9. Elevation (placeholder - not yet implemented)
-    // 10. Work KJ
     if(workKj)  cards.push({val:workKj+' kJ',              lbl:'Work',      cls:'c-orange', vcls:'orange'});
-    // Removed IF - not in requested order
   } else if(isRunning(sport)) {
-    // 3. Avg Pace
     if(avgMps)  cards.push({val:fmtPace(avgMps),           lbl:'Avg Pace',  cls:'c-green',  vcls:'green'});
-    // 4. Avg HR
     if(avgHr)   cards.push({val:Math.round(avgHr)+'',      lbl:'Avg HR',    cls:'c-red',    vcls:'red',    sub:maxHr?`max ${Math.round(maxHr)}`:''});
-    // 5. Avg Power (usually n/a for running, but some have it)
-    if(avgWatts)cards.push({val:Math.round(avgWatts)+'W',  lbl:'Avg Power', cls:'c-accent'});
-    // 6. Cadence
     if(avgCad)  cards.push({val:Math.round(avgCad)+'',     lbl:'Cadence',   cls:'c-purple', sub:'spm'});
-    // 7. TSS
     if(tss)     cards.push({val:tss,                       lbl:'TSS',       cls:'c-orange', vcls:'orange'});
-    // 8. NP (usually n/a for running)
-    if(np)      cards.push({val:np+'W',                    lbl:'NP',        cls:'c-accent', vcls:'accent'});
-    // 9. Elevation (placeholder)
-    // 10. Work KJ (usually n/a for running)
-    if(workKj)  cards.push({val:workKj+' kJ',              lbl:'Work',      cls:'c-orange', vcls:'orange'});
+    // Work (kJ) excluded for running — inaccurate without running power meter
   } else {
-    // Rowing or other
-    // 3. Speed (n/a for rowing)
-    // 4. Avg HR
     if(avgHr)   cards.push({val:Math.round(avgHr)+'',      lbl:'Avg HR',    cls:'c-red',    vcls:'red'});
-    // 5. Avg Power
     if(avgWatts)cards.push({val:Math.round(avgWatts)+'W',  lbl:'Avg Power', cls:'c-orange', vcls:'orange'});
-    // 10. Work KJ
     if(workKj)  cards.push({val:workKj+' kJ',              lbl:'Work',      cls:'c-orange'});
   }
-  const sport = data.sport_type;
+
+  const el = document.getElementById('summary-cards');
+  el.innerHTML = cards.map(c=>
+    `<div class="sc ${c.cls||''}">
+      <div class="sc-val ${c.vcls||''}">${c.val}</div>
+      <div class="sc-lbl">${c.lbl}</div>
+      ${c.sub ? `<div class="sc-sub">${c.sub}</div>` : ''}
+    </div>`
+  ).join('');
+}
+
+/* ── WORKOUT STATS PANEL ── */
+function buildWorkoutStats(data, ftp) {
+  const s = data.streams||{};
+  const time = s.time||[];
+  const totalSecs = time.length ? time[time.length-1] : null;
   const avgWatts = avg(s.watts);
   const avgHr    = avg(s.heartrate);
 
@@ -880,7 +872,6 @@ function buildSummaryCards(data, ftp) {
   if(np&&data.icu_weight) wkg=+(np/data.icu_weight).toFixed(2);
   if(avgWatts&&totalSecs) workKj=Math.round(avgWatts*totalSecs/1000);
 
-  // Power:HR decoupling — compare first/last half avg power:HR ratio
   if(s.watts&&s.heartrate&&s.watts.length>=60) {
     const half=Math.floor(s.watts.length/2);
     const w1=avg(s.watts.slice(0,half)), h1=avg(s.heartrate.slice(0,half));
@@ -965,30 +956,36 @@ function buildElevationChart(data, ftp, hrmax) {
   }
 
   const elevVals=decAlt.data.filter(v=>v!=null);
-  const eMin=Math.min(...elevVals), eMax=Math.max(...elevVals), ePad=(eMax-eMin)*0.15||5;
-  // Push yMin well below actual min so the filled area looks pronounced
-  const elevYMin = eMin - (eMax - eMin) * 0.6;
+  const eMin=Math.min(...elevVals), eMax=Math.max(...elevVals);
+  const range = eMax - eMin;
+  // Fix #2b: 0.3 multiplier (was 0.6) — more subtle elevation fill baseline
+  const elevYMin = eMin - range * 0.3;
 
   function buildScales() {
-    // Only include active axes — Chart.js reserves space for ALL defined axes
-    // even with display:false. Omitting hidden axes prevents truncation.
+    // Fix #1: afterFit width=50 on all y-axes to prevent left-side label
+    // width variability from pushing the plot area right (apparent right truncation)
     const sc = {
       x:{type:'linear',ticks:{maxTicksLimit:8,callback:v=>fmtDuration(v),maxRotation:0},
         grid:{color:'rgba(255,255,255,0.04)'},border:{color:'rgba(255,255,255,0.08)'},
         afterFit: axis => { axis.paddingRight = 0; }},
       yElev:{position:'left',min:elevYMin,grid:{color:'rgba(255,255,255,0.04)'},
         border:{color:'rgba(255,255,255,0.08)'},
-        ticks:{maxTicksLimit:4,callback:v=>Math.round(v)+'m',color:'rgba(120,120,120,0.8)'}}
+        ticks:{maxTicksLimit:4,callback:v=>Math.round(v)+'m',color:'rgba(120,120,120,0.8)'},
+        afterFit: axis => { axis.width = 50; }}
     };
     if(active['power']) sc.yR1={position:'right',grid:{display:false},border:{display:false},
-      ticks:{maxTicksLimit:4,color:'#00e5ff',callback:v=>Math.round(v)+'W'}};
+      ticks:{maxTicksLimit:4,color:'#00e5ff',callback:v=>Math.round(v)+'W'},
+      afterFit: axis => { axis.width = 50; }};
     if(active['hr'])    sc.yR2={position:'right',grid:{display:false},border:{display:false},
-      ticks:{maxTicksLimit:4,color:'#ef4444',callback:v=>Math.round(v)}};
+      ticks:{maxTicksLimit:4,color:'#ef4444',callback:v=>Math.round(v)},
+      afterFit: axis => { axis.width = 50; }};
     if(active['cad'])   sc.yR3={position:'right',grid:{display:false},border:{display:false},
-      ticks:{maxTicksLimit:4,color:'#a78bfa',callback:v=>Math.round(v)}};
+      ticks:{maxTicksLimit:4,color:'#a78bfa',callback:v=>Math.round(v)},
+      afterFit: axis => { axis.width = 50; }};
     if(active['pace'])  sc.yR4={position:'right',reverse:isRun,grid:{display:false},border:{display:false},
       ticks:{maxTicksLimit:4,color:'#fbbf24',
-        callback:v=>isRun?`${Math.floor(v)}:${String(Math.round((v%1)*60)).padStart(2,'0')}`:v.toFixed(0)+' km/h'}};
+        callback:v=>isRun?`${Math.floor(v)}:${String(Math.round((v%1)*60)).padStart(2,'0')}`:v.toFixed(0)+' km/h'},
+      afterFit: axis => { axis.width = 50; }};
     return sc;
   }
 
@@ -1012,7 +1009,6 @@ function buildElevationChart(data, ftp, hrmax) {
     window._elevChart.update();
   };
 
-  // Toggle buttons
   const togglesEl=document.getElementById('metric-toggles');
   if(togglesEl) togglesEl.innerHTML=METRICS.filter(m=>!m.always).map(m=>
     `<button class="metric-toggle ${active[m.id]?'active':''}" data-metric="${m.id}"
@@ -1027,7 +1023,9 @@ function toggleMetric(id,btn) {
   if(window._rebuildElevChart) window._rebuildElevChart();
 }
 
-/* ── PRIMARY TRACE: time-series trace, zone-coloured ── */
+/* ── PRIMARY TRACE ──
+   Fix #2c: Check isRunning() BEFORE isCycling() so running activities
+   with power data still show Pace as primary metric, not Power. */
 async function buildPrimaryTrace(data, ftp, hrmax) {
   const s = data.streams||{}, time = s.time||[], sport = data.sport_type;
   const isCyc = isCycling(sport), isRun = isRunning(sport);
@@ -1037,33 +1035,7 @@ async function buildPrimaryTrace(data, ftp, hrmax) {
     return;
   }
 
-  if (isCyc && s.watts?.length) {
-    // ── Left: Power time-series, zone-coloured ──
-    document.getElementById('primary-trace-title').textContent = 'Power';
-    document.getElementById('curve-title').textContent = '90-Day Power Curve';
-    const dec = decimateChartData(time, s.watts);
-    const zc  = ftp ? dec.data.map(v => v!=null ? POWER_ZONE_COLOURS[getPowerZone(v,ftp)] : '#9ca3af') : null;
-    makeChart('chart-primary', [{
-      label: 'Power',
-      data:  dec.time.map((t,i) => ({x:t, y:dec.data[i]??null})),
-      borderColor: zc ? 'transparent' : '#00e5ff',
-      _zoneColors: zc,
-      backgroundColor: 'transparent', fill: true,
-      _gradientTop:    'rgba(0,255,135,0.35)',
-      _gradientBottom: 'rgba(0,255,135,0.0)',
-      borderWidth: 2, pointRadius: 0, tension: 0, yAxisID: 'y'
-    }], {
-      y: { position:'left',
-           grid:{color:'rgba(255,255,255,0.04)'}, border:{color:'rgba(255,255,255,0.08)'},
-           ticks:{maxTicksLimit:5, color:'#00e5ff', callback:v=>Math.round(v)+'W'} }
-    }, time);
-
-    // ── Right: Power-duration curve — x=duration(s), y=watts ──
-    await buildDurationCurve('chart-curve', 'power', s.watts, ftp, 'W',
-      v => Math.round(v)+'W', '#00e5ff');
-
-  } else if (isRun && s.velocity_smooth?.length) {
-    // ── Left: Pace time-series, zone-coloured by HR ──
+  if (isRun && s.velocity_smooth?.length) {
     document.getElementById('primary-trace-title').textContent = 'Pace';
     document.getElementById('curve-title').textContent = '90-Day Pace Curve';
     const paceArr = s.velocity_smooth.map(v => v>0 ? +(1000/v/60).toFixed(3) : null);
@@ -1083,65 +1055,66 @@ async function buildPrimaryTrace(data, ftp, hrmax) {
       y: { position:'left', reverse:true,
            grid:{color:'rgba(255,255,255,0.04)'}, border:{color:'rgba(255,255,255,0.08)'},
            ticks:{maxTicksLimit:5, color:'#00ff87',
-             callback:v=>`${Math.floor(v)}:${String(Math.round((v%1)*60)).padStart(2,'0')}`} }
+             callback:v=>`${Math.floor(v)}:${String(Math.round((v%1)*60)).padStart(2,'0')}`},
+           afterFit: axis => { axis.width = 50; } }
     }, time);
-
-    // ── Right: Pace-duration curve — x=duration(s), y=min/km ──
     await buildDurationCurve('chart-curve', 'pace', s.velocity_smooth, null, 'min/km',
-      v => `${Math.floor(v)}:${String(Math.round((v%1)*60)).padStart(2,'0')}`, '#00ff87', true,
-      s.distance);
+      v => `${Math.floor(v)}:${String(Math.round((v%1)*60)).padStart(2,'0')}`, '#00ff87', true, s.distance);
+
+  } else if (isCyc && s.watts?.length) {
+    document.getElementById('primary-trace-title').textContent = 'Power';
+    document.getElementById('curve-title').textContent = '90-Day Power Curve';
+    const dec = decimateChartData(time, s.watts);
+    const zc  = ftp ? dec.data.map(v => v!=null ? POWER_ZONE_COLOURS[getPowerZone(v,ftp)] : '#9ca3af') : null;
+    makeChart('chart-primary', [{
+      label: 'Power',
+      data:  dec.time.map((t,i) => ({x:t, y:dec.data[i]??null})),
+      borderColor: zc ? 'transparent' : '#00e5ff',
+      _zoneColors: zc,
+      backgroundColor: 'transparent', fill: true,
+      _gradientTop: 'rgba(0,255,135,0.35)', _gradientBottom: 'rgba(0,255,135,0.0)',
+      borderWidth: 2, pointRadius: 0, tension: 0, yAxisID: 'y'
+    }], {
+      y: { position:'left',
+           grid:{color:'rgba(255,255,255,0.04)'}, border:{color:'rgba(255,255,255,0.08)'},
+           ticks:{maxTicksLimit:5, color:'#00e5ff', callback:v=>Math.round(v)+'W'},
+           afterFit: axis => { axis.width = 50; } }
+    }, time);
+    await buildDurationCurve('chart-curve', 'power', s.watts, ftp, 'W', v => Math.round(v)+'W', '#00e5ff');
   }
 }
 
-/* ── DURATION CURVE with 90d best behind it ──
-   Builds a power or pace curve from the activity stream:
-   for each duration bucket, find the best (highest power / fastest pace)
-   sustained average over that window.
-   Then fetches the 90d best from S3 and renders it behind.
-   x = duration in seconds, y = watts or min/km
-── */
 async function buildDurationCurve(canvasId, type, rawStream, ref, unit, tickFmt, colour, reverseY, distStream) {
   const ctx = document.getElementById(canvasId);
   if (!ctx || !rawStream?.length) return;
 
-  // For pace: x = distance in metres; for power: x = duration in seconds
   const isPace = type === 'pace';
-
-  // Power: time buckets 5s→activity length. Pace: distance buckets 100m→total distance
   const maxDur = rawStream.length;
   const totalDistM = distStream?.length ? distStream[distStream.length-1] : 0;
   const buckets = [];
 
   if (isPace && totalDistM > 0) {
-    // Distance buckets: 100m, 200m, 400m, 800m, 1k, 2k, 3k, 5k, 8k, 10k, 16k, 21k, 42k
     const distBuckets = [100,200,400,800,1000,1500,2000,3000,5000,8000,10000,16000,21097,42195];
     distBuckets.forEach(d => { if(d <= totalDistM) buckets.push(d); });
   } else {
-    // Time buckets: 5s through activity length, log-spaced
     for (let s=5; s<=maxDur; s = s<60?s+5:s<300?s+15:s<3600?s+30:s+120) buckets.push(s);
   }
 
-  // For each bucket, calculate best sustained performance
   const activityBest = buckets.map(bucket => {
     if (isPace && distStream?.length) {
-      // Pace: find fastest time to cover 'bucket' metres anywhere in activity
-      // distStream is cumulative distance array
       let bestSec = Infinity;
       for (let i=0; i<distStream.length; i++) {
         const targetDist = (distStream[i]||0) + bucket;
-        // Find first index where cumulative distance >= targetDist
         let j = i+1;
         while(j<distStream.length && (distStream[j]||0) < targetDist) j++;
         if(j>=distStream.length) break;
-        const elapsed = j - i; // seconds (1Hz)
+        const elapsed = j - i;
         if(elapsed < bestSec) bestSec = elapsed;
       }
       if(!isFinite(bestSec)) return null;
-      // Convert to min/km pace
       const mps = bucket / bestSec;
       return mps > 0 ? +(1000/mps/60).toFixed(3) : null;
     } else {
-      // Power: best average over duration window
       const dur = bucket;
       if (dur > rawStream.length) return null;
       let best = 0;
@@ -1157,8 +1130,6 @@ async function buildDurationCurve(canvasId, type, rawStream, ref, unit, tickFmt,
   });
 
   const datasets = [];
-
-  // 90d best from static S3 file
   try {
     const filename = isPace ? 'pace_curves_90d.json' : 'power_curves_90d.json';
     const r = await fetch(`${CF_BASE}data/${filename}`);
@@ -1168,10 +1139,7 @@ async function buildDurationCurve(canvasId, type, rawStream, ref, unit, tickFmt,
       if (curve?.values?.length) {
         let best90;
         if (isPace) {
-          // Pace curve: curve.distance[] = metres, curve.values[] = seconds to cover that distance
-          // Convert to min/km pace for display
-          const dists  = curve.distance || [];
-          const times  = curve.values || [];
+          const dists = curve.distance || [], times = curve.values || [];
           best90 = buckets.map(distBucket => {
             const idx = dists.findIndex(d => d >= distBucket);
             if (idx === -1) return null;
@@ -1181,7 +1149,6 @@ async function buildDurationCurve(canvasId, type, rawStream, ref, unit, tickFmt,
             return mps > 0 ? +(1000/mps/60).toFixed(3) : null;
           });
         } else {
-          // Power curve: curve.secs[] = durations, curve.values[] = watts
           const secs = curve.secs || [];
           best90 = buckets.map(dur => {
             const idx = secs.findIndex(s => s >= dur);
@@ -1193,8 +1160,7 @@ async function buildDurationCurve(canvasId, type, rawStream, ref, unit, tickFmt,
         datasets.push({
           label: '90d Best',
           data: buckets.map((d,i) => ({x:d, y:best90[i]??null})),
-          borderColor: 'rgba(255,255,255,0.25)',
-          backgroundColor: 'rgba(255,255,255,0.05)',
+          borderColor: 'rgba(255,255,255,0.25)', backgroundColor: 'rgba(255,255,255,0.05)',
           fill: true, borderWidth: 1.5, pointRadius: 0, tension: 0.3,
           borderDash: [4,3], order: 10
         });
@@ -1202,19 +1168,16 @@ async function buildDurationCurve(canvasId, type, rawStream, ref, unit, tickFmt,
     }
   } catch(_) {}
 
-  // Activity best curve on top
   datasets.push({
     label: 'This Activity',
     data: buckets.map((d,i) => ({x:d, y:activityBest[i]??null})),
     borderColor: colour,
     backgroundColor: colour.replace(')', ',0.1)').replace('rgb','rgba'),
-    fill: false, borderWidth: 2, pointRadius: 0, tension: 0.3,
-    order: 1
+    fill: false, borderWidth: 2, pointRadius: 0, tension: 0.3, order: 1
   });
 
   new Chart(ctx, {
-    type: 'line',
-    data: {datasets},
+    type: 'line', data: {datasets},
     options: {
       responsive: true, maintainAspectRatio: false, animation: false,
       layout: {padding:{right:0}},
@@ -1239,13 +1202,13 @@ async function buildDurationCurve(canvasId, type, rawStream, ref, unit, tickFmt,
         y: {
           reverse: reverseY||false,
           grid:{color:'rgba(255,255,255,0.04)'}, border:{color:'rgba(255,255,255,0.08)'},
-          ticks:{maxTicksLimit:5, color:colour, callback:tickFmt}
+          ticks:{maxTicksLimit:5, color:colour, callback:tickFmt},
+          afterFit: axis => { axis.width = 50; }
         }
       }
     }
   });
 }
-
 
 /* ── HR TRACE + ZONE BARS ── */
 function buildHrSection(data, hrmax) {
@@ -1261,7 +1224,6 @@ function buildHrSection(data, hrmax) {
     borderWidth:2,pointRadius:0,tension:0};
   makeChart('chart-hr',[ds],{},dec.time);
 
-  // HR zone bars (time in zone %)
   const hzEl=document.getElementById('hr-zone-bars');
   if(!hrmax) { hzEl.innerHTML='<div style="color:var(--text-muted);font-size:10px;font-family:var(--font-mono)">Set max HR to see zones</div>'; return; }
   const counts=new Array(5).fill(0);
@@ -1283,15 +1245,11 @@ function buildHrSection(data, hrmax) {
   }).join('');
 }
 
-/* ── CADENCE + SPEED CHARTS ──
-   Cycling: cadence (left) | speed (right)
-   Running: cadence full width (speed card hidden)
-── */
+/* ── CADENCE + SPEED CHARTS ── */
 function buildCadenceSpeed(data) {
   const s=data.streams||{}, time=s.time||[], sport=data.sport_type;
   const isCyc=isCycling(sport), isRun=isRunning(sport);
 
-  // Cadence
   if (s.cadence?.length) {
     document.getElementById('cadence-title').textContent =
       isCyc ? 'Cadence (rpm)' : isRun ? 'Cadence (spm)' : 'Stroke Rate';
@@ -1303,11 +1261,9 @@ function buildCadenceSpeed(data) {
       fill:true, borderWidth:1.5, pointRadius:0, tension:0
     }], {}, dec.time);
   } else {
-    // No cadence — hide left card
     document.getElementById('cad-speed-row').querySelector('.act-card').style.display='none';
   }
 
-  // Speed — cycling only
   if (isCyc && s.velocity_smooth?.length) {
     const speedArr = s.velocity_smooth.map(v => v!=null ? +(v*3.6).toFixed(2) : null);
     const dec = decimateChartData(time, speedArr);
@@ -1322,7 +1278,6 @@ function buildCadenceSpeed(data) {
          grid:{color:'rgba(255,255,255,0.04)'}, border:{color:'rgba(255,255,255,0.08)'}}
     }, dec.time);
   } else {
-    // Hide speed card, expand cadence to full width
     document.getElementById('speed-card').style.display='none';
     document.getElementById('cad-speed-row').style.gridTemplateColumns='1fr';
   }
@@ -1395,7 +1350,6 @@ async function init() {
   if(!actId) { showError('No activity ID specified.',''); return; }
   if(!actId.startsWith('i')) actId='i'+actId;
 
-  // Fetch stream JSON
   let data;
   try {
     const r=await fetch(`${CF_BASE}data/streams/${actId}.json`);
@@ -1407,14 +1361,12 @@ async function init() {
   const ftp   = data.icu_ftp||null;
   const hrmax = data.athlete_max_hr||null;
 
-  // Sync status
   const syncEl=document.getElementById('last-sync');
   if(syncEl&&data.synced_at) {
     const d=new Date(data.synced_at);
     syncEl.textContent=d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+' sync';
   }
 
-  // Header — name and date now in stream JSON
   const badge=document.getElementById('sport-badge');
   badge.textContent=`${sportIcon(sport)} ${sport.replace(/([A-Z])/g,' $1').trim()}`;
   badge.className=`act-sport-badge ${sport}`;
@@ -1423,24 +1375,27 @@ async function init() {
   document.getElementById('kudos-count').textContent   = data.kudos_count??'0';
   document.title=`${data.name||'Activity'} — Training OS`;
 
-  // Strava link
-  // Strava link — strava_id stored in stream JSON
-  if(data.strava_id) {
+  // Strava + Intervals.icu links
+  if(data.strava_id || data.activity_id) {
     const sr=document.getElementById('strava-row');
-    const sl=document.getElementById('strava-link');
-    if(sr&&sl) {
-      sl.href=`https://www.strava.com/activities/${data.strava_id}`;
-      sl.innerHTML='<img src="https://www.strava.com/favicon.ico" style="width:14px;height:14px;vertical-align:middle;margin-right:5px" onerror="this.style.display=&quot;none&quot;">View on Strava →';
-      sr.style.display='flex';
+    if(sr) sr.style.display='flex';
+    if(data.strava_id) {
+      const sl=document.getElementById('strava-link');
+      if(sl) {
+        sl.href=`https://www.strava.com/activities/${data.strava_id}`;
+        sl.innerHTML='<img src="https://www.strava.com/favicon.ico" style="width:14px;height:14px;vertical-align:middle;margin-right:5px" onerror="this.style.display=&quot;none&quot;">View on Strava →';
+      }
+    }
+    if(data.activity_id) {
+      const il=document.getElementById('intervals-link');
+      if(il) { il.href=`https://intervals.icu/activities/${data.activity_id}`; il.style.display='inline-flex'; }
     }
   }
 
-  // Build all sections
   buildSummaryCards(data, ftp);
   buildWorkoutStats(data, ftp);
   buildElevationChart(data, ftp, hrmax);
 
-  // Map — deferred after content reveal
   const latlng=data.streams?.latlng;
   if(latlng?.length && !isRowing(sport)) {
     window._pendingMap=()=>initMap(latlng, data.streams?.watts, data.streams?.heartrate, sport, ftp, hrmax);
@@ -1455,11 +1410,9 @@ async function init() {
   buildSegments(data.segments);
   buildLaps(data.laps, sport);
 
-  // Show content
   document.getElementById('loading-state').classList.add('hidden');
   document.getElementById('activity-content').classList.remove('hidden');
 
-  // Init map after content visible
   if(window._pendingMap) {
     requestAnimationFrame(()=>requestAnimationFrame(()=>{
       window._pendingMap(); window._pendingMap=null;

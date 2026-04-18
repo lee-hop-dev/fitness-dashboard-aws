@@ -6,6 +6,20 @@
 
 const API_BASE = 'https://j2zxz92vd4.execute-api.eu-west-2.amazonaws.com/prod';
 
+// Return a date string as YYYY-MM-DD using local calendar date.
+// NEVER use toISOString() for date cutoffs — it returns UTC and in BST
+// produces yesterday's date, silently cutting off today's activities.
+function localDateStr(d) {
+  d = d || new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function localDateOffset(days) {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return localDateStr(d);
+}
+
 const DATA = {
   _cache: {},
 
@@ -21,13 +35,6 @@ const DATA = {
     return data;
   },
 
-  // ── Normalise a single activity from Intervals.icu field names to page field names ──
-  // Intervals.icu field → page expects
-  //   start_date          → date
-  //   moving_time         → duration
-  //   icu_average_watts   → avg_power
-  //   average_heartrate   → avg_hr
-  //   icu_intensity       → if_val  (stored as 0-1 float, e.g. 0.85)
   _normaliseActivity(a) {
     return {
       ...a,
@@ -35,19 +42,12 @@ const DATA = {
       duration:  a.moving_time    || a.duration     || 0,
       avg_power: a.icu_average_watts != null ? a.icu_average_watts : (a.avg_power ?? null),
       avg_hr:    a.average_heartrate != null ? a.average_heartrate : (a.avg_hr   ?? null),
-      // icu_intensity is stored as a ratio (e.g. 0.85); pages use if_val directly
       if_val:    a.icu_intensity  != null ? a.icu_intensity  : (a.if_val ?? null),
       tss:       a.icu_training_load != null ? a.icu_training_load : (a.tss ?? 0),
-      // average_speed from Intervals.icu (m/s) → avg_speed used by running/cycling pages
       avg_speed: a.average_speed != null ? a.average_speed : (a.avg_speed ?? null),
     };
   },
 
-  // ── Normalise a single wellness entry from Intervals.icu field names ──
-  // Intervals.icu field → page expects
-  //   restingHR   → resting_hr
-  //   sleepSecs   → sleep  (converted to hours)
-  //   ctl/atl/tsb → unchanged
   _normaliseWellness(w) {
     return {
       ...w,
@@ -57,17 +57,11 @@ const DATA = {
     };
   },
 
-  // ── Build heatmap cells from raw activities ──
-  // renderHeatmap() expects: [{ date, level (0-5), tss, sport }]
-  // sport drives the colour (cycling/running/rowing/other)
-  // level drives the opacity intensity
   _buildHeatmapCells(activities, days) {
-    // Sport priority for dominant-sport calculation
     const SPORT_PRIORITY = { VirtualRide:1, Ride:1, GravelRide:1, MountainBikeRide:1,
                                Run:2, VirtualRun:2, TrailRun:2,
                                Rowing:3, VirtualRow:3 };
 
-    // Build a map of date → { tss, sport (dominant) }
     const byDate = {};
     activities.forEach(a => {
       const date = a.start_date || a.date;
@@ -76,12 +70,10 @@ const DATA = {
       const type = a.type || 'Other';
       if (!byDate[date]) byDate[date] = { tss: 0, sport: type, priority: SPORT_PRIORITY[type] || 99 };
       byDate[date].tss += tss;
-      // Keep the highest-priority sport for the day
       const p = SPORT_PRIORITY[type] || 99;
       if (p < byDate[date].priority) { byDate[date].sport = type; byDate[date].priority = p; }
     });
 
-    // Map sport type → heatmap sport category
     const sportCategory = (type) => {
       if (!type) return 'other';
       const t = type.toLowerCase();
@@ -91,16 +83,13 @@ const DATA = {
       return 'other';
     };
 
-    // Generate all dates for the range, oldest first
+    // Use localDateOffset — toISOString() returns UTC and produces the wrong
+    // date in BST, causing today to appear as yesterday in the heatmap.
     const cells = [];
-    const today = new Date();
     for (let i = days - 1; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
+      const dateStr = localDateOffset(i);
       const entry = byDate[dateStr];
       const tss = entry?.tss || 0;
-      // If there's any activity, show at least level 2 so it's clearly visible
       const level = tss === 0 ? 0
                   : tss < 40  ? 2
                   : tss < 80  ? 3
@@ -111,9 +100,6 @@ const DATA = {
     return cells;
   },
 
-  // ── Normalise YTD API response ──
-  // API: { ytd: { Ride:{count,tss,moving_time_s,distance_m,elevation_m}, Run:{...} } }
-  // Pages expect: { total:{distance,hours,tss}, cycling:{...}, running:{...}, rowing:{...} }
   _normaliseYTD(raw) {
     const sports = raw.ytd || {};
     const CYCLING = ['Ride','VirtualRide','EBikeRide','EMountainBikeRide','GravelRide','MountainBikeRide','TrackRide','Velomobile'];
@@ -156,9 +142,6 @@ const DATA = {
     return { total, cycling, running, rowing, other, raw: sports };
   },
 
-  // ── Normalise weeklyTSS ──
-  // API: [{ week, sports:{ Ride:n, VirtualRide:n, Run:n, ... }, total }]
-  // charts.js expects: [{ week, ride, run, row, other }]
   _normaliseWeeklyTSS(raw) {
     const CYCLING = ['Ride','VirtualRide','EBikeRide','EMountainBikeRide','GravelRide','MountainBikeRide','TrackRide','Velomobile'];
     const RUNNING = ['Run','VirtualRun','TrailRun'];
@@ -180,12 +163,6 @@ const DATA = {
     });
   },
 
-  // ── loadAll ──────────────────────────────────────────────────────────────
-  // activityDays: how many days of activities to load for the main list
-  //   default 90 — enough for cycling/running recent cards and charts
-  //   pass 400 for rowing/running pages that need all-time PBs
-  // Note: heatmap data is NOT loaded here. index.html calls loadHeatmap1y()
-  //   separately after the main data resolves so sport pages pay no cost.
   async loadAll({ activityDays = 90 } = {}) {
     const [
       activitiesResp,
@@ -207,32 +184,21 @@ const DATA = {
       this._fetch('/hr-curve'),
     ]);
 
-    // Normalise activities — map Intervals.icu field names to page field names
     const activities = (activitiesResp.activities || []).map(a => this._normaliseActivity(a));
-
-    // Normalise wellness — map restingHR/sleepSecs to resting_hr/sleep
     const wellness = (wellnessResp.wellness || []).map(w => this._normaliseWellness(w));
-
-    // Normalise weeklyTSS and ytd
     const weeklyTSS = this._normaliseWeeklyTSS(weeklyTSSResp.weekly_tss);
     const ytd = this._normaliseYTD(ytdResp);
 
-    // Athlete — map Intervals.icu field names
     const profile = athleteResp.profile || {};
-    // W'bal (icu_w_prime) is per-activity, not on the athlete profile.
-    // Take the most recent non-null value across activities — same approach as original collector.
     const wPrime = (activitiesResp.activities || [])
       .find(a => a.icu_w_prime != null)?.icu_w_prime ?? null;
 
-    // Extract threshold_pace from the Run sport settings.
-    // GET /athlete/{id} returns WithSportSettings which includes sportSettings[].
-    // threshold_pace from Intervals.icu is stored in m/s — convert to seconds/km for display.
     const runSettings = (profile.sportSettings || []).find(s =>
       Array.isArray(s.types) && s.types.includes('Run')
     );
-    const rawThresholdMps = runSettings?.threshold_pace ?? null; // m/s from Intervals.icu
+    const rawThresholdMps = runSettings?.threshold_pace ?? null;
     const threshold_pace = rawThresholdMps != null && rawThresholdMps > 0
-      ? Math.round(1000 / rawThresholdMps)  // convert m/s → seconds per km
+      ? Math.round(1000 / rawThresholdMps)
       : null;
 
     const athlete = {
@@ -240,10 +206,9 @@ const DATA = {
       ftp:             profile.icu_ftp  || profile.ftp    || null,
       w_prime:         wPrime,
       weight:          profile.icu_weight || profile.weight || null,
-      threshold_pace,  // seconds per km from Run sport settings; null if not configured
+      threshold_pace,
     };
 
-    // Meta — assemble from three curve endpoints
     const meta = {
       ...powerCurveResp,
       power_curve: powerCurveResp.watts
@@ -260,16 +225,10 @@ const DATA = {
     return { activities, wellness, weeklyTSS, ytd, athlete, meta };
   },
 
-  // ── loadHeatmap1y ────────────────────────────────────────────────────────
-  // Fetches 365 days of activities and builds heatmap cells.
-  // Called only by index.html — deferred after main loadAll() resolves so
-  // sport pages (cycling/running/rowing/cardio) pay zero cost for heatmap data.
   async loadHeatmap1y() {
     const resp = await this._fetch('/activities', { days: 365, limit: 1000 });
     return this._buildHeatmapCells(resp.activities || [], 365);
   },
-
-  // ── Helpers ───────────────────────────────────────────────────────────────
 
   latestWellness(wellness) {
     const rev = [...wellness].reverse();
@@ -285,12 +244,14 @@ const DATA = {
   },
 
   recentActivities(activities, days = 7) {
-    const cutoff = new Date(Date.now() - days * 864e5).toISOString().split('T')[0];
+    // Use local date arithmetic — toISOString() returns UTC and in BST
+    // produces yesterday's date, cutting today's activities out of Last 7 Days.
+    const cutoff = localDateOffset(days);
     return activities.filter(a => (a.date || a.start_date) >= cutoff);
   },
 
   powerBests(activities) {
-    const cutoff = new Date(Date.now() - 90 * 864e5).toISOString().split('T')[0];
+    const cutoff = localDateOffset(90);
     const rides  = activities.filter(a =>
       (a.type === 'Ride' || a.type === 'VirtualRide') &&
       (a.date || a.start_date) >= cutoff &&
@@ -306,7 +267,7 @@ const DATA = {
   },
 
   paceBests(activities) {
-    const cutoff = new Date(Date.now() - 90 * 864e5).toISOString().split('T')[0];
+    const cutoff = localDateOffset(90);
     const runs   = activities.filter(a =>
       (a.type === 'Run' || a.type === 'VirtualRun') &&
       (a.date || a.start_date) >= cutoff &&
@@ -330,7 +291,7 @@ const DATA = {
   },
 
   pbMarkers(activities) {
-    const cutoff = new Date(Date.now() - 90 * 864e5).toISOString().split('T')[0];
+    const cutoff = localDateOffset(90);
     const tssOf  = a => a.tss || 0;
     const recent = activities.filter(a => (a.date || a.start_date) >= cutoff && tssOf(a) > 0);
     if (!recent.length) return [];

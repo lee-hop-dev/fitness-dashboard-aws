@@ -182,7 +182,8 @@ def sync_activities(api_key: str, days: int = 400) -> int:
       icu_training_load     — TSS equivalent
       icu_average_watts     — average power
       icu_weighted_avg_watts— normalised power
-      icu_intensity         — intensity factor (0.0–1.0+, NOT percent)
+      icu_intensity         — intensity factor on 0-100+ scale (NOT 0.0-1.0)
+                              — frontend divides by 100 to show 0.90 etc.
       icu_ftp               — FTP at time of activity
       icu_w_prime           — W\'bal
       icu_weight            — weight at time of activity
@@ -685,13 +686,36 @@ def _fetch_strava_activity_data(strava_id: str, access_token: str) -> tuple:
 
 def _fetch_laps(activity_id: str, api_key: str) -> tuple:
     """
-    Fetch lap/interval data and key activity metrics from Intervals.icu.
-    Returns (laps, meta) where meta contains icu_ftp and athlete_max_hr.
-    Single API call — reuses the activity detail endpoint already needed for laps.
+    Fetch lap/interval data and full activity metrics from Intervals.icu.
+    Returns (laps, meta). Meta contains all fields required by the frontend
+    summary + hero panels — everything pre-calculated by Intervals, no
+    browser-side recalculation needed.
+    Single API call — reuses the activity detail endpoint for laps.
     activity_id must include the 'i' prefix (e.g. 'i135229442').
 
     Correct endpoint: /api/v1/activity/{id}?intervals=true
     Ref: https://forum.intervals.icu/t/solved-how-to-fetch-lap-interval-data-via-api/126341
+
+    Field audit (2026-04 — verified against live DynamoDB rows):
+      Universal (present on Ride/Run/Row, though some null on very short sessions):
+        moving_time, distance, average_speed, pace, max_speed,
+        average_heartrate, max_heartrate, athlete_max_hr,
+        average_cadence (unit differs per sport: rpm/spm/strokes-per-min),
+        average_stride, icu_training_load, icu_weight,
+        polarization_index, trimp, icu_hr_zones, icu_hr_zone_times,
+        hr_load, hr_load_type
+      Ride-only (null for Run/Row):
+        icu_average_watts, icu_weighted_avg_watts, icu_w_prime,
+        icu_variability_index, icu_efficiency_factor, icu_joules,
+        icu_intensity (0-100 scale, divide by 100 for display),
+        decoupling (already a %), icu_zone_times (power),
+        strain_score, power_load
+      Run-only (null for Ride/Row):
+        pace_zone_times, pace_load, gap
+      Sport-specific FTP:
+        icu_ftp — sport-specific FTP at activity time (Ride or Run)
+      Elevation (null for indoor):
+        total_elevation_gain, total_elevation_loss
     """
     try:
         raw = intervals_get(
@@ -701,18 +725,74 @@ def _fetch_laps(activity_id: str, api_key: str) -> tuple:
         )
         if not isinstance(raw, dict):
             return [], {}
-        # Extract key metrics — icu_ftp is sport-specific FTP at activity time
-        # athlete_max_hr is the athlete's configured max HR (consistent across sports)
-        # Also capture name and start_date_local for frontend display
+
+        # Build meta dict — pass Intervals values through verbatim.
+        # Use .get() so missing fields become None (handled by frontend as "hide tile").
         meta = {
-            "icu_ftp":          raw.get("icu_ftp"),
-            "athlete_max_hr":   raw.get("athlete_max_hr"),
-            "name":             raw.get("name", ""),
-            "start_date_local": raw.get("start_date_local", ""),
+            # ── Identity & display ────────────────────────────────────────────
+            "name":                   raw.get("name", ""),
+            "start_date_local":       raw.get("start_date_local", ""),
+            # ── Duration & distance ───────────────────────────────────────────
+            "moving_time":            raw.get("moving_time"),
+            "elapsed_time":           raw.get("elapsed_time"),
+            "distance":               raw.get("distance"),
+            "average_speed":          raw.get("average_speed"),
+            "max_speed":              raw.get("max_speed"),
+            "pace":                   raw.get("pace"),
+            # ── Heart rate ────────────────────────────────────────────────────
+            "average_heartrate":      raw.get("average_heartrate"),
+            "max_heartrate":          raw.get("max_heartrate"),
+            "athlete_max_hr":         raw.get("athlete_max_hr"),
+            "lthr":                   raw.get("lthr"),
+            "icu_resting_hr":         raw.get("icu_resting_hr"),
+            "icu_hr_zones":           raw.get("icu_hr_zones"),
+            "icu_hr_zone_times":      raw.get("icu_hr_zone_times"),
+            # ── Cadence & stride ──────────────────────────────────────────────
+            "average_cadence":        raw.get("average_cadence"),
+            "average_stride":         raw.get("average_stride"),
+            # ── Power (Ride-only; null elsewhere) ─────────────────────────────
+            "icu_ftp":                raw.get("icu_ftp"),
+            "icu_average_watts":      raw.get("icu_average_watts"),
+            "icu_weighted_avg_watts": raw.get("icu_weighted_avg_watts"),
+            "icu_w_prime":            raw.get("icu_w_prime"),
+            "icu_variability_index":  raw.get("icu_variability_index"),
+            "icu_efficiency_factor":  raw.get("icu_efficiency_factor"),
+            "icu_joules":             raw.get("icu_joules"),
+            "icu_joules_above_ftp":   raw.get("icu_joules_above_ftp"),
+            "icu_power_zones":        raw.get("icu_power_zones"),
+            "icu_zone_times":         raw.get("icu_zone_times"),
+            "decoupling":             raw.get("decoupling"),
+            "strain_score":           raw.get("strain_score"),
+            # ── Run-only ──────────────────────────────────────────────────────
+            "pace_zones":             raw.get("pace_zones"),
+            "pace_zone_times":        raw.get("pace_zone_times"),
+            "gap_zone_times":         raw.get("gap_zone_times"),
+            "gap":                    raw.get("gap"),
+            # ── Training load ─────────────────────────────────────────────────
+            "icu_training_load":      raw.get("icu_training_load"),
+            "icu_intensity":          raw.get("icu_intensity"),   # 0-100 scale
+            "hr_load":                raw.get("hr_load"),
+            "pace_load":              raw.get("pace_load"),
+            "power_load":             raw.get("power_load"),
+            "hr_load_type":           raw.get("hr_load_type"),
+            "trimp":                  raw.get("trimp"),
+            "polarization_index":     raw.get("polarization_index"),
+            # ── Weight & context ──────────────────────────────────────────────
+            "icu_weight":             raw.get("icu_weight"),
+            # ── Elevation (null for indoor) ───────────────────────────────────
+            "total_elevation_gain":   raw.get("total_elevation_gain"),
+            "total_elevation_loss":   raw.get("total_elevation_loss"),
+            "min_altitude":           raw.get("min_altitude"),
+            "max_altitude":           raw.get("max_altitude"),
+            # ── Source / context ──────────────────────────────────────────────
+            "source":                 raw.get("source"),
+            "device_name":            raw.get("device_name"),
+            "trainer":                raw.get("trainer"),
+            "has_segments":           raw.get("has_segments"),
         }
         intervals = raw.get("icu_intervals", [])
         if not isinstance(intervals, list):
-            return []
+            return [], meta
         laps = []
         lap_num = 0
         for interval in intervals:
@@ -749,8 +829,12 @@ def sync_streams_14d(api_key: str, access_token: str) -> dict:
       1. Fetch streams (power, HR, cadence, GPS etc) from Intervals.icu
       2. Fetch kudos count from Strava (count only, one-time snapshot)
       3. Fetch and filter segment efforts (PR top-3, overall top-10, AG top-10)
-      4. Fetch lap splits from Intervals.icu
+      4. Fetch lap splits + full activity metrics from Intervals.icu
       5. Write combined payload to S3: data/streams/{activity_id}.json
+
+    The payload includes all Intervals pre-calculated values (TSS/NP/IF/VI/
+    decoupling/work etc) in the top level — frontend reads directly, no
+    client-side recalculation. See _fetch_laps() meta block for full field list.
 
     Files are Lambda-managed — never overwritten by frontend deploys.
     CloudFront serves them as static assets — no Lambda in the page load path.
@@ -842,22 +926,25 @@ def sync_streams_14d(api_key: str, access_token: str) -> dict:
                 del streams["latlng"]
                 logger.info(f"{activity_id}: removed Intervals latlng (no Strava polyline available)")
 
-            # 4. Lap splits + activity metrics from Intervals.icu (single call)
+            # 4. Lap splits + full activity metrics from Intervals.icu (single call)
+            #    activity_meta contains every pre-calculated field the frontend needs.
             laps, activity_meta = _fetch_laps(activity_id, api_key)
 
             # 5. Assemble payload and write to S3
-            # Store icu_ftp (sport-specific FTP at activity time) and athlete_max_hr
-            # for use by the frontend for power/HR zone colouring on GPS map.
+            #    Top-level shape preserved (activity_id, sport_type, kudos_count,
+            #    icu_ftp, athlete_max_hr, streams, laps, segments) for backwards
+            #    compatibility; all additional Intervals fields are flattened in
+            #    from activity_meta.
             payload = {
+                # ── Identity ──────────────────────────────────────────────────
                 "activity_id":      activity_id,
                 "synced_at":        datetime.now(timezone.utc).isoformat() + "Z",
                 "sport_type":       sport,
-                "name":             activity_meta.get("name", ""),
-                "start_date_local": activity_meta.get("start_date_local", ""),
-                "kudos_count":      kudos_count,
                 "strava_id":        str(strava_id) if strava_id else None,
-                "icu_ftp":          activity_meta.get("icu_ftp"),
-                "athlete_max_hr":   activity_meta.get("athlete_max_hr"),
+                # ── All Intervals pre-calculated fields (see _fetch_laps) ─────
+                **activity_meta,
+                # ── Strava kudos + streams + laps + segments ──────────────────
+                "kudos_count":      kudos_count,
                 "streams":          streams,
                 "laps":             laps,
                 "segments":         segments,

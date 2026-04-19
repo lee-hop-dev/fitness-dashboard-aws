@@ -3,312 +3,1418 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ECRO: Roubaix Monument — Training OS</title>
+<title>Activity — Training OS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="stylesheet" href="assets/css/main.css?v=20260320-5">
+<script src="assets/js/theme-toggle.js"></script>
 <style>
-:root{
-  --cream:#f8f6f1;--cream-dk:#f0ece3;--cream-border:#e2ddd4;
-  --ink:#1a1714;--ink-soft:#4a4540;--ink-muted:#8c857c;
-  --tc:#c85a1e;--tc-lt:#fef0e8;--tc-mid:#f0d5c5;
-  --amber:#d4860c;--blue:#1e4a7a;--green:#2d6a4f;--green-lt:#e8f5ee;
-  --z1:#93c5fd;--z2:#34d399;--z3:#fbbf24;--z4:#c85a1e;--z5:#dc2626;
-  --r-sm:6px;--r-md:10px;--r-lg:16px;
-  --sh:0 1px 4px rgba(26,23,20,.07);--sh-md:0 4px 14px rgba(26,23,20,.09);
+/* ============================================================
+   ACTIVITY DETAIL — local styles only
+   All colour/font/radius tokens from main.css
+   ============================================================ */
+
+.back-link {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 11px; font-family: var(--font-mono);
+  color: var(--text-muted); text-decoration: none;
+  margin-bottom: 18px; transition: color var(--transition);
 }
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;display:flex}
-.sidebar{width:200px;min-width:200px;background:#fff;border-right:1px solid var(--cream-border);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:200;box-shadow:var(--sh)}
-.sb-brand{padding:1.25rem 1rem 1rem;border-bottom:1px solid var(--cream-border);display:flex;align-items:center;gap:10px}
-.sb-initials{width:34px;height:34px;border-radius:8px;background:var(--tc);color:#fff;font-weight:700;font-size:.8rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.sb-name{font-family:'Lora',serif;font-weight:700;font-size:.85rem;line-height:1.25;color:var(--ink)}
-.sb-name span{color:var(--tc)}
-.sb-nav{padding:.75rem 0;flex:1;overflow-y:auto}
-.sb-item{display:flex;align-items:center;gap:9px;padding:.55rem 1rem;font-size:.82rem;color:var(--ink-muted);text-decoration:none;transition:all .15s;border-left:3px solid transparent}
-.sb-item:hover{color:var(--ink);background:var(--cream)}
-.sb-item.active{color:var(--tc);background:var(--tc-lt);border-left-color:var(--tc);font-weight:500}
-.sb-icon{font-size:13px;width:18px;text-align:center}
-.sb-footer{padding:.75rem 1rem;border-top:1px solid var(--cream-border);font-size:.72rem;color:var(--ink-muted)}
-.main{margin-left:200px;flex:1;min-width:0}
-.topnav{background:#fff;border-bottom:1px solid var(--cream-border);padding:0 1.75rem;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:var(--sh)}
-.topnav-left{display:flex;align-items:center;gap:1rem}
-.back-link{display:flex;align-items:center;gap:5px;font-size:.78rem;font-weight:500;color:var(--ink-muted);text-decoration:none;letter-spacing:.04em;text-transform:uppercase;transition:color .15s}
-.back-link:hover{color:var(--tc)}
-.back-link svg{width:12px;height:12px}
-.bc-sep{color:var(--cream-border);font-size:.9rem}
-.bc-cur{font-size:.78rem;color:var(--ink-muted)}
-.topnav-right{display:flex;align-items:center;gap:.75rem}
-.kudos{display:flex;align-items:center;gap:5px;background:var(--cream);border:1px solid var(--cream-border);border-radius:20px;padding:4px 12px;font-size:.75rem;font-weight:500;color:var(--ink-soft)}
-.kudos .hrt{color:#e53e3e}
-.ext-btn{display:inline-flex;align-items:center;gap:5px;font-size:.75rem;font-weight:500;padding:5px 12px;border-radius:var(--r-sm);text-decoration:none;border:1px solid;transition:all .15s}
-.ext-btn.strava{color:#fc4c02;border-color:#fcd9c7;background:#fff5f1}
-.ext-btn.strava:hover{background:#ffe8dd}
-.ext-btn.icu{color:var(--blue);border-color:#c5d8f0;background:#f0f5fc}
-.ext-btn.icu:hover{background:#daeaf8}
-.hero{background:#fff;border-bottom:1px solid var(--cream-border);padding:1.5rem 1.75rem 1.25rem}
-.hero-badge{display:inline-flex;align-items:center;gap:5px;font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--tc);background:var(--tc-lt);padding:3px 10px;border-radius:20px;margin-bottom:.6rem}
-.hero-title{font-family:'Lora',serif;font-size:1.9rem;font-weight:700;color:var(--ink);letter-spacing:-.02em;line-height:1.15;margin-bottom:.35rem}
-.hero-title .pfx{color:var(--tc)}
-.hero-meta{font-size:.78rem;color:var(--ink-muted)}
-.hero-meta b{color:var(--ink-soft);font-weight:500}
-.stats-strip{display:grid;grid-template-columns:repeat(8,1fr);background:var(--cream-dk);border-top:1px solid var(--cream-border);border-bottom:1px solid var(--cream-border)}
-.sc{background:var(--cream-dk);padding:.85rem 1rem;border-right:1px solid var(--cream-border)}
-.sc:last-child{border-right:none}
-.sc.hi{background:#fff;border-top:2px solid var(--tc)}
-.sv{font-family:'Lora',serif;font-size:1.3rem;font-weight:700;color:var(--ink);letter-spacing:-.02em;line-height:1}
-.sv .u{font-size:.75rem;font-weight:400;font-family:'DM Sans',sans-serif;color:var(--ink-muted);margin-left:1px}
-.sv .sub{display:block;font-size:.65rem;color:var(--ink-muted);font-family:'DM Sans',sans-serif;margin-top:1px}
-.sl{font-size:.62rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-muted);margin-top:3px}
-.sc.hi .sl,.sc.hi .sv{color:var(--tc)}
-.body{padding:1.5rem 1.75rem;max-width:1300px}
-.sec{margin-bottom:1.75rem}
-.sec-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem}
-.sec-title{font-family:'Lora',serif;font-size:1rem;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:8px}
-.sec-title::before{content:'';display:inline-block;width:3px;height:16px;background:var(--tc);border-radius:2px}
-.sec-sub{font-size:.75rem;color:var(--ink-muted)}
-.card{background:#fff;border:1px solid var(--cream-border);border-radius:var(--r-lg);box-shadow:var(--sh);overflow:hidden}
-.cb{padding:1.1rem 1.25rem}
-.tlabel{font-size:.65rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-muted);margin-bottom:.4rem;display:flex;align-items:center;justify-content:space-between}
-.tpeak{font-size:.72rem;color:var(--tc);font-family:'Lora',serif;letter-spacing:0;text-transform:none;font-weight:600}
-.chart-wrap{position:relative;width:100%}
-.stream-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
-.stream-card{background:#fff;border:1px solid var(--cream-border);border-radius:var(--r-lg);box-shadow:var(--sh);padding:1rem 1.1rem}
-.stag{font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem;display:inline-flex;align-items:center;gap:4px}
-.stag .dot{width:6px;height:6px;border-radius:50%}
-.stag.spd{color:var(--green)}.stag.spd .dot{background:var(--green)}
-.stag.hr{color:#e53e3e}.stag.hr .dot{background:#e53e3e}
-.stag.cad{color:var(--amber)}.stag.cad .dot{background:var(--amber)}
-.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.9rem;margin-bottom:.9rem}
-.kpi{background:#fff;border:1px solid var(--cream-border);border-radius:var(--r-md);padding:.9rem 1.1rem;box-shadow:var(--sh);position:relative;overflow:hidden}
-.kpi::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--cream-border)}
-.kpi.hi::after{background:var(--tc)}.kpi.good::after{background:var(--green)}.kpi.warn::after{background:var(--amber)}.kpi.neu::after{background:var(--blue)}
-.kv{font-family:'Lora',serif;font-size:1.4rem;font-weight:700;color:var(--ink);letter-spacing:-.02em;line-height:1;margin-bottom:4px}
-.kv .ku{font-size:.8rem;font-weight:400;font-family:'DM Sans',sans-serif;color:var(--ink-muted)}
-.kl{font-size:.65rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-muted)}
-.kn{font-size:.7rem;color:var(--ink-muted);margin-top:3px;font-style:italic}
-.zones-list{display:flex;flex-direction:column;gap:.55rem}
-.zrow{display:grid;grid-template-columns:26px 90px 1fr 38px 38px;align-items:center;gap:.6rem;font-size:.8rem}
-.zbadge{width:24px;height:24px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:700}
-.zname{color:var(--ink-soft);font-weight:500;font-size:.78rem}
-.ztrack{height:7px;background:var(--cream-dk);border-radius:4px;overflow:hidden}
-.zfill{height:100%;border-radius:4px}
-.zpct{font-size:.75rem;font-weight:600;text-align:right}
-.ztime{font-size:.72rem;color:var(--ink-muted);text-align:right}
-.seg-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
-.seg-card{display:flex;align-items:center;gap:.75rem;background:var(--cream);border:1px solid var(--cream-border);border-radius:var(--r-md);padding:.75rem 1rem;transition:border-color .15s}
-.seg-card:hover{border-color:var(--ink-muted)}
-.medal{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0}
-.medal.g{background:#fef3c7;color:#92400e;border:1.5px solid #fbbf24}
-.medal.s{background:#f1f5f9;color:#475569;border:1.5px solid #cbd5e1}
-.medal.b{background:var(--tc-lt);color:var(--tc);border:1.5px solid var(--tc-mid)}
-.seg-body{flex:1;min-width:0}
-.seg-name{font-size:.8rem;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.seg-detail{font-size:.7rem;color:var(--ink-muted);margin-top:1px}
-.seg-time{font-family:'Lora',serif;font-size:.95rem;font-weight:600;color:var(--ink);white-space:nowrap}
-.seg-rank{font-size:.68rem;color:var(--ink-muted);text-align:right;margin-top:1px}
-.lap-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:.79rem}
-thead th{font-size:.64rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-muted);padding:.55rem .9rem;text-align:left;background:var(--cream);border-bottom:1px solid var(--cream-border)}
-tbody td{padding:.58rem .9rem;border-bottom:1px solid var(--cream-dk);color:var(--ink-soft);vertical-align:middle}
-tbody td:first-child{font-weight:600;color:var(--ink-muted);font-size:.72rem}
-tbody tr:last-child td{border-bottom:none}
-tbody tr:hover td{background:var(--cream)}
-.np-cell{display:flex;align-items:center;gap:6px}
-.np-val{font-weight:600;color:var(--ink-soft);min-width:36px}
-.np-bar{height:5px;border-radius:3px;background:var(--tc);opacity:.5}
-.avgw{font-weight:600;color:var(--tc)}
-.g3-1{display:grid;grid-template-columns:1.6fr 1fr;gap:1rem}
-.curve-leg{display:flex;gap:1rem;margin-bottom:.6rem;font-size:.72rem}
-.cl-item{display:flex;align-items:center;gap:5px;color:var(--ink-muted)}
-.cl-line{width:12px;height:3px;border-radius:2px}
-.pg-footer{text-align:center;padding:1.5rem;color:var(--ink-muted);font-size:.72rem;border-top:1px solid var(--cream-border);margin-top:.5rem}
-@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-.hero{animation:fadeUp .35s ease both}
-.stats-strip{animation:fadeUp .38s .04s ease both}
-.kpi:nth-child(1){animation:fadeUp .35s .08s ease both}
-.kpi:nth-child(2){animation:fadeUp .35s .12s ease both}
-.kpi:nth-child(3){animation:fadeUp .35s .16s ease both}
-.kpi:nth-child(4){animation:fadeUp .35s .20s ease both}
-.card,.stream-card{animation:fadeUp .35s .18s ease both}
+.back-link:hover { color: var(--accent); }
+.back-link::before { content: '←'; }
+
+/* ── HEADER ── */
+.act-header {
+  display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 20px;
+  margin-bottom: 18px; flex-wrap: wrap;
+}
+.act-header-left { flex: 1; min-width: 0; }
+.act-sport-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; padding: 3px 10px;
+  border-radius: 20px; margin-bottom: 8px;
+}
+.act-sport-badge.Ride,.act-sport-badge.VirtualRide {
+  background: var(--accent-dim); color: var(--accent); border: 1px solid var(--accent-border);
+}
+.act-sport-badge.Run,.act-sport-badge.VirtualRun {
+  background: var(--green-dim); color: var(--green); border: 1px solid rgba(0,255,135,0.3);
+}
+.act-sport-badge.Rowing {
+  background: var(--purple-dim); color: var(--purple); border: 1px solid rgba(255,112,67,0.3);
+}
+.act-title {
+  font-size: 24px; font-weight: 800; letter-spacing: -0.6px;
+  color: #fff; margin-bottom: 3px; line-height: 1.2;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.act-date {
+  font-size: 11px; font-family: var(--font-mono); color: var(--text-muted);
+}
+.kudos-pill {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 14px; background: var(--bg-surface);
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+.kudos-pill span { font-size: 18px; }
+.kudos-num { font-size: 18px; font-weight: 800; font-family: var(--font-mono); color: #fff; }
+.kudos-lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
+
+/* ── SUMMARY CARDS ── */
+.summary-cards {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.sc {
+  background: var(--bg-surface); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 10px 14px;
+  min-width: 90px; position: relative; overflow: hidden;
+  transition: all var(--transition); flex: 1;
+}
+.sc::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+}
+.sc.c-accent::before { background: var(--accent); }
+.sc.c-green::before  { background: var(--green); }
+.sc.c-orange::before { background: var(--orange); }
+.sc.c-red::before    { background: var(--red); }
+.sc.c-purple::before { background: var(--purple); }
+.sc.c-yellow::before { background: var(--yellow); }
+.sc:hover { border-color: var(--border-bright); background: var(--bg-elevated); }
+.sc-val {
+  font-size: 18px; font-weight: 800; font-family: var(--font-mono);
+  letter-spacing: -0.5px; color: #fff; line-height: 1;
+  white-space: nowrap;
+}
+.sc-val.accent { color: var(--accent); }
+.sc-val.green  { color: var(--green); }
+.sc-val.orange { color: var(--orange); }
+.sc-val.red    { color: var(--red); }
+.sc-val.yellow { color: var(--yellow); }
+.sc-lbl {
+  font-size: 9px; font-weight: 700; letter-spacing: 1.2px;
+  text-transform: uppercase; color: var(--text-muted); margin-top: 4px;
+}
+.sc-sub {
+  font-size: 9px; font-family: var(--font-mono); color: var(--text-muted);
+  margin-top: 1px;
+}
+
+/* ── SECTION CARDS ── */
+.act-card {
+  background: var(--bg-surface); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 16px 18px;
+  margin-bottom: 12px; transition: border-color var(--transition);
+}
+.act-card:hover { border-color: var(--border-bright); }
+.act-card-title {
+  font-size: 10px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+/* ── SPLIT ROWS ── */
+.split-row {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 12px; margin-bottom: 12px;
+}
+.split-row.wide-left  { grid-template-columns: 3fr 2fr; }
+.split-row.wide-right { grid-template-columns: 2fr 3fr; }
+
+/* ── MAP ── */
+.map-card { overflow: hidden; }
+.map-card .map-card-header {
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+#activity-map { height: 260px; background: var(--bg-elevated); }
+.leaflet-container { background: #f8f8f6; }
+.leaflet-tile { filter: brightness(0.95); }
+.leaflet-control-attribution {
+  background: rgba(8,10,13,0.8) !important; color: var(--text-faint) !important;
+  font-size: 9px !important;
+}
+.leaflet-control-attribution a { color: var(--text-muted) !important; }
+
+/* Zone legend pills */
+.zone-legend { display: flex; gap: 3px; align-items: center; flex-wrap: wrap; }
+.zone-pip { width: 10px; height: 10px; border-radius: 2px; }
+.zone-lbl { font-size: 9px; font-family: var(--font-mono); color: var(--text-muted); margin-right: 3px; }
+
+/* ── WORKOUT STATS PANEL ── */
+.workout-stats {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 8px; margin-top: 4px;
+}
+.ws-item { display: flex; flex-direction: column; }
+.ws-val {
+  font-size: 22px; font-weight: 800; font-family: var(--font-mono);
+  letter-spacing: -0.5px; color: #fff;
+}
+.ws-val.accent { color: var(--accent); }
+.ws-val.orange { color: var(--orange); }
+.ws-lbl {
+  font-size: 9px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--text-muted); margin-top: 3px;
+}
+.ws-divider {
+  grid-column: 1 / -1; height: 1px;
+  background: var(--border); margin: 4px 0;
+}
+
+/* ── CHARTS ── */
+.chart-wrap { position: relative; }
+.chart-wrap canvas { display: block; width: 100% !important; }
+.cw-180 { height: 180px; }
+.cw-200 { height: 200px; }
+.cw-220 { height: 220px; }
+.cw-260 { height: 260px; }
+
+/* Metric toggle buttons */
+.metric-toggles { display: flex; gap: 4px; flex-wrap: wrap; }
+.metric-toggle {
+  padding: 3px 9px; border-radius: 20px; border: 1px solid;
+  font-size: 10px; font-family: var(--font-mono); font-weight: 600;
+  cursor: pointer; transition: opacity var(--transition);
+  background: transparent; opacity: 0.35;
+}
+.metric-toggle.active { opacity: 1; }
+.metric-toggle:hover  { opacity: 0.7; }
+
+/* ── HR ZONE BARS ── */
+.hr-zone-bars { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; }
+.hz-row {
+  display: grid; grid-template-columns: 1fr 100px 36px;
+  align-items: center; gap: 8px;
+  padding: 6px 10px;
+  background: var(--bg-elevated); border-radius: var(--radius-sm);
+  border-left: 3px solid transparent;
+  transition: background var(--transition);
+}
+.hz-row:hover { background: var(--bg-hover); }
+.hz-zone { font-size: 10px; font-family: var(--font-mono); font-weight: 700; color: var(--text-secondary); }
+.hz-zone-name { font-size: 9px; color: var(--text-muted); margin-top: 1px; }
+.hz-bar-bg { height: 8px; background: var(--bg-surface); border-radius: 4px; overflow: hidden; }
+.hz-bar-fill { height: 100%; border-radius: 4px; transition: width 1s cubic-bezier(0.4,0,0.2,1); }
+.hz-stats { text-align: right; }
+.hz-pct { font-size: 11px; font-family: var(--font-mono); font-weight: 700; color: var(--text-primary); }
+.hz-mins { font-size: 9px; font-family: var(--font-mono); color: var(--text-muted); }
+
+/* ── SEGMENTS ── */
+.seg-items { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.seg-item {
+  display: grid; grid-template-columns: 1fr auto;
+  gap: 12px; align-items: center;
+  padding: 10px 12px; background: var(--bg-elevated);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  transition: all var(--transition);
+}
+.seg-item:hover { border-color: var(--border-bright); }
+.seg-name { font-size: 12px; font-weight: 600; color: #fff; margin-bottom: 3px; }
+.seg-meta { font-size: 10px; font-family: var(--font-mono); color: var(--text-muted); }
+.seg-badges { display: flex; gap: 4px; flex-wrap: wrap; }
+.seg-badge {
+  font-size: 10px; font-weight: 700; padding: 2px 7px;
+  border-radius: 4px; white-space: nowrap;
+}
+.sb-gold   { background: rgba(255,214,0,0.15);   color: var(--gold);   border: 1px solid rgba(255,214,0,0.3); }
+.sb-silver { background: rgba(192,200,216,0.12); color: var(--silver); border: 1px solid rgba(192,200,216,0.25); }
+.sb-bronze { background: rgba(205,127,50,0.12);  color: var(--bronze); border: 1px solid rgba(205,127,50,0.25); }
+.sb-top10  { background: var(--accent-dim);      color: var(--accent); border: 1px solid var(--accent-border); }
+.sb-ag     { background: var(--orange-dim);      color: var(--orange); border: 1px solid rgba(255,107,43,0.3); }
+.seg-empty { font-size: 11px; font-family: var(--font-mono); color: var(--text-muted); padding: 12px 0; text-align: center; }
+
+/* ── LAP TABLE ── */
+.laps-table {
+  width: 100%; border-collapse: collapse;
+  font-family: var(--font-mono); font-size: 11px; margin-top: 8px;
+}
+.laps-table th {
+  text-align: left; padding: 6px 10px; font-size: 9px; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+.laps-table td {
+  padding: 7px 10px; color: var(--text-primary);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.laps-table tr:hover td { background: var(--bg-hover); cursor: pointer; }
+.laps-table tr.lap-hl td { background: var(--bg-active); color: var(--accent); }
+.laps-table td.acc { color: var(--accent); font-weight: 700; }
+.laps-table td.grn { color: var(--green);  font-weight: 700; }
+
+/* ── STRAVA / INTERVALS SOCIAL ── */
+.strava-row {
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  padding: 10px 0; border-top: 1px solid var(--border); margin-top: 8px;
+}
+.strava-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; font-family: var(--font-mono);
+  color: #fc4c02; text-decoration: none; font-weight: 600;
+}
+.strava-link:hover { text-decoration: underline; }
+.intervals-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; font-family: var(--font-mono);
+  color: #5b8dee; text-decoration: none; font-weight: 600;
+}
+.intervals-link:hover { text-decoration: underline; }
+
+/* ── NOT AVAILABLE ── */
+.not-avail {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; padding: 80px 20px; gap: 10px;
+  color: var(--text-muted); font-family: var(--font-mono);
+  font-size: 12px; text-align: center;
+}
+.not-avail-icon { font-size: 36px; }
+.not-avail strong { color: var(--text-secondary); font-size: 14px; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  .split-row,
+  .split-row.wide-left,
+  .split-row.wide-right { grid-template-columns: 1fr; }
+  .summary-cards { gap: 6px; }
+  .sc { min-width: 70px; }
+  .act-header { flex-direction: column; }
+}
 </style>
 </head>
 <body>
-<aside class="sidebar">
-  <div class="sb-brand">
-    <div class="sb-initials">LH</div>
-    <div class="sb-name">Training<br><span>OS</span></div>
-  </div>
-  <nav class="sb-nav">
-    <a href="index.html" class="sb-item"><span class="sb-icon">◈</span>Overview</a>
-    <a href="cycling.html" class="sb-item active"><span class="sb-icon">⬡</span>Cycling</a>
-    <a href="running.html" class="sb-item"><span class="sb-icon">▷</span>Running</a>
-    <a href="rowing.html" class="sb-item"><span class="sb-icon">⊕</span>Rowing</a>
-    <a href="cardio.html" class="sb-item"><span class="sb-icon">◎</span>Cardio</a>
-    <a href="other.html" class="sb-item"><span class="sb-icon">○</span>Other</a>
-    <a href="race-stream.html" class="sb-item"><span class="sb-icon">📺</span>Race Stream</a>
-    <a href="about.html" class="sb-item"><span class="sb-icon">⚙</span>Architecture</a>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-initials">LH</span>
+      <span class="brand-text">Training<br>OS</span>
+    </div>
+    <ul class="nav-links">
+      <li class="nav-item"><a href="index.html"><span class="nav-icon">◈</span><span>Overview</span></a></li>
+      <li class="nav-item"><a href="cycling.html"><span class="nav-icon">⬡</span><span>Cycling</span></a></li>
+      <li class="nav-item"><a href="running.html"><span class="nav-icon">▷</span><span>Running</span></a></li>
+      <li class="nav-item"><a href="rowing.html"><span class="nav-icon">⊕</span><span>Rowing</span></a></li>
+      <li class="nav-item"><a href="cardio.html"><span class="nav-icon">◎</span><span>Cardio</span></a></li>
+      <li class="nav-item"><a href="other.html"><span class="nav-icon">○</span><span>Other</span></a></li>
+      <li class="nav-item"><a href="race-stream.html"><span class="nav-icon">📺</span><span>Race Stream</span></a></li>
+      <li class="nav-item"><a href="about.html"><span class="nav-icon">⚙</span><span>Architecture</span></a></li>
+    </ul>
+    <div class="sidebar-footer">
+      <div class="theme-toggle-nav" onclick="toggleTheme()">
+        <span class="nav-icon theme-icon">☀️</span><span>Theme</span>
+      </div>
+      <div class="sync-status">
+        <span class="sync-dot"></span>
+        <span class="sync-text" id="last-sync">—</span>
+      </div>
+    </div>
   </nav>
-  <div class="sb-footer">Activity Flyweight</div>
-</aside>
-<div class="main">
-  <div class="topnav">
-    <div class="topnav-left">
-      <a href="cycling.html" class="back-link">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 4L6 8l4 4"/></svg>
-        Cycling
-      </a>
-      <span class="bc-sep">/</span>
-      <span class="bc-cur">ECRO: Roubaix Monument</span>
+
+  <!-- MAIN -->
+  <main class="main-content">
+
+    <a href="index.html" class="back-link">Back to Overview</a>
+
+    <!-- Loading -->
+    <div id="loading-state" class="loading-overlay">
+      <div class="loading-spinner"></div>
+      <span>Loading activity...</span>
     </div>
-    <div class="topnav-right">
-      <div class="kudos"><span class="hrt">♥</span><strong>16</strong>&nbsp;kudos</div>
-      <a href="https://www.strava.com/activities/18079812825" class="ext-btn strava" target="_blank">Strava →</a>
-      <a href="https://intervals.icu/activities/i139158659" class="ext-btn icu" target="_blank">Intervals →</a>
+
+    <!-- Error -->
+    <div id="error-state" class="hidden">
+      <div class="not-avail">
+        <div class="not-avail-icon">◌</div>
+        <strong id="error-title">Activity not available</strong>
+        <span id="error-msg">Stream data is only available for the last 14 days.</span>
+        <a href="index.html" class="back-link" style="margin-top:10px;margin-bottom:0">← Return to overview</a>
+      </div>
     </div>
-  </div>
-  <div class="hero">
-    <div class="hero-badge">⬡ Virtual Ride</div>
-    <h1 class="hero-title"><span class="pfx">ECRO:</span> Roubaix Monument</h1>
-    <p class="hero-meta">Sunday, 12 April 2026 &nbsp;·&nbsp; <b>FTP 280W</b></p>
-  </div>
-  <div class="stats-strip">
-    <div class="sc"><div class="sv">1:19<span class="u">h</span></div><div class="sl">Duration</div></div>
-    <div class="sc"><div class="sv">49.97<span class="u">km</span></div><div class="sl">Distance</div></div>
-    <div class="sc"><div class="sv">37.6<span class="u">km/h</span></div><div class="sl">Avg Speed</div></div>
-    <div class="sc"><div class="sv">163<span class="u">bpm</span><span class="sub">max 179</span></div><div class="sl">Avg HR</div></div>
-    <div class="sc hi"><div class="sv">227<span class="u">W</span></div><div class="sl">Avg Power</div></div>
-    <div class="sc"><div class="sv">83<span class="u">rpm</span></div><div class="sl">Cadence</div></div>
-    <div class="sc"><div class="sv">103</div><div class="sl">TSS</div></div>
-    <div class="sc"><div class="sv">247<span class="u">W</span></div><div class="sl">NP</div></div>
-  </div>
-  <div class="body">
-    <div class="sec">
-      <div class="sec-hd"><h2 class="sec-title">Telemetry — Activity Profile</h2></div>
-      <div class="card" style="margin-bottom:1rem">
-        <div class="cb">
-          <div class="tlabel">Power Output <span class="tpeak">Peak 477W &nbsp;·&nbsp; NP 247W &nbsp;·&nbsp; Avg 227W</span></div>
-          <div class="chart-wrap" style="height:150px"><canvas id="ch-power"></canvas></div>
+
+    <!-- Content -->
+    <div id="activity-content" class="hidden">
+
+      <!-- 1. HEADER -->
+      <header class="act-header">
+        <div class="act-header-left">
+          <div class="act-sport-badge" id="sport-badge">—</div>
+          <h1 class="act-title" id="activity-name">—</h1>
+          <span class="act-date" id="activity-date">—</span>
         </div>
-      </div>
-    </div>
-    <div class="sec">
-      <div class="sec-hd"><h2 class="sec-title">Workout Analysis</h2></div>
-      <div class="kpi-grid">
-        <div class="kpi hi"><div class="kv">247<span class="ku">W</span></div><div class="kl">Normalised Power</div><div class="kn">FTP 280W</div></div>
-        <div class="kpi good"><div class="kv">0.88</div><div class="kl">Intensity Factor</div><div class="kn">Threshold effort</div></div>
-        <div class="kpi neu"><div class="kv">1.09</div><div class="kl">Variability Index</div></div>
-        <div class="kpi warn"><div class="kv">10.5<span class="ku">%</span></div><div class="kl">Pwr:HR Decoupling</div><div class="kn">Aerobic drift</div></div>
-      </div>
-      <div class="kpi-grid" style="grid-template-columns:repeat(2,1fr);max-width:50%">
-        <div class="kpi"><div class="kv">1086<span class="ku">kJ</span></div><div class="kl">Total Work</div></div>
-        <div class="kpi"><div class="kv">103</div><div class="kl">TSS</div></div>
-      </div>
-    </div>
-    <div class="sec">
-      <div class="sec-hd"><h2 class="sec-title">Route &amp; Power Zones</h2><span class="sec-sub">FTP 280W</span></div>
-      <div class="g3-1">
-        <div style="display:flex;flex-direction:column;gap:1rem">
-          <div class="card">
-            <div class="cb">
-              <div style="height:180px;background:linear-gradient(135deg,#e8f5ee,#f0ece3,#e8f0fa);border-radius:8px;display:flex;align-items:center;justify-content:center;border:1px solid var(--cream-border);position:relative;overflow:hidden">
-                <svg viewBox="0 0 300 180" width="100%" height="100%" style="position:absolute;inset:0">
-                  <path d="M80,90 Q100,60 140,70 Q180,80 200,100 Q220,120 200,140 Q180,160 150,150 Q120,140 100,120 Q80,110 80,90Z" fill="none" stroke="#c85a1e" stroke-width="3" stroke-linecap="round" opacity=".7"/>
-                  <path d="M140,70 Q160,55 185,65 Q195,70 200,100" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" opacity=".8"/>
-                  <circle cx="140" cy="70" r="5" fill="#34d399"/>
-                </svg>
-                <span style="font-size:.72rem;color:var(--ink-muted);background:rgba(255,255,255,.75);padding:4px 10px;border-radius:20px;font-weight:500;position:relative">GPS Route — Power Zones</span>
-              </div>
-            </div>
-          </div>
-          <div class="card">
-            <div class="cb">
-              <div class="tlabel">HR Zones — Entire Workout</div>
-              <div class="zones-list">
-                <div class="zrow"><div class="zbadge" style="background:#dbeafe;color:#1e40af">Z1</div><div class="zname">Recovery</div><div class="ztrack"><div class="zfill" style="width:1%;background:var(--z1)"></div></div><div class="zpct" style="color:var(--z1)">0%</div><div class="ztime">0m</div></div>
-                <div class="zrow"><div class="zbadge" style="background:#d1fae5;color:#065f46">Z2</div><div class="zname">Aerobic</div><div class="ztrack"><div class="zfill" style="width:1%;background:var(--z2)"></div></div><div class="zpct" style="color:var(--z2)">1%</div><div class="ztime">1m</div></div>
-                <div class="zrow"><div class="zbadge" style="background:#fef9c3;color:#854d0e">Z3</div><div class="zname">Tempo</div><div class="ztrack"><div class="zfill" style="width:21%;background:var(--z3)"></div></div><div class="zpct" style="color:#d97706">21%</div><div class="ztime">17m</div></div>
-                <div class="zrow"><div class="zbadge" style="background:var(--tc-lt);color:var(--tc)">Z4</div><div class="zname">Threshold</div><div class="ztrack"><div class="zfill" style="width:74%;background:var(--z4)"></div></div><div class="zpct" style="color:var(--tc);font-weight:700">74%</div><div class="ztime">59m</div></div>
-                <div class="zrow"><div class="zbadge" style="background:#fee2e2;color:#991b1b">Z5</div><div class="zname">Max</div><div class="ztrack"><div class="zfill" style="width:5%;background:var(--z5)"></div></div><div class="zpct" style="color:#dc2626">5%</div><div class="ztime">4m</div></div>
-              </div>
-            </div>
+        <div class="kudos-pill">
+          <span>❤️</span>
+          <div>
+            <div class="kudos-num" id="kudos-count">—</div>
+            <div class="kudos-lbl">Kudos</div>
           </div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:1rem">
-          <div class="card">
-            <div class="cb">
-              <div class="tlabel">Per Lap — Avg Power <span class="tpeak">Peak lap 4 · 477W</span></div>
-              <div class="chart-wrap" style="height:160px"><canvas id="ch-lapbar"></canvas></div>
-            </div>
+      </header>
+
+      <!-- 2. SUMMARY CARDS -->
+      <div class="summary-cards" id="summary-cards"></div>
+
+      <!-- 3. ELEVATION PROFILE (full width, all metrics toggleable) -->
+      <div class="act-card" id="elevation-section">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <span class="act-card-title" id="elev-title">Activity Profile</span>
+          <div class="metric-toggles" id="metric-toggles"></div>
+        </div>
+        <div class="chart-wrap cw-220">
+          <canvas id="chart-elevation"></canvas>
+        </div>
+      </div>
+
+      <!-- 4. SPLIT: Map | Workout Stats -->
+      <div class="split-row wide-left" id="map-stats-row">
+        <div class="act-card map-card" id="map-section">
+          <div class="map-card-header">
+            <span class="act-card-title" id="map-title" style="margin-bottom:0">GPS Route</span>
+            <div class="zone-legend" id="zone-legend"></div>
           </div>
-          <div class="card">
-            <div class="cb">
-              <div class="curve-leg">
-                <div class="cl-item"><div class="cl-line" style="background:#cbd5e1"></div>90-day best</div>
-                <div class="cl-item"><div class="cl-line" style="background:var(--tc)"></div>This activity</div>
-              </div>
-              <div class="tlabel">90-Day Power Curve</div>
-              <div class="chart-wrap" style="height:115px"><canvas id="ch-curve"></canvas></div>
-            </div>
+          <div id="activity-map"></div>
+        </div>
+        <div class="act-card" id="workout-stats-card">
+          <div class="act-card-title">Entire Workout</div>
+          <div class="workout-stats" id="workout-stats"></div>
+          <div class="strava-row" id="strava-row" style="display:none">
+            <a class="strava-link" id="strava-link" href="#" target="_blank" rel="noopener">
+              View on Strava →
+            </a>
+            <a class="intervals-link" id="intervals-link" href="#" target="_blank" rel="noopener" style="display:none">
+              View on Intervals.icu →
+            </a>
           </div>
         </div>
       </div>
-    </div>
-    <div class="sec">
-      <div class="sec-hd"><h2 class="sec-title">Data Streams</h2></div>
-      <div class="stream-grid">
-        <div class="stream-card"><div class="stag spd"><span class="dot"></span>Stream — Speed</div><div class="chart-wrap" style="height:90px"><canvas id="ch-speed"></canvas></div></div>
-        <div class="stream-card"><div class="stag hr"><span class="dot"></span>Stream — Heart Rate</div><div class="chart-wrap" style="height:90px"><canvas id="ch-hr"></canvas></div></div>
-        <div class="stream-card"><div class="stag cad"><span class="dot"></span>Stream — Cadence</div><div class="chart-wrap" style="height:90px"><canvas id="ch-cad"></canvas></div></div>
+
+      <!-- 5. SPLIT: Primary trace | Duration curve -->
+      <div class="split-row" id="power-row">
+        <div class="act-card">
+          <div class="act-card-title" id="primary-trace-title">Power Trace</div>
+          <div class="chart-wrap cw-220">
+            <canvas id="chart-primary"></canvas>
+          </div>
+        </div>
+        <div class="act-card">
+          <div class="act-card-title" id="curve-title">Power Curve</div>
+          <div class="chart-wrap cw-220">
+            <canvas id="chart-curve"></canvas>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="sec">
-      <div class="sec-hd"><h2 class="sec-title">Achievements</h2><span class="sec-sub">Segments — 7 qualifying</span></div>
-      <div class="seg-grid">
-        <div class="seg-card"><div class="medal g">1st</div><div class="seg-body"><div class="seg-name">Champs-Élysées Sprint</div><div class="seg-detail">151 m · Personal Record</div></div><div><div class="seg-time">0:14</div><div class="seg-rank">🥇 PR</div></div></div>
-        <div class="seg-card"><div class="medal s">2nd</div><div class="seg-body"><div class="seg-name">Lutece Express Lead-In</div><div class="seg-detail">3.55 km · 2nd Best</div></div><div><div class="seg-time">4:51</div><div class="seg-rank">🥈 2nd Best</div></div></div>
-        <div class="seg-card"><div class="medal s">2nd</div><div class="seg-body"><div class="seg-name">Paris last hill</div><div class="seg-detail">1.06 km · 2nd Best</div></div><div><div class="seg-time">1:41</div><div class="seg-rank">🥈 2nd Best</div></div></div>
-        <div class="seg-card"><div class="medal s">2nd</div><div class="seg-body"><div class="seg-name">Lutece Express Sprint</div><div class="seg-detail">232 m · 2nd Best</div></div><div><div class="seg-time">0:17</div><div class="seg-rank">🥈 2nd Best</div></div></div>
-        <div class="seg-card"><div class="medal b">3rd</div><div class="seg-body"><div class="seg-name">Lutece Express</div><div class="seg-detail">6.60 km · 3rd Best</div></div><div><div class="seg-time">9:42</div><div class="seg-rank">🥉 3rd Best</div></div></div>
-        <div class="seg-card"><div class="medal b">3rd</div><div class="seg-body"><div class="seg-name">Champs-Élysées Sprint</div><div class="seg-detail">151 m</div></div><div><div class="seg-time">0:18</div><div class="seg-rank">🥉 3rd Best</div></div></div>
-        <div class="seg-card"><div class="medal b">3rd</div><div class="seg-body"><div class="seg-name">Lutece Express Sprint</div><div class="seg-detail">232 m</div></div><div><div class="seg-time">0:19</div><div class="seg-rank">🥉 3rd Best</div></div></div>
+
+      <!-- 6. SPLIT: HR trace | HR zone bars -->
+      <div class="split-row">
+        <div class="act-card">
+          <div class="act-card-title">Heart Rate</div>
+          <div class="chart-wrap cw-200">
+            <canvas id="chart-hr"></canvas>
+          </div>
+        </div>
+        <div class="act-card">
+          <div class="act-card-title">HR Zones</div>
+          <div class="hr-zone-bars" id="hr-zone-bars"></div>
+        </div>
       </div>
-    </div>
-    <div class="sec">
-      <div class="sec-hd"><h2 class="sec-title">Splits</h2><span class="sec-sub">Lap Splits — 15 laps</span></div>
-      <div class="card"><div class="lap-wrap"><table><thead><tr><th>Lap</th><th>Time</th><th>Distance</th><th>Avg W</th><th>NP</th><th>Avg HR</th><th>Cad</th><th>Effort</th></tr></thead><tbody id="laps-body"></tbody></table></div></div>
-    </div>
-  </div>
-  <div class="pg-footer">Activity Flyweight &nbsp;·&nbsp; Stream data available 14 days</div>
+
+      <!-- 7. SPLIT: Cadence | Speed -->
+      <div class="split-row" id="cad-speed-row">
+        <div class="act-card">
+          <div class="act-card-title" id="cadence-title">Cadence</div>
+          <div class="chart-wrap cw-180">
+            <canvas id="chart-cadence"></canvas>
+          </div>
+        </div>
+        <div class="act-card" id="speed-card">
+          <div class="act-card-title">Speed</div>
+          <div class="chart-wrap cw-180">
+            <canvas id="chart-speed"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 8. SEGMENTS -->
+      <div class="act-card" id="segments-section">
+        <div class="act-card-title">Segment Achievements <span id="segments-meta" style="font-weight:400;letter-spacing:0;text-transform:none;font-size:10px;color:var(--text-muted)"></span></div>
+        <div class="seg-items" id="seg-items"></div>
+      </div>
+
+      <!-- 9. LAP SPLITS -->
+      <div class="act-card" id="laps-section">
+        <div class="act-card-title">Lap Splits <span id="laps-meta" style="font-weight:400;letter-spacing:0;text-transform:none;font-size:10px;color:var(--text-muted)"></span></div>
+        <table class="laps-table">
+          <thead><tr id="laps-thead"></tr></thead>
+          <tbody id="laps-tbody"></tbody>
+        </table>
+      </div>
+
+    </div><!-- /activity-content -->
+  </main>
 </div>
 <script>
-const powerData=[[0,293],[36,327],[72,404],[108,437],[144,353],[180,301],[216,161],[252,185],[288,212],[324,197],[360,248],[396,229],[432,255],[468,224],[504,223],[540,302],[576,261],[612,259],[648,302],[684,240],[720,391],[756,240],[792,217],[828,215],[864,152],[900,175],[936,218],[972,283],[1008,233],[1044,380],[1080,215],[1116,269],[1152,275],[1188,241],[1224,325],[1260,376],[1296,373],[1332,215],[1368,274],[1404,183],[1440,144],[1476,296],[1512,226],[1548,278],[1584,222],[1620,455],[1656,182],[1692,179],[1728,212],[1764,222],[1800,235],[1836,348],[1872,264],[1908,302],[1944,271],[1980,252],[2016,129],[2052,163],[2088,157],[2124,180],[2160,193],[2196,194],[2232,398],[2268,217],[2304,195],[2340,180],[2376,180],[2412,221],[2448,394],[2484,162],[2520,246],[2556,170],[2592,124],[2628,134],[2664,157],[2700,161],[2736,143],[2772,178],[2808,187],[2844,184],[2880,150],[2916,216],[2952,171],[2988,166],[3024,214],[3060,252],[3096,199],[3132,217],[3168,306],[3204,364],[3240,203],[3276,213],[3312,157],[3348,189],[3384,233],[3420,205],[3456,189],[3492,209],[3528,184],[3564,198],[3600,254],[3636,218],[3672,201],[3708,181],[3744,175],[3780,195],[3816,246],[3852,314],[3888,176],[3924,175],[3960,113],[3996,157],[4032,116],[4068,155],[4104,139],[4140,171],[4176,124],[4212,227],[4248,244],[4284,212],[4320,241],[4356,210],[4392,211],[4428,191],[4464,193],[4500,192],[4536,266],[4572,193],[4608,173],[4644,196],[4680,165],[4716,175]];
-const hrData=[[0,147],[36,162],[72,170],[108,175],[144,176],[180,177],[216,175],[252,170],[288,163],[324,159],[360,163],[396,163],[432,164],[468,169],[504,164],[540,163],[576,166],[612,167],[648,171],[684,175],[720,176],[756,174],[792,172],[828,170],[864,164],[900,160],[936,159],[972,161],[1008,162],[1044,167],[1080,166],[1116,164],[1152,165],[1188,164],[1224,169],[1260,173],[1296,172],[1332,167],[1368,166],[1404,163],[1440,159],[1476,163],[1512,165],[1548,165],[1584,166],[1620,172],[1656,169],[1692,167],[1728,166],[1764,165],[1800,164],[1836,168],[1872,168],[1908,169],[1944,168],[1980,167],[2016,160],[2052,157],[2088,155],[2124,157],[2160,157],[2196,156],[2232,161],[2268,159],[2304,157],[2340,156],[2376,155],[2412,157],[2448,161],[2484,157],[2520,160],[2556,157],[2592,152],[2628,149],[2664,148],[2700,147],[2736,146],[2772,149],[2808,149],[2844,148],[2880,146],[2916,150],[2952,149],[2988,148],[3024,151],[3060,155],[3096,152],[3132,154],[3168,159],[3204,164],[3240,162],[3276,162],[3312,158],[3348,159],[3384,161],[3420,160],[3456,158],[3492,159],[3528,157],[3564,157],[3600,160],[3636,159],[3672,158],[3708,157],[3744,155],[3780,155],[3816,157],[3852,162],[3888,159],[3924,158],[3960,154],[3996,153],[4032,151],[4068,152],[4104,151],[4140,153],[4176,152],[4212,155],[4248,157],[4284,157],[4320,158],[4356,158],[4392,159],[4428,158],[4464,158],[4500,157],[4536,159],[4572,158],[4608,157],[4644,157],[4680,156],[4716,155]];
-const speedData=[[0,39],[36,41],[72,34],[108,39],[144,43],[180,48],[216,54],[252,54],[288,37],[324,38],[360,35],[396,38],[432,45],[468,34],[504,41],[540,39],[576,37],[612,40],[648,32],[684,31],[720,26],[756,31],[792,38],[828,36],[864,42],[900,47],[936,46],[972,42],[1008,38],[1044,29],[1080,42],[1116,40],[1152,39],[1188,40],[1224,37],[1260,31],[1296,33],[1332,40],[1368,38],[1404,42],[1440,45],[1476,38],[1512,40],[1548,37],[1584,40],[1620,32],[1656,39],[1692,41],[1728,39],[1764,40],[1800,40],[1836,38],[1872,38],[1908,36],[1944,39],[1980,40],[2016,44],[2052,42],[2088,42],[2124,41],[2160,41],[2196,42],[2232,37],[2268,41],[2304,43],[2340,43],[2376,44],[2412,41],[2448,36],[2484,42],[2520,39],[2556,40],[2592,44],[2628,44],[2664,43],[2700,44],[2736,44],[2772,43],[2808,43],[2844,43],[2880,44],[2916,41],[2952,43],[2988,43],[3024,40],[3060,38],[3096,40],[3132,40],[3168,36],[3204,34],[3240,39],[3276,38],[3312,40],[3348,39],[3384,37],[3420,39],[3456,40],[3492,39],[3528,40],[3564,39],[3600,37],[3636,38],[3672,39],[3708,39],[3744,40],[3780,40],[3816,37],[3852,35],[3888,38],[3924,38],[3960,41],[3996,40],[4032,40],[4068,39],[4104,40],[4140,39],[4176,41],[4212,38],[4248,38],[4284,39],[4320,38],[4356,38],[4392,38],[4428,38],[4464,39],[4500,39],[4536,36],[4572,38],[4608,38],[4644,38],[4680,39],[4716,39]];
-const cadData=[[0,87],[72,85],[144,86],[216,80],[288,83],[360,81],[432,83],[504,82],[576,82],[648,82],[720,76],[792,84],[864,85],[936,86],[1008,81],[1080,84],[1152,81],[1224,80],[1296,78],[1368,80],[1440,86],[1512,83],[1584,83],[1656,82],[1728,82],[1800,83],[1872,81],[1944,82],[2016,86],[2088,84],[2160,83],[2232,80],[2304,85],[2376,86],[2448,79],[2520,82],[2592,86],[2664,85],[2736,86],[2808,85],[2880,86],[2952,85],[3024,82],[3096,82],[3168,78],[3240,81],[3312,82],[3384,79],[3456,82],[3528,82],[3600,79],[3672,81],[3744,82],[3816,79],[3888,80],[3960,83],[4032,82],[4104,82],[4176,83],[4248,80],[4320,80],[4392,80],[4464,81],[4536,78],[4608,80],[4680,81],[4716,81]];
-const curveActivity=[[5,1002],[15,853],[25,627],[35,532],[55,487],[75,472],[105,437],[165,383],[225,362],[345,330],[465,301],[645,270],[945,249],[1200,241],[2400,221],[3600,210],[4600,206]];
-const curveBest=[[5,1050],[15,900],[25,680],[35,590],[55,540],[75,520],[105,490],[165,430],[225,410],[345,380],[465,355],[645,322],[945,293],[1200,280],[2400,255],[3600,241],[4600,234]];
-const lapPowers=[294,403,353,477,240,310,227,447,207,332,318,253,197,256,207];
-const laps=[[1,'0:47','535 m',294,232,157,87],[2,'1:10','712 m',403,385,171,69],[3,'0:28','308 m',353,394,175,83],[4,'0:19','251 m',477,391,177,88],[5,'17:28','11.88 km',240,256,167,87],[6,'1:05','572 m',310,303,174,82],[7,'5:42','4.02 km',227,240,167,86],[8,'0:11','121 m',447,281,166,74],[9,'2:54','1.86 km',207,229,164,89],[10,'0:55','499 m',332,316,169,77],[11,'0:45','390 m',318,312,176,77],[12,'1:22','918 m',253,276,177,87],[13,'18:35','11.25 km',197,213,159,83],[14,'1:40','812 m',256,257,167,84],[15,'26:30','15.83 km',207,223,159,80]];
-const base={responsive:true,maintainAspectRatio:false,animation:{duration:700,easing:'easeInOutQuart'},plugins:{legend:{display:false},tooltip:{backgroundColor:'#fff',titleColor:'#1a1714',bodyColor:'#4a4540',borderColor:'#e2ddd4',borderWidth:1,padding:9,cornerRadius:8}},scales:{x:{display:false},y:{display:true,grid:{color:'#f0ece3',drawBorder:false},ticks:{font:{family:'DM Sans,sans-serif',size:10},color:'#8c857c',maxTicksLimit:4},border:{display:false}}}};
-const mk=(data,col,fill,t=0.35)=>({data:data.map(([x,y])=>({x,y})),borderColor:col,borderWidth:1.8,backgroundColor:fill,fill:true,tension:t,pointRadius:0,pointHoverRadius:3,pointHoverBackgroundColor:col});
-new Chart(document.getElementById('ch-power'),{type:'line',data:{datasets:[mk(powerData,'#c85a1e','rgba(200,90,30,0.1)')]},options:{...base,scales:{...base.scales,y:{...base.scales.y,min:0,max:520,ticks:{...base.scales.y.ticks,callback:v=>v+'W'}}}}});
-new Chart(document.getElementById('ch-hr'),{type:'line',data:{datasets:[mk(hrData,'#e53e3e','rgba(229,62,62,0.08)')]},options:{...base,scales:{...base.scales,y:{...base.scales.y,min:130,max:195}}}});
-new Chart(document.getElementById('ch-speed'),{type:'line',data:{datasets:[mk(speedData,'#2d6a4f','rgba(45,106,79,0.1)')]},options:{...base,scales:{...base.scales,y:{...base.scales.y,min:0,max:70,ticks:{...base.scales.y.ticks,callback:v=>v+'km/h'}}}}});
-new Chart(document.getElementById('ch-cad'),{type:'line',data:{datasets:[mk(cadData,'#d4860c','rgba(212,134,12,0.1)')]},options:{...base,scales:{...base.scales,y:{...base.scales.y,min:60,max:100}}}});
-const maxLW=Math.max(...lapPowers);
-new Chart(document.getElementById('ch-lapbar'),{type:'bar',data:{labels:lapPowers.map((_,i)=>'L'+(i+1)),datasets:[{data:lapPowers,backgroundColor:lapPowers.map(w=>w===maxLW?'rgba(200,90,30,0.9)':'rgba(200,90,30,0.45)'),borderRadius:4,borderSkipped:false}]},options:{...base,scales:{x:{display:true,grid:{display:false},ticks:{font:{family:'DM Sans,sans-serif',size:9},color:'#8c857c'},border:{display:false}},y:{...base.scales.y,min:0,max:520,ticks:{...base.scales.y.ticks,callback:v=>v+'W'}}}}});
-new Chart(document.getElementById('ch-curve'),{type:'line',data:{datasets:[{data:curveBest.map(([x,y])=>({x:Math.log10(x),y})),borderColor:'#cbd5e1',borderWidth:1.5,borderDash:[4,3],backgroundColor:'transparent',fill:false,tension:0.4,pointRadius:0},{data:curveActivity.map(([x,y])=>({x:Math.log10(x),y})),borderColor:'#c85a1e',borderWidth:2,backgroundColor:'rgba(200,90,30,0.1)',fill:true,tension:0.4,pointRadius:0,pointHoverRadius:3}]},options:{...base,scales:{x:{display:true,type:'linear',grid:{display:false},ticks:{font:{family:'DM Sans,sans-serif',size:9},color:'#8c857c',callback:v=>{const s=Math.round(Math.pow(10,v));return s<60?s+'s':s<3600?Math.round(s/60)+'m':Math.round(s/3600)+'h'},maxTicksLimit:5},border:{display:false}},y:{...base.scales.y,min:100,max:1100,ticks:{...base.scales.y.ticks,callback:v=>v+'W'}}}}});
-const tbody=document.getElementById('laps-body');
-const maxNP=Math.max(...laps.map(l=>l[4]));
-laps.forEach(([lap,time,dist,avgW,np,hr,cad])=>{
-  const bw=Math.round((np/maxNP)*56);
-  const tr=document.createElement('tr');
-  tr.innerHTML=`<td>Lap ${lap}</td><td>${time}</td><td>${dist}</td><td class="avgw">${avgW}W</td><td><div class="np-cell"><span class="np-val">${np}W</span><div class="np-bar" style="width:${bw}px"></div></div></td><td>${hr} bpm</td><td>${cad}</td><td><div style="display:inline-block;width:${bw}px;height:5px;background:var(--tc);opacity:.4;border-radius:3px"></div></td>`;
-  tbody.appendChild(tr);
+'use strict';
+
+/* ── CONSTANTS ── */
+const API_BASE = 'https://j2zxz92vd4.execute-api.eu-west-2.amazonaws.com/prod';
+const CF_BASE  = '';
+
+const POWER_ZONE_COLOURS = ['#9ca3af','#60a5fa','#34d399','#fbbf24','#f97316','#ef4444'];
+const HR_ZONE_COLOURS    = ['#9ca3af','#60a5fa','#34d399','#fbbf24','#ef4444'];
+const POWER_ZONE_NAMES   = ['Z1 Active Recovery','Z2 Endurance','Z3 Tempo','Z4 Threshold','Z5 VO2 Max','Z6 Anaerobic'];
+const HR_ZONE_NAMES      = ['Z1 Recovery','Z2 Aerobic','Z3 Tempo','Z4 Threshold','Z5 Maximum'];
+
+Chart.defaults.color = '#b8c0d0';
+Chart.defaults.font.family = "'DM Mono', monospace";
+Chart.defaults.font.size = 10;
+
+/* ── UTILS ── */
+function fmtDuration(secs) {
+  if (secs == null) return '—';
+  const h = Math.floor(secs/3600), m = Math.floor((secs%3600)/60), s = secs%60;
+  if (h > 0) return `${h}h ${m.toString().padStart(2,'0')}m`;
+  return `${m}:${s.toString().padStart(2,'0')}`;
+}
+function fmtPace(mps) {
+  if (!mps || mps <= 0) return '—';
+  const spk = 1000/mps, m = Math.floor(spk/60), s = Math.round(spk%60);
+  return `${m}:${s.toString().padStart(2,'0')}/km`;
+}
+function fmtDist(m) {
+  if (m == null) return '—';
+  return m >= 1000 ? (m/1000).toFixed(2)+' km' : m.toFixed(0)+' m';
+}
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const clean = iso.replace(/Z$/, '').replace(/[+-]\d{2}:\d{2}$/, '');
+  const d = new Date(clean.length <= 10 ? clean + 'T00:00:00' : clean);
+  if (isNaN(d)) return iso;
+  return d.toLocaleDateString('en-GB', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
+}
+function avg(arr) {
+  if (!arr?.length) return null;
+  const v = arr.filter(x => x != null && x > 0);
+  return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null;
+}
+function maxVal(arr) {
+  if (!arr?.length) return null;
+  return Math.max(...arr.filter(x=>x!=null));
+}
+function isCycling(s) { return ['Ride','VirtualRide','GravelRide','MountainBikeRide','EBikeRide'].includes(s); }
+function isRunning(s)  { return ['Run','VirtualRun','TrailRun'].includes(s); }
+function isRowing(s)   { return (s||'').toLowerCase().includes('row'); }
+function sportIcon(s)  { if(isCycling(s))return'⬡'; if(isRunning(s))return'▷'; if(isRowing(s))return'⊕'; return'○'; }
+
+function decimateChartData(time, data, n=800) {
+  if (!time?.length) return {time:[],data:[]};
+  const step = Math.max(1, Math.ceil(time.length/n));
+  const t=[], d=[];
+  for (let i=0; i<time.length; i+=step) { t.push(time[i]); d.push(data[i]??null); }
+  return {time:t, data:d};
+}
+
+/* ── ZONE HELPERS ── */
+function getPowerZone(w, ftp) {
+  if (!ftp||!w) return 0;
+  const p=w/ftp;
+  if(p<=0.55)return 0; if(p<=0.75)return 1; if(p<=0.90)return 2;
+  if(p<=1.05)return 3; if(p<=1.20)return 4; return 5;
+}
+function getHrZone(hr, hmax) {
+  if (!hmax||!hr) return 0;
+  const p=hr/hmax;
+  if(p<0.60) return 0;
+  if(p<0.70) return 1;
+  if(p<0.80) return 2;
+  if(p<0.90) return 3;
+  return 4;
+}
+
+/* ── CROSSHAIR ── */
+const _charts = [];
+let _crosshairMarker = null, _decimatedLatlng = [], _lapStartSec = [];
+
+function dispatchCrosshair(sec) {
+  document.dispatchEvent(new CustomEvent('act-xhair', {detail:{sec}}));
+}
+document.addEventListener('act-xhair', e => {
+  const sec = e.detail.sec;
+  _charts.forEach(c => {
+    if (!c||c._destroyed) return;
+    const len = c.data.datasets[0]?.data?.length||0;
+    const idx = Math.min(Math.round(sec / (c._timeStep||1)), len-1);
+    c.tooltip.setActiveElements(
+      c.data.datasets.map((_,di)=>({datasetIndex:di,index:idx})),
+      {x:0,y:0}
+    );
+    c.update('none');
+  });
+  if (_crosshairMarker && _decimatedLatlng.length) {
+    const step = Math.ceil((window._origGpsLen||_decimatedLatlng.length)/800);
+    const idx = Math.min(Math.floor(sec/step), _decimatedLatlng.length-1);
+    _crosshairMarker.setLatLng(_decimatedLatlng[idx]);
+  }
+  if (_lapStartSec.length) {
+    let li=0;
+    _lapStartSec.forEach((s,i)=>{ if(sec>=s) li=i; });
+    document.querySelectorAll('#laps-tbody tr').forEach((r,i)=>{
+      r.classList.toggle('lap-hl', i===li);
+    });
+  }
 });
+
+/* ── GRADIENT FILL HELPER ── */
+function createGradientFill(ctx, chartArea, colorTop, colorBottom) {
+  if (!chartArea) return colorBottom;
+  const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+  gradient.addColorStop(0, colorTop);
+  gradient.addColorStop(1, colorBottom);
+  return gradient;
+}
+
+const gradientFillPlugin = {
+  id: 'gradientFill',
+  beforeDraw(chart) {
+    const {ctx, chartArea} = chart;
+    if (!chartArea) return;
+    chart.data.datasets.forEach(ds => {
+      if (ds._gradientTop && ds._gradientBottom) {
+        ds.backgroundColor = createGradientFill(ctx, chartArea, ds._gradientTop, ds._gradientBottom);
+      }
+    });
+  }
+};
+Chart.register(gradientFillPlugin);
+
+/* ── CHART FACTORY ── */
+const zoneSegmentPlugin = {
+  id: 'zoneSegment',
+  beforeDatasetDraw(chart, args) {
+    const ds = chart.data.datasets[args.index];
+    if (!ds._zoneColors || !ds._zoneColors.length) return;
+    const {ctx, chartArea} = chart;
+    const meta = chart.getDatasetMeta(args.index);
+    if (!meta.data.length) return;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(chartArea.left, chartArea.top, chartArea.width, chartArea.height);
+    ctx.clip();
+    for (let i=0; i<meta.data.length-1; i++) {
+      const p1=meta.data[i], p2=meta.data[i+1];
+      if(!p1||!p2) continue;
+      const grad = ctx.createLinearGradient(p1.x,0,p2.x,0);
+      grad.addColorStop(0, ds._zoneColors[i]||ds.borderColor);
+      grad.addColorStop(1, ds._zoneColors[i+1]||ds.borderColor);
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+    ctx.restore();
+    return false;
+  }
+};
+Chart.register(zoneSegmentPlugin);
+
+function makeChart(canvasId, datasets, scalesOpts, timeArr, timeStep) {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx) return null;
+  const baseScales = {
+    x: {
+      type:'linear',
+      ticks:{maxTicksLimit:6, callback:v=>fmtDuration(v), maxRotation:0},
+      grid:{color:'rgba(255,255,255,0.04)'},
+      border:{color:'rgba(255,255,255,0.08)'},
+      afterFit: axis => { axis.paddingRight = 0; }
+    },
+    y: {
+      grid:{color:'rgba(255,255,255,0.04)'},
+      border:{color:'rgba(255,255,255,0.08)'},
+      ticks:{maxTicksLimit:5},
+      afterFit: axis => { axis.width = 50; }
+    }
+  };
+  const chart = new Chart(ctx, {
+    type:'line',
+    data:{datasets},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      animation:false,
+      layout:{padding:{right:0,left:0}},
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'rgba(8,10,13,0.92)',
+          borderColor:'rgba(255,255,255,0.1)',
+          borderWidth:1,
+          callbacks:{
+            title: items => fmtDuration(Math.round(items[0]?.parsed?.x??0))
+          }
+        }
+      },
+      scales:{...baseScales,...scalesOpts},
+      onHover(e,els) {
+        if(!els.length) return;
+        const sec = timeArr?.[els[0].index] ?? els[0].element.x;
+        dispatchCrosshair(Math.round(sec));
+      }
+    }
+  });
+  chart._timeStep = timeStep || 1;
+  _charts.push(chart);
+  return chart;
+}
+
+function buildDataset(time, raw, color, zoneColorsFn, label, fillColor, yAxisID) {
+  const dec = decimateChartData(time, raw);
+  const pts = dec.time.map((t,i)=>({x:t,y:dec.data[i]??null}));
+  const zoneColors = zoneColorsFn ? dec.data.map(zoneColorsFn) : null;
+  return {
+    label: label||'',
+    data: pts,
+    borderColor: zoneColors ? 'transparent' : color,
+    _zoneColors: zoneColors,
+    backgroundColor: fillColor||'transparent',
+    fill: !!fillColor,
+    borderWidth: 1.5,
+    pointRadius: 0,
+    tension: 0,
+    yAxisID: yAxisID||'y'
+  };
+}
+
+/* ── GPS MAP ── */
+let _leafletMap = null;
+
+function decimateGps(latlng, n=800) {
+  if (!latlng?.length) return [];
+  let pairs;
+  if (typeof latlng[0]==='number') {
+    pairs=[];
+    for(let i=0;i+1<latlng.length;i+=2) pairs.push([latlng[i],latlng[i+1]]);
+  } else pairs=latlng;
+  const valid=pairs.filter(p=>Array.isArray(p)&&p.length>=2&&p[0]!=null&&p[1]!=null
+    &&!(p[0]===0&&p[1]===0)&&isFinite(p[0])&&isFinite(p[1]));
+  if(!valid.length) return [];
+  const step=Math.ceil(valid.length/n);
+  return valid.filter((_,i)=>i%step===0);
+}
+
+function initMap(latlng, powerArr, hrArr, sport, ftp, hrmax) {
+  if (!latlng?.length) return;
+  window._origGpsLen = typeof latlng[0]==='number' ? Math.floor(latlng.length/2) : latlng.length;
+  _decimatedLatlng = decimateGps(latlng);
+  const decimPow = (() => { const step=Math.ceil(window._origGpsLen/800); return (powerArr||[]).filter((_,i)=>i%step===0); })();
+  const decimHr  = (() => { const step=Math.ceil(window._origGpsLen/800); return (hrArr||[]).filter((_,i)=>i%step===0); })();
+
+  if (!_decimatedLatlng.length) {
+    document.getElementById('map-section').style.display='none';
+    document.getElementById('map-stats-row').style.gridTemplateColumns='1fr';
+    return;
+  }
+
+  _leafletMap = L.map('activity-map',{zoomControl:true,preferCanvas:true});
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
+    attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains:'abcd', maxZoom:20, crossOrigin:true
+  }).addTo(_leafletMap);
+
+  _leafletMap.invalidateSize(false);
+
+  const getCol = i => {
+    if(isCycling(sport)&&ftp&&decimPow[i]!=null) return POWER_ZONE_COLOURS[getPowerZone(decimPow[i],ftp)];
+    if(isRunning(sport)&&hrmax&&decimHr[i]!=null) return HR_ZONE_COLOURS[getHrZone(decimHr[i],hrmax)];
+    return '#9ca3af';
+  };
+
+  let rStart=0, rCol=getCol(0);
+  for(let i=1;i<=_decimatedLatlng.length;i++) {
+    const col=i<_decimatedLatlng.length?getCol(i):null;
+    if(col!==rCol||i===_decimatedLatlng.length) {
+      const seg=_decimatedLatlng.slice(rStart,i+1).filter(Boolean);
+      if(seg.length>=2) L.polyline(seg,{color:rCol,weight:4,opacity:0.9}).addTo(_leafletMap);
+      rStart=i; rCol=col;
+    }
+  }
+
+  if(_decimatedLatlng.length) {
+    setTimeout(()=>{
+      _leafletMap.invalidateSize(false);
+      try {
+        const b=L.latLngBounds(_decimatedLatlng);
+        if(b.isValid()) _leafletMap.fitBounds(b,{padding:[16,16]});
+        else _leafletMap.setView(_decimatedLatlng[0],13);
+      } catch(e) { if(_decimatedLatlng[0]) _leafletMap.setView(_decimatedLatlng[0],13); }
+    },50);
+  }
+
+  _crosshairMarker = L.circleMarker(_decimatedLatlng[0],{
+    radius:6,color:'#fff',fillColor:'#00e5ff',fillOpacity:1,weight:2
+  }).addTo(_leafletMap);
+
+  const legendEl = document.getElementById('zone-legend');
+  const mapTitleEl = document.getElementById('map-title');
+  if(isCycling(sport)&&ftp) {
+    mapTitleEl.textContent=`GPS Route — Power Zones (FTP ${Math.round(ftp)}W)`;
+    legendEl.innerHTML=['Z1','Z2','Z3','Z4','Z5','Z6'].map((z,i)=>
+      `<span class="zone-pip" style="background:${POWER_ZONE_COLOURS[i]}"></span><span class="zone-lbl">${z}</span>`
+    ).join('');
+  } else if(isRunning(sport)&&hrmax) {
+    mapTitleEl.textContent=`GPS Route — HR Zones (max ${Math.round(hrmax)} bpm)`;
+    legendEl.innerHTML=['Z1','Z2','Z3','Z4','Z5'].map((z,i)=>
+      `<span class="zone-pip" style="background:${HR_ZONE_COLOURS[i]}"></span><span class="zone-lbl">${z}</span>`
+    ).join('');
+  }
+}
+
+/* ── SUMMARY CARDS ── */
+function buildSummaryCards(data, ftp) {
+  const s = data.streams||{};
+  const time = s.time||[];
+  const totalSecs  = time.length ? time[time.length-1] : null;
+  const totalDistM = s.distance?.length ? s.distance[s.distance.length-1] : null;
+  const avgHr   = avg(s.heartrate);
+  const maxHr   = maxVal(s.heartrate);
+  const avgCad  = avg(s.cadence);
+  const avgWatts= avg(s.watts);
+  const sport   = data.sport_type;
+  const avgMps  = avg(s.velocity_smooth);
+
+  let np=null, tss=null, ifVal=null;
+  if(s.watts?.length>=30) {
+    const w=s.watts; let sum4=0,cnt=0;
+    for(let i=29;i<w.length;i++){
+      const sl=w.slice(i-29,i+1), mn=sl.reduce((a,b)=>a+(b||0),0)/30;
+      sum4+=Math.pow(mn,4); cnt++;
+    }
+    np=cnt?Math.round(Math.pow(sum4/cnt,0.25)):null;
+  }
+  if(np&&ftp&&totalSecs) {
+    ifVal=+(np/ftp).toFixed(2);
+    tss=Math.round((totalSecs*np*ifVal)/(ftp*3600)*100);
+  }
+
+  const workKj=avgWatts&&totalSecs?Math.round(avgWatts*totalSecs/1000):null;
+  const cards = [];
+
+  if(totalSecs)  cards.push({val:fmtDuration(totalSecs), lbl:'Duration',  cls:'c-accent'});
+  if(totalDistM) cards.push({val:fmtDist(totalDistM),    lbl:'Distance',  cls:'c-accent'});
+
+  if(isCycling(sport)) {
+    if(avgMps)  cards.push({val:(avgMps*3.6).toFixed(1)+' km/h', lbl:'Avg Speed', cls:'c-yellow', vcls:'yellow'});
+    if(avgHr)   cards.push({val:Math.round(avgHr)+'',      lbl:'Avg HR',    cls:'c-red',    vcls:'red',    sub:maxHr?`max ${Math.round(maxHr)}`:''});
+    if(avgWatts)cards.push({val:Math.round(avgWatts)+'W',  lbl:'Avg Power', cls:'c-accent'});
+    if(avgCad)  cards.push({val:Math.round(avgCad)+'',     lbl:'Cadence',   cls:'c-purple', sub:'rpm'});
+    if(tss)     cards.push({val:tss,                       lbl:'TSS',       cls:'c-orange', vcls:'orange'});
+    if(np)      cards.push({val:np+'W',                    lbl:'NP',        cls:'c-accent', vcls:'accent'});
+    if(workKj)  cards.push({val:workKj+' kJ',              lbl:'Work',      cls:'c-orange', vcls:'orange'});
+  } else if(isRunning(sport)) {
+    if(avgMps)  cards.push({val:fmtPace(avgMps),           lbl:'Avg Pace',  cls:'c-green',  vcls:'green'});
+    if(avgHr)   cards.push({val:Math.round(avgHr)+'',      lbl:'Avg HR',    cls:'c-red',    vcls:'red',    sub:maxHr?`max ${Math.round(maxHr)}`:''});
+    if(avgCad)  cards.push({val:Math.round(avgCad)+'',     lbl:'Cadence',   cls:'c-purple', sub:'spm'});
+    if(tss)     cards.push({val:tss,                       lbl:'TSS',       cls:'c-orange', vcls:'orange'});
+  } else {
+    if(avgHr)   cards.push({val:Math.round(avgHr)+'',      lbl:'Avg HR',    cls:'c-red',    vcls:'red'});
+    if(avgWatts)cards.push({val:Math.round(avgWatts)+'W',  lbl:'Avg Power', cls:'c-orange', vcls:'orange'});
+    if(workKj)  cards.push({val:workKj+' kJ',              lbl:'Work',      cls:'c-orange'});
+  }
+
+  const el = document.getElementById('summary-cards');
+  el.innerHTML = cards.map(c=>
+    `<div class="sc ${c.cls||""}">
+      <div class="sc-val ${c.vcls||""}"> ${c.val}</div>
+      <div class="sc-lbl">${c.lbl}</div>
+      ${c.sub ? `<div class="sc-sub">${c.sub}</div>` : ''}
+    </div>`
+  ).join('');
+}
+
+/* ── WORKOUT STATS PANEL ── */
+function buildWorkoutStats(data, ftp) {
+  const s = data.streams||{};
+  const time = s.time||[];
+  const totalSecs = time.length ? time[time.length-1] : null;
+  const avgWatts = avg(s.watts);
+  const avgHr    = avg(s.heartrate);
+
+  let np=null, ifVal=null, tss=null, vi=null, wkg=null, workKj=null, decoupling=null;
+
+  if(s.watts?.length>=30) {
+    const w=s.watts; let sum4=0,cnt=0;
+    for(let i=29;i<w.length;i++){
+      const sl=w.slice(i-29,i+1), mn=sl.reduce((a,b)=>a+(b||0),0)/30;
+      sum4+=Math.pow(mn,4); cnt++;
+    }
+    np=cnt?Math.round(Math.pow(sum4/cnt,0.25)):null;
+  }
+  if(np&&ftp&&totalSecs) {
+    ifVal=+(np/ftp).toFixed(2);
+    tss=Math.round((totalSecs*np*ifVal)/(ftp*3600)*100);
+  }
+  if(np&&avgWatts) vi=+(np/avgWatts).toFixed(2);
+  if(np&&data.icu_weight) wkg=+(np/data.icu_weight).toFixed(2);
+  if(avgWatts&&totalSecs) workKj=Math.round(avgWatts*totalSecs/1000);
+
+  if(s.watts&&s.heartrate&&s.watts.length>=60) {
+    const half=Math.floor(s.watts.length/2);
+    const w1=avg(s.watts.slice(0,half)), h1=avg(s.heartrate.slice(0,half));
+    const w2=avg(s.watts.slice(half)),   h2=avg(s.heartrate.slice(half));
+    if(w1&&h1&&w2&&h2) {
+      const r1=w1/h1, r2=w2/h2;
+      decoupling=+(((r1-r2)/r1)*100).toFixed(1);
+    }
+  }
+
+  const items = [];
+  if(np)        items.push({val:np+'W',           lbl:'Normalised Power', vcls:'accent'});
+  if(ifVal)     items.push({val:ifVal,             lbl:'Intensity Factor', vcls:'yellow'});
+  if(vi)        items.push({val:vi,                lbl:'Variability Index'});
+  if(wkg)       items.push({val:wkg+' W/kg',       lbl:'Watts per kg',    vcls:'accent'});
+  if(workKj)    items.push({val:workKj+' kJ',      lbl:'Work',            vcls:'orange'});
+  if(decoupling!==null) items.push({val:decoupling+'%', lbl:'Pwr:HR Decoupling', vcls: Math.abs(decoupling)<5?'green':'red'});
+  if(tss)       items.push({val:tss,               lbl:'TSS',             vcls:'orange'});
+  if(avgHr)     items.push({val:Math.round(avgHr)+' bpm', lbl:'Avg Heart Rate', vcls:'red'});
+
+  const el = document.getElementById('workout-stats');
+  if(!items.length) { el.innerHTML='<div style="color:var(--text-muted);font-size:11px;font-family:var(--font-mono)">No power data available</div>'; return; }
+  el.innerHTML = items.map(it=>
+    `<div class="ws-item">
+      <div class="ws-val ${it.vcls||''}">${it.val}</div>
+      <div class="ws-lbl">${it.lbl}</div>
+    </div>`
+  ).join('');
+}
+
+/* ── ELEVATION PROFILE CHART ── */
+function buildElevationChart(data, ftp, hrmax) {
+  const s = data.streams||{};
+  const time = s.time||[], alt = s.altitude||s.fixed_altitude||[];
+  const sport = data.sport_type;
+
+  if(!alt.length||!time.length) {
+    document.getElementById('elevation-section').style.display='none';
+    return;
+  }
+  const isCyc=isCycling(sport), isRun=isRunning(sport);
+
+  const METRICS = [
+    {id:'elev', lbl:'Elevation', color:'rgba(34,197,94,0.7)', key:null,              yId:'yElev', fill:'rgba(34,197,94,0.12)', always:true},
+    {id:'power',lbl:'Power',     color:'#00e5ff',             key:'watts',           yId:'yR1',   show:isCyc||!!s.watts?.length},
+    {id:'pace', lbl:isCyc?'Speed':'Pace', color:'#fbbf24',   key:'velocity_smooth', yId:'yR4',   show:true, reverse:isRun},
+    {id:'hr',   lbl:'HR',        color:'#ef4444',             key:'heartrate',       yId:'yR2',   show:true},
+    {id:'cad',  lbl:isCyc?'Cadence':isRun?'Cadence':'S/Rate',color:'#a78bfa',      key:'cadence',yId:'yR3',  show:true},
+  ].filter(m=>m.always||m.show);
+
+  window._activeMetrics = window._activeMetrics||{};
+  METRICS.forEach(m=>{
+    if(window._activeMetrics[m.id]===undefined)
+      window._activeMetrics[m.id] = m.always ? true : m.id!=='cad';
+  });
+  const active = window._activeMetrics;
+
+  const decAlt = decimateChartData(time, alt, 600);
+  const decStreams = {};
+  METRICS.forEach(m=>{
+    if(!m.key||!s[m.key]) return;
+    let raw=s[m.key];
+    if(m.id==='pace'&&isRun) raw=raw.map(v=>v>0?+(1000/v/60).toFixed(3):null);
+    if(m.id==='pace'&&isCyc) raw=raw.map(v=>v!=null?+(v*3.6).toFixed(2):null);
+    decStreams[m.id]=decimateChartData(time,raw,600);
+  });
+
+  function buildDatasets() {
+    return METRICS.filter(m=>active[m.id]).map(m=>{
+      if(m.id==='elev') return {
+        label:'Elevation',data:decAlt.time.map((t,i)=>({x:t,y:decAlt.data[i]??null})),
+        borderColor:'rgba(180,180,180,0.6)',backgroundColor:'rgba(140,140,140,0.45)',
+        fill:true,borderWidth:1.5,pointRadius:0,tension:0.4,yAxisID:'yElev',order:10
+      };
+      const dec=decStreams[m.id]; if(!dec) return null;
+      return {
+        label:m.lbl,data:dec.time.map((t,i)=>({x:t,y:dec.data[i]??null})),
+        borderColor:m.color,backgroundColor:'transparent',
+        fill:false,borderWidth:1.5,pointRadius:0,tension:0,yAxisID:m.yId,order:1
+      };
+    }).filter(Boolean);
+  }
+
+  const elevVals=decAlt.data.filter(v=>v!=null);
+  const eMin=Math.min(...elevVals), eMax=Math.max(...elevVals);
+  const range = eMax - eMin;
+  const elevYMin = eMin - range * 0.3;
+
+  function buildScales() {
+    const sc = {
+      x:{type:'linear',ticks:{maxTicksLimit:8,callback:v=>fmtDuration(v),maxRotation:0},
+        grid:{color:'rgba(255,255,255,0.04)'},border:{color:'rgba(255,255,255,0.08)'},
+        afterFit: axis => { axis.paddingRight = 0; }},
+      yElev:{position:'left',min:elevYMin,grid:{color:'rgba(255,255,255,0.04)'},
+        border:{color:'rgba(255,255,255,0.08)'},
+        ticks:{maxTicksLimit:4,callback:v=>Math.round(v)+'m',color:'rgba(120,120,120,0.8)'},
+        afterFit: axis => { axis.width = 50; }}
+    };
+    if(active['power']) sc.yR1={position:'right',grid:{display:false},border:{display:false},
+      ticks:{maxTicksLimit:4,color:'#00e5ff',callback:v=>Math.round(v)+'W'},
+      afterFit: axis => { axis.width = 50; }};
+    if(active['hr'])    sc.yR2={position:'right',grid:{display:false},border:{display:false},
+      ticks:{maxTicksLimit:4,color:'#ef4444',callback:v=>Math.round(v)},
+      afterFit: axis => { axis.width = 50; }};
+    if(active['cad'])   sc.yR3={position:'right',grid:{display:false},border:{display:false},
+      ticks:{maxTicksLimit:4,color:'#a78bfa',callback:v=>Math.round(v)},
+      afterFit: axis => { axis.width = 50; }};
+    if(active['pace'])  sc.yR4={position:'right',reverse:isRun,grid:{display:false},border:{display:false},
+      ticks:{maxTicksLimit:4,color:'#fbbf24',
+        callback:v=>isRun?`${Math.floor(v)}:${String(Math.round((v%1)*60)).padStart(2,'0')}`:v.toFixed(0)+' km/h'},
+      afterFit: axis => { axis.width = 50; }};
+    return sc;
+  }
+
+  const ctx=document.getElementById('chart-elevation');
+  if(!ctx) return;
+  window._elevChart=new Chart(ctx,{
+    type:'line',data:{datasets:buildDatasets()},
+    options:{responsive:true,maintainAspectRatio:false,
+      animation:{duration:1200,easing:'easeInQuart'},
+      layout:{padding:{right:0,left:0}},
+      interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(8,10,13,0.92)',
+        borderColor:'rgba(255,255,255,0.1)',borderWidth:1,
+        callbacks:{title:items=>fmtDuration(Math.round(items[0]?.parsed?.x??0))}}},
+      scales:buildScales()}
+  });
+  window._rebuildElevChart=()=>{
+    if(!window._elevChart) return;
+    window._elevChart.data.datasets=buildDatasets();
+    window._elevChart.options.scales=buildScales();
+    window._elevChart.update();
+  };
+
+  const togglesEl=document.getElementById('metric-toggles');
+  if(togglesEl) togglesEl.innerHTML=METRICS.filter(m=>!m.always).map(m=>
+    `<button class="metric-toggle ${active[m.id]?'active':''}" data-metric="${m.id}"
+      style="color:${m.color};border-color:${m.color}"
+      onclick="toggleMetric('${m.id}',this)">${m.lbl}</button>`
+  ).join('');
+}
+
+function toggleMetric(id,btn) {
+  btn.classList.toggle('active');
+  if(window._activeMetrics) window._activeMetrics[id]=btn.classList.contains('active');
+  if(window._rebuildElevChart) window._rebuildElevChart();
+}
+
+async function buildPrimaryTrace(data, ftp, hrmax) {
+  const s = data.streams||{}, time = s.time||[], sport = data.sport_type;
+  const isCyc = isCycling(sport), isRun = isRunning(sport);
+
+  if (!s.watts?.length && !s.velocity_smooth?.length) {
+    document.getElementById('power-row').style.display = 'none';
+    return;
+  }
+
+  if (isRun && s.velocity_smooth?.length) {
+    document.getElementById('primary-trace-title').textContent = 'Pace';
+    document.getElementById('curve-title').textContent = '90-Day Pace Curve';
+    const paceArr = s.velocity_smooth.map(v => v>0 ? +(1000/v/60).toFixed(3) : null);
+    const dec = decimateChartData(time, paceArr);
+    const zc  = hrmax ? (() => {
+      const dhr = decimateChartData(time, s.heartrate||[]);
+      return dhr.data.map(v => v!=null ? HR_ZONE_COLOURS[getHrZone(v,hrmax)] : '#9ca3af');
+    })() : null;
+    makeChart('chart-primary', [{
+      label: 'Pace',
+      data:  dec.time.map((t,i) => ({x:t, y:dec.data[i]??null})),
+      borderColor: zc ? 'transparent' : '#00ff87',
+      _zoneColors: zc,
+      backgroundColor: 'transparent', fill: false,
+      borderWidth: 2, pointRadius: 0, tension: 0, yAxisID: 'y'
+    }], {
+      y: { position:'left', reverse:true,
+           grid:{color:'rgba(255,255,255,0.04)'}, border:{color:'rgba(255,255,255,0.08)'},
+           ticks:{maxTicksLimit:5, color:'#00ff87',
+             callback:v=>`${Math.floor(v)}:${String(Math.round((v%1)*60)).padStart(2,'0')}`},
+           afterFit: axis => { axis.width = 50; } }
+    }, time);
+    await buildDurationCurve('chart-curve', 'pace', s.velocity_smooth, null, 'min/km',
+      v => `${Math.floor(v)}:${String(Math.round((v%1)*60)).padStart(2,'0')}`, '#00ff87', true, s.distance);
+
+  } else if (isCyc && s.watts?.length) {
+    document.getElementById('primary-trace-title').textContent = 'Power';
+    document.getElementById('curve-title').textContent = '90-Day Power Curve';
+    const dec = decimateChartData(time, s.watts);
+    const zc  = ftp ? dec.data.map(v => v!=null ? POWER_ZONE_COLOURS[getPowerZone(v,ftp)] : '#9ca3af') : null;
+    makeChart('chart-primary', [{
+      label: 'Power',
+      data:  dec.time.map((t,i) => ({x:t, y:dec.data[i]??null})),
+      borderColor: zc ? 'transparent' : '#00e5ff',
+      _zoneColors: zc,
+      backgroundColor: 'transparent', fill: true,
+      _gradientTop: 'rgba(0,255,135,0.35)', _gradientBottom: 'rgba(0,255,135,0.0)',
+      borderWidth: 2, pointRadius: 0, tension: 0, yAxisID: 'y'
+    }], {
+      y: { position:'left',
+           grid:{color:'rgba(255,255,255,0.04)'}, border:{color:'rgba(255,255,255,0.08)'},
+           ticks:{maxTicksLimit:5, color:'#00e5ff', callback:v=>Math.round(v)+'W'},
+           afterFit: axis => { axis.width = 50; } }
+    }, time);
+    await buildDurationCurve('chart-curve', 'power', s.watts, ftp, 'W', v => Math.round(v)+'W', '#00e5ff');
+  }
+}
+
+async function buildDurationCurve(canvasId, type, rawStream, ref, unit, tickFmt, colour, reverseY, distStream) {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx || !rawStream?.length) return;
+
+  const isPace = type === 'pace';
+  const maxDur = rawStream.length;
+  const totalDistM = distStream?.length ? distStream[distStream.length-1] : 0;
+  const buckets = [];
+
+  if (isPace && totalDistM > 0) {
+    const distBuckets = [100,200,400,800,1000,1500,2000,3000,5000,8000,10000,16000,21097,42195];
+    distBuckets.forEach(d => { if(d <= totalDistM) buckets.push(d); });
+  } else {
+    for (let s=5; s<=maxDur; s = s<60?s+5:s<300?s+15:s<3600?s+30:s+120) buckets.push(s);
+  }
+
+  const activityBest = buckets.map(bucket => {
+    if (isPace && distStream?.length) {
+      let bestSec = Infinity;
+      for (let i=0; i<distStream.length; i++) {
+        const targetDist = (distStream[i]||0) + bucket;
+        let j = i+1;
+        while(j<distStream.length && (distStream[j]||0) < targetDist) j++;
+        if(j>=distStream.length) break;
+        const elapsed = j - i;
+        if(elapsed < bestSec) bestSec = elapsed;
+      }
+      if(!isFinite(bestSec)) return null;
+      const mps = bucket / bestSec;
+      return mps > 0 ? +(1000/mps/60).toFixed(3) : null;
+    } else {
+      const dur = bucket;
+      if (dur > rawStream.length) return null;
+      let best = 0;
+      for (let i=0; i<=rawStream.length-dur; i++) {
+        const slice = rawStream.slice(i, i+dur);
+        const valid = slice.filter(v=>v!=null&&v>0);
+        if (valid.length < dur*0.8) continue;
+        const mean = valid.reduce((a,b)=>a+b,0) / valid.length;
+        if (mean > best) best = mean;
+      }
+      return best > 0 ? Math.round(best) : null;
+    }
+  });
+
+  const datasets = [];
+  try {
+    const filename = isPace ? 'pace_curves_90d.json' : 'power_curves_90d.json';
+    const r = await fetch(`${CF_BASE}data/${filename}`);
+    if (r.ok) {
+      const cd = await r.json();
+      const curve = cd?.list?.[0];
+      if (curve?.values?.length) {
+        let best90;
+        if (isPace) {
+          const dists = curve.distance || [], times = curve.values || [];
+          best90 = buckets.map(distBucket => {
+            const idx = dists.findIndex(d => d >= distBucket);
+            if (idx === -1) return null;
+            const sec = times[idx];
+            if (!sec || sec <= 0) return null;
+            const mps = dists[idx] / sec;
+            return mps > 0 ? +(1000/mps/60).toFixed(3) : null;
+          });
+        } else {
+          const secs = curve.secs || [];
+          best90 = buckets.map(dur => {
+            const idx = secs.findIndex(s => s >= dur);
+            if (idx === -1) return null;
+            const v = curve.values[idx];
+            return v ? Math.round(v) : null;
+          });
+        }
+        datasets.push({
+          label: '90d Best',
+          data: buckets.map((d,i) => ({x:d, y:best90[i]??null})),
+          borderColor: 'rgba(255,255,255,0.25)', backgroundColor: 'rgba(255,255,255,0.05)',
+          fill: true, borderWidth: 1.5, pointRadius: 0, tension: 0.3,
+          borderDash: [4,3], order: 10
+        });
+      }
+    }
+  } catch(_) {}
+
+  datasets.push({
+    label: 'This Activity',
+    data: buckets.map((d,i) => ({x:d, y:activityBest[i]??null})),
+    borderColor: colour,
+    backgroundColor: colour.replace(')', ',0.1)').replace('rgb','rgba'),
+    fill: false, borderWidth: 2, pointRadius: 0, tension: 0.3, order: 1
+  });
+
+  new Chart(ctx, {
+    type: 'line', data: {datasets},
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      layout: {padding:{right:0}},
+      interaction: {mode:'index', intersect:false},
+      plugins: {
+        legend: {display:true, labels:{color:'#b8c0d0', font:{size:9}, boxWidth:12}},
+        tooltip: {
+          backgroundColor:'rgba(8,10,13,0.92)', borderColor:'rgba(255,255,255,0.1)', borderWidth:1,
+          callbacks: {
+            title: items => fmtDuration(Math.round(items[0]?.parsed?.x??0)),
+            label: item => `${item.dataset.label}: ${tickFmt(item.parsed.y)}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'logarithmic',
+          ticks: {maxTicksLimit:8, callback:v=>fmtDuration(Math.round(v)), maxRotation:0},
+          grid: {color:'rgba(255,255,255,0.04)'}, border:{color:'rgba(255,255,255,0.08)'},
+          afterFit: axis => { axis.paddingRight = 0; }
+        },
+        y: {
+          reverse: reverseY||false,
+          grid:{color:'rgba(255,255,255,0.04)'}, border:{color:'rgba(255,255,255,0.08)'},
+          ticks:{maxTicksLimit:5, color:colour, callback:tickFmt},
+          afterFit: axis => { axis.width = 50; }
+        }
+      }
+    }
+  });
+}
+
+/* ── HR TRACE + ZONE BARS ── */
+function buildHrSection(data, hrmax) {
+  const s=data.streams||{}, time=s.time||[];
+  if(!s.heartrate?.length) { document.querySelector('.split-row:has(#chart-hr)').style.display='none'; return; }
+
+  const dec=decimateChartData(time,s.heartrate);
+  const zoneColors=hrmax ? dec.data.map(v=>v!=null?HR_ZONE_COLOURS[getHrZone(v,hrmax)]:'#9ca3af') : null;
+  const ds={label:'HR',data:dec.time.map((t,i)=>({x:t,y:dec.data[i]??null})),
+    borderColor:zoneColors?'transparent':'#ef4444',_zoneColors:zoneColors,
+    backgroundColor:'transparent',fill:true,
+    _gradientTop:'rgba(239,68,68,0.45)',_gradientBottom:'rgba(239,68,68,0.0)',
+    borderWidth:2,pointRadius:0,tension:0};
+  makeChart('chart-hr',[ds],{},dec.time);
+
+  const hzEl=document.getElementById('hr-zone-bars');
+  if(!hrmax) { hzEl.innerHTML='<div style="color:var(--text-muted);font-size:11px;font-family:var(--font-mono)">Set max HR to see zones</div>'; return; }
+  const counts=new Array(5).fill(0);
+  s.heartrate.filter(v=>v!=null&&v>0).forEach(v=>counts[Math.min(getHrZone(v,hrmax),4)]++);
+  const total=counts.reduce((a,b)=>a+b,0)||1;
+  hzEl.innerHTML=counts.map((c,i)=>{
+    const pct=Math.round(c/total*100), mins=Math.round(c/60);
+    return `<div class="hz-row" style="border-left-color:${HR_ZONE_COLOURS[i]}">
+      <div>
+        <div class="hz-zone">Z${i+1}</div>
+        <div class="hz-zone-name">${HR_ZONE_NAMES[i]}</div>
+      </div>
+      <div class="hz-bar-bg"><div class="hz-bar-fill" style="width:${pct}%;background:${HR_ZONE_COLOURS[i]}"></div></div>
+      <div class="hz-stats">
+        <div class="hz-pct">${pct}%</div>
+        <div class="hz-mins">${mins}m</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ── CADENCE + SPEED CHARTS ── */
+function buildCadenceSpeed(data) {
+  const s=data.streams||{}, time=s.time||[], sport=data.sport_type;
+  const isCyc=isCycling(sport), isRun=isRunning(sport);
+
+  if (s.cadence?.length) {
+    document.getElementById('cadence-title').textContent =
+      isCyc ? 'Cadence (rpm)' : isRun ? 'Cadence (spm)' : 'Stroke Rate';
+    const dec = decimateChartData(time, s.cadence);
+    makeChart('chart-cadence', [{
+      label:'Cadence',
+      data: dec.time.map((t,i) => ({x:t, y:dec.data[i]??null})),
+      borderColor:'#a78bfa', backgroundColor:'rgba(167,139,250,0.07)',
+      fill:true, borderWidth:1.5, pointRadius:0, tension:0
+    }], {}, dec.time);
+  } else {
+    document.getElementById('cad-speed-row').querySelector('.act-card').style.display='none';
+  }
+
+  if (isCyc && s.velocity_smooth?.length) {
+    const speedArr = s.velocity_smooth.map(v => v!=null ? +(v*3.6).toFixed(2) : null);
+    const dec = decimateChartData(time, speedArr);
+    makeChart('chart-speed', [{
+      label:'Speed',
+      data: dec.time.map((t,i) => ({x:t, y:dec.data[i]??null})),
+      borderColor:'#fbbf24', backgroundColor:'transparent',
+      fill:true, _gradientTop:'rgba(251,191,36,0.45)', _gradientBottom:'rgba(251,191,36,0.0)',
+      borderWidth:1.5, pointRadius:0, tension:0
+    }], {
+      y:{ticks:{maxTicksLimit:5, callback:v=>v.toFixed(0)+' km/h'},
+         grid:{color:'rgba(255,255,255,0.04)'}, border:{color:'rgba(255,255,255,0.08)'}}
+    }, dec.time);
+  } else {
+    document.getElementById('speed-card').style.display='none';
+    document.getElementById('cad-speed-row').style.gridTemplateColumns='1fr';
+  }
+}
+
+/* ── SEGMENTS ── */
+function buildSegments(segments) {
+  const el=document.getElementById('seg-items');
+  const meta=document.getElementById('segments-meta');
+  if(!segments?.length) {
+    el.innerHTML='<div class="seg-empty">No qualifying segment achievements.<br><span style="opacity:.6;font-size:9px">Showing only PR top 3, overall top 10, and age group top 10</span></div>';
+    meta.textContent=''; return;
+  }
+  meta.textContent=`— ${segments.length} qualifying`;
+  const sorted=[...segments].sort((a,b)=>{
+    return (a.pr_rank??99)-(b.pr_rank??99) || (a.kom_rank??99)-(b.kom_rank??99) || (a.qom_rank??99)-(b.qom_rank??99);
+  });
+  el.innerHTML=sorted.map(seg=>{
+    const badges=[];
+    if(seg.pr_rank===1) badges.push(`<span class="seg-badge sb-gold">🥇 PR</span>`);
+    else if(seg.pr_rank===2) badges.push(`<span class="seg-badge sb-silver">🥈 2nd Best</span>`);
+    else if(seg.pr_rank===3) badges.push(`<span class="seg-badge sb-bronze">🥉 3rd Best</span>`);
+    if(seg.kom_rank!=null&&seg.kom_rank<=10) badges.push(`<span class="seg-badge sb-top10">🏆 Top ${seg.kom_rank}</span>`);
+    if(seg.qom_rank!=null&&seg.qom_rank<=10) badges.push(`<span class="seg-badge sb-ag">👴 Top ${seg.qom_rank} AG</span>`);
+    return `<div class="seg-item">
+      <div>
+        <div class="seg-name">${seg.name||'Unnamed'}</div>
+        <div class="seg-meta">${[seg.distance_m?fmtDist(seg.distance_m):'',seg.elapsed_time_s?fmtDuration(seg.elapsed_time_s):''].filter(Boolean).join(' · ')}</div>
+      </div>
+      <div class="seg-badges">${badges.join('')}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ── LAP SPLITS ── */
+function buildLaps(laps, sport) {
+  if(!laps?.length) { document.getElementById('laps-section').style.display='none'; return; }
+  document.getElementById('laps-meta').textContent=`— ${laps.length} laps`;
+  const isCyc=isCycling(sport), isRun=isRunning(sport);
+  const cols=[
+    {lbl:'Lap',   key:'lap',       fmt:v=>v},
+    {lbl:'Time',  key:'elapsed_s', fmt:v=>fmtDuration(v)},
+    {lbl:'Dist',  key:'distance_m',fmt:v=>v?fmtDist(v):'—'},
+  ];
+  if(isCyc) {
+    cols.push({lbl:'Avg W', key:'avg_watts',   fmt:v=>v?Math.round(v)+'W':'—', cls:'acc'});
+    cols.push({lbl:'NP',    key:'np_watts',    fmt:v=>v?Math.round(v)+'W':'—'});
+    cols.push({lbl:'Avg HR',key:'avg_hr',      fmt:v=>v?Math.round(v):'—'});
+    cols.push({lbl:'Cad',   key:'avg_cadence', fmt:v=>v?Math.round(v):'—'});
+  } else if(isRun) {
+    cols.push({lbl:'Pace',  key:'avg_speed',   fmt:v=>v&&v>0?fmtPace(v):'—', cls:'grn'});
+    cols.push({lbl:'Avg HR',key:'avg_hr',      fmt:v=>v?Math.round(v):'—'});
+    cols.push({lbl:'Cad',   key:'avg_cadence', fmt:v=>v?Math.round(v):'—'});
+  } else {
+    cols.push({lbl:'Avg W', key:'avg_watts',   fmt:v=>v?Math.round(v)+'W':'—', cls:'acc'});
+    cols.push({lbl:'Avg HR',key:'avg_hr',      fmt:v=>v?Math.round(v):'—'});
+    cols.push({lbl:'S/R',   key:'avg_cadence', fmt:v=>v?Math.round(v):'—'});
+  }
+  document.getElementById('laps-thead').innerHTML=cols.map(c=>`<th>${c.lbl}</th>`).join('');
+  _lapStartSec=laps.map(l=>l.start_time??0);
+  document.getElementById('laps-tbody').innerHTML=laps.map((lap,i)=>`<tr onclick="dispatchCrosshair(${_lapStartSec[i]??0})">${
+    cols.map(c=>`<td${c.cls?` class="${c.cls}"`:''}>${c.fmt(lap[c.key])}</td>`).join('')
+  }</tr>`).join('');
+}
+
+/* ── MAIN INIT ── */
+async function init() {
+  const params=new URLSearchParams(location.search);
+  let actId=params.get('id');
+  if(!actId) { showError('No activity ID specified.',''); return; }
+  if(!actId.startsWith('i')) actId='i'+actId;
+
+  let data;
+  try {
+    const r=await fetch(`${CF_BASE}data/streams/${actId}.json`);
+    if(!r.ok) { showError('Activity not available.','Stream data is only kept for 14 days.'); return; }
+    data=await r.json();
+  } catch(e) { showError('Failed to load.', e.message); return; }
+
+  const sport = data.sport_type||'';
+  const ftp   = data.icu_ftp||null;
+  const hrmax = data.athlete_max_hr||null;
+
+  const syncEl=document.getElementById('last-sync');
+  if(syncEl&&data.synced_at) {
+    const d=new Date(data.synced_at);
+    syncEl.textContent=d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+' sync';
+  }
+
+  const badge=document.getElementById('sport-badge');
+  badge.textContent=`${sportIcon(sport)} ${sport.replace(/([A-Z])/g,' $1').trim()}`;
+  badge.className=`act-sport-badge ${sport}`;
+  document.getElementById('activity-name').textContent = data.name||'Activity';
+  document.getElementById('activity-date').textContent = fmtDate(data.start_date_local||data.synced_at);
+  document.getElementById('kudos-count').textContent   = data.kudos_count??'0';
+  document.title=`${data.name||'Activity'} — Training OS`;
+
+  if(data.strava_id || data.activity_id) {
+    const sr=document.getElementById('strava-row');
+    if(sr) sr.style.display='flex';
+    if(data.strava_id) {
+      const sl=document.getElementById('strava-link');
+      if(sl) {
+        sl.href=`https://www.strava.com/activities/${data.strava_id}`;
+        sl.innerHTML='<img src="https://www.strava.com/favicon.ico" style="width:14px;height:14px;vertical-align:middle;margin-right:5px" onerror="this.style.display=&quot;none&quot;">View on Strava →';
+      }
+    }
+    if(data.activity_id) {
+      const il=document.getElementById('intervals-link');
+      if(il) { il.href=`https://intervals.icu/activities/${data.activity_id}`; il.style.display='inline-flex'; }
+    }
+  }
+
+  buildSummaryCards(data, ftp);
+  buildWorkoutStats(data, ftp);
+  buildElevationChart(data, ftp, hrmax);
+
+  const latlng=data.streams?.latlng;
+  if(latlng?.length && !isRowing(sport)) {
+    window._pendingMap=()=>initMap(latlng, data.streams?.watts, data.streams?.heartrate, sport, ftp, hrmax);
+  } else {
+    document.getElementById('map-section').style.display='none';
+    document.getElementById('map-stats-row').style.gridTemplateColumns='1fr';
+  }
+
+  buildPrimaryTrace(data, ftp, hrmax);
+  buildHrSection(data, hrmax);
+  buildCadenceSpeed(data);
+  buildSegments(data.segments);
+  buildLaps(data.laps, sport);
+
+  document.getElementById('loading-state').classList.add('hidden');
+  document.getElementById('activity-content').classList.remove('hidden');
+
+  if(window._pendingMap) {
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      window._pendingMap(); window._pendingMap=null;
+    }));
+  }
+}
+
+function showError(title, msg) {
+  document.getElementById('loading-state').classList.add('hidden');
+  document.getElementById('error-state').classList.remove('hidden');
+  document.getElementById('error-title').textContent=title;
+  document.getElementById('error-msg').textContent=msg;
+}
+
+document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>

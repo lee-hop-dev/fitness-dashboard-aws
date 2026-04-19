@@ -66,6 +66,122 @@
 .kudos-num { font-size: 18px; font-weight: 800; font-family: var(--font-mono); color: #fff; }
 .kudos-lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
 
+/* ═══════════════════════════════════════════════════════════
+   HERO STRIP — Cockpit 6-cell telemetry panel
+   Hero tiles sit edge-to-edge with thin gutters between them,
+   each tile carries a 2px coloured top border indicating metric
+   category. Reads pre-calculated Intervals values only.
+   ─────────────────────────────────────────────────────────── */
+.act-hero {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.ah-cell {
+  background: var(--bg-surface);
+  padding: 14px 14px 12px;
+  position: relative;
+  transition: background var(--transition);
+}
+.ah-cell::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+}
+.ah-cell.c-accent::before { background: var(--accent); }
+.ah-cell.c-green::before  { background: var(--green); }
+.ah-cell.c-orange::before { background: var(--orange); }
+.ah-cell.c-red::before    { background: var(--red); }
+.ah-cell.c-yellow::before { background: var(--yellow); }
+.ah-cell.c-purple::before { background: var(--purple); }
+.ah-cell:hover { background: var(--bg-elevated); }
+.ah-val {
+  font-size: 18px; font-weight: 800; font-family: var(--font-mono);
+  letter-spacing: -0.5px; color: var(--text-primary); line-height: 1;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ah-val.accent { color: var(--accent); }
+.ah-val.green  { color: var(--green); }
+.ah-val.orange { color: var(--orange); }
+.ah-val.red    { color: var(--red); }
+.ah-val.yellow { color: var(--yellow); }
+.ah-val.purple { color: var(--purple); }
+.ah-lbl {
+  font-size: 9px; font-weight: 700; letter-spacing: 1.2px;
+  text-transform: uppercase; color: var(--text-muted); margin-top: 6px;
+}
+.ah-sub {
+  font-size: 9px; font-family: var(--font-mono); color: var(--text-muted);
+  margin-top: 1px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SUMMARY PANEL — Sport-dispatched metric tile grid
+   All tiles read Intervals pre-calculated values. Null values
+   drop the tile cleanly — no placeholder dashes.
+   ─────────────────────────────────────────────────────────── */
+.act-summary {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  margin-bottom: 14px;
+  transition: border-color var(--transition);
+}
+.act-summary:hover { border-color: var(--border-bright); }
+.as-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px; gap: 10px; flex-wrap: wrap;
+}
+.as-title {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 10px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--text-secondary);
+}
+.as-title::before {
+  content: ''; display: inline-block;
+  width: 3px; height: 14px; background: var(--accent);
+}
+.as-title.c-green::before  { background: var(--green); }
+.as-title.c-purple::before { background: var(--purple); }
+.as-meta {
+  font-size: 10px; font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+.as-grid {
+  display: grid; gap: 14px;
+  grid-template-columns: repeat(6, 1fr);
+}
+.as-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+.as-tile { display: flex; flex-direction: column; }
+.as-val {
+  font-size: 15px; font-weight: 800; font-family: var(--font-mono);
+  letter-spacing: -0.3px; color: var(--text-primary); line-height: 1;
+}
+.as-val.accent { color: var(--accent); }
+.as-val.green  { color: var(--green); }
+.as-val.orange { color: var(--orange); }
+.as-val.red    { color: var(--red); }
+.as-val.yellow { color: var(--yellow); }
+.as-val.purple { color: var(--purple); }
+.as-lbl {
+  font-size: 9px; font-weight: 700; letter-spacing: 1.2px;
+  text-transform: uppercase; color: var(--text-muted); margin-top: 4px;
+}
+
+/* Hero + Summary responsive wrap */
+@media (max-width: 900px) {
+  .act-hero    { grid-template-columns: repeat(3, 1fr); }
+  .as-grid     { grid-template-columns: repeat(3, 1fr); }
+  .as-grid.cols-4 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 520px) {
+  .act-hero    { grid-template-columns: repeat(2, 1fr); }
+  .as-grid     { grid-template-columns: repeat(2, 1fr); }
+}
+
 /* ── SUMMARY CARDS ── */
 .summary-cards {
   display: flex; gap: 8px; flex-wrap: wrap;
@@ -359,8 +475,17 @@
         </div>
       </header>
 
-      <!-- 2. SUMMARY CARDS -->
-      <div class="summary-cards" id="summary-cards"></div>
+      <!-- 2a. HERO — 6-cell Cockpit telemetry strip -->
+      <div class="act-hero" id="act-hero"></div>
+
+      <!-- 2b. SUMMARY PANEL — Sport-dispatched tile grid -->
+      <div class="act-summary" id="act-summary" style="display:none">
+        <div class="as-head">
+          <div class="as-title" id="as-title">Activity Summary</div>
+          <div class="as-meta" id="as-meta"></div>
+        </div>
+        <div class="as-grid" id="as-grid"></div>
+      </div>
 
       <!-- 3. ELEVATION PROFILE (full width, all metrics toggleable) -->
       <div class="act-card" id="elevation-section">
@@ -776,6 +901,262 @@ function initMap(latlng, powerArr, hrArr, sport, ftp, hrmax) {
       `<span class="zone-pip" style="background:${HR_ZONE_COLOURS[i]}"></span><span class="zone-lbl">${z}</span>`
     ).join('');
   }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HERO STRIP BUILDER — 6-cell Cockpit telemetry row
+   Reads Intervals pre-calculated values. Sport-dispatched.
+   Null values drop cells cleanly (fewer than 6 tiles if needed).
+   ─────────────────────────────────────────────────────────── */
+function buildHero(data) {
+  const sport = data.sport_type || '';
+  const cells = [];
+
+  // Universal: Duration + Distance always lead the hero
+  if (data.moving_time != null) {
+    cells.push({ val: fmtDuration(data.moving_time), lbl: 'Duration', cls: 'c-accent' });
+  }
+  if (data.distance != null && data.distance > 0) {
+    cells.push({ val: fmtDist(data.distance), lbl: 'Distance', cls: 'c-accent' });
+  }
+
+  if (isCycling(sport)) {
+    // Ride: Avg Speed · Avg HR · Avg Power · TSS
+    if (data.average_speed != null) {
+      cells.push({ val: (data.average_speed * 3.6).toFixed(1) + ' km/h', lbl: 'Avg Speed', cls: 'c-yellow', vcls: 'yellow' });
+    }
+    if (data.average_heartrate != null) {
+      cells.push({
+        val: Math.round(data.average_heartrate) + '',
+        lbl: 'Avg HR', cls: 'c-red', vcls: 'red',
+        sub: data.max_heartrate ? `max ${Math.round(data.max_heartrate)}` : ''
+      });
+    }
+    if (data.icu_average_watts != null) {
+      cells.push({ val: Math.round(data.icu_average_watts) + 'W', lbl: 'Avg Power', cls: 'c-accent' });
+    }
+    if (data.icu_training_load != null && data.icu_training_load > 0) {
+      cells.push({ val: Math.round(data.icu_training_load) + '', lbl: 'TSS', cls: 'c-orange', vcls: 'orange' });
+    }
+  } else if (isRunning(sport)) {
+    // Run: Avg Pace · Avg HR · Cadence · TSS
+    if (data.average_speed != null && data.average_speed > 0) {
+      cells.push({ val: fmtPace(data.average_speed), lbl: 'Avg Pace', cls: 'c-green', vcls: 'green' });
+    }
+    if (data.average_heartrate != null) {
+      cells.push({
+        val: Math.round(data.average_heartrate) + '',
+        lbl: 'Avg HR', cls: 'c-red', vcls: 'red',
+        sub: data.max_heartrate ? `max ${Math.round(data.max_heartrate)}` : ''
+      });
+    }
+    if (data.average_cadence != null) {
+      cells.push({ val: Math.round(data.average_cadence) + '', lbl: 'Cadence', cls: 'c-purple', vcls: 'purple', sub: 'spm' });
+    }
+    if (data.icu_training_load != null && data.icu_training_load > 0) {
+      cells.push({ val: Math.round(data.icu_training_load) + '', lbl: 'TSS', cls: 'c-orange', vcls: 'orange' });
+    }
+  } else if (isRowing(sport)) {
+    // Row (lower-rung): 500m Split · Avg HR. TSS only if present.
+    if (data.average_speed != null && data.average_speed > 0) {
+      // 500m split derived from average speed (m/s). Intervals stores this in `pace`
+      // but the unit is minutes/km — convert to m:ss/500m for rowing convention.
+      const splitSecs = 500 / data.average_speed;
+      const m = Math.floor(splitSecs / 60), s = (splitSecs % 60).toFixed(1);
+      cells.push({ val: `${m}:${s.padStart(4, '0')}`, lbl: '/500m Split', cls: 'c-green', vcls: 'green' });
+    }
+    if (data.average_heartrate != null) {
+      cells.push({
+        val: Math.round(data.average_heartrate) + '',
+        lbl: 'Avg HR', cls: 'c-red', vcls: 'red',
+        sub: data.max_heartrate ? `max ${Math.round(data.max_heartrate)}` : ''
+      });
+    }
+    if (data.icu_training_load != null && data.icu_training_load > 0) {
+      cells.push({ val: Math.round(data.icu_training_load) + '', lbl: 'TSS', cls: 'c-orange', vcls: 'orange' });
+    }
+  } else {
+    // Fallback: Avg HR · TSS
+    if (data.average_heartrate != null) {
+      cells.push({ val: Math.round(data.average_heartrate) + '', lbl: 'Avg HR', cls: 'c-red', vcls: 'red' });
+    }
+    if (data.icu_training_load != null && data.icu_training_load > 0) {
+      cells.push({ val: Math.round(data.icu_training_load) + '', lbl: 'TSS', cls: 'c-orange', vcls: 'orange' });
+    }
+  }
+
+  const el = document.getElementById('act-hero');
+  if (!el) return;
+  if (!cells.length) {
+    el.style.display = 'none';
+    return;
+  }
+  // Dynamic column count so 4-cell heroes don't look sparse
+  el.style.gridTemplateColumns = `repeat(${Math.min(cells.length, 6)}, 1fr)`;
+  el.innerHTML = cells.map(c => `
+    <div class="ah-cell ${c.cls || ''}">
+      <div class="ah-val ${c.vcls || ''}">${c.val}</div>
+      <div class="ah-lbl">${c.lbl}</div>
+      ${c.sub ? `<div class="ah-sub">${c.sub}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SUMMARY PANEL BUILDER — Intervals pre-calculated tile grid
+   All values pass through from Intervals — no browser-side calc.
+   Null values drop the tile. Sport dispatches a different tile set.
+   ─────────────────────────────────────────────────────────── */
+function buildSummaryPanel(data) {
+  const sport = data.sport_type || '';
+  const tiles = [];
+  const pushTile = (val, lbl, vcls) => {
+    if (val != null && val !== '' && !Number.isNaN(val)) {
+      tiles.push({ val, lbl, vcls: vcls || '' });
+    }
+  };
+
+  if (isCycling(sport)) {
+    // Ride summary — Intervals pre-calculated power metrics
+    if (data.icu_weighted_avg_watts != null) {
+      pushTile(Math.round(data.icu_weighted_avg_watts) + 'W', 'Normalised Power', 'accent');
+    }
+    if (data.icu_intensity != null) {
+      // icu_intensity is stored on a 0-100 scale; divide by 100 for IF display
+      pushTile((data.icu_intensity / 100).toFixed(2), 'Intensity Factor', 'yellow');
+    }
+    if (data.icu_variability_index != null) {
+      pushTile((+data.icu_variability_index).toFixed(2), 'Variability Index');
+    }
+    if (data.icu_efficiency_factor != null) {
+      pushTile((+data.icu_efficiency_factor).toFixed(2), 'Efficiency Factor', 'green');
+    }
+    if (data.icu_weighted_avg_watts != null && data.icu_weight) {
+      const wkg = data.icu_weighted_avg_watts / data.icu_weight;
+      pushTile(wkg.toFixed(2) + ' W/kg', 'Watts per kg', 'accent');
+    }
+    if (data.icu_joules != null) {
+      pushTile(Math.round(data.icu_joules / 1000) + ' kJ', 'Total Work', 'orange');
+    }
+    if (data.decoupling != null) {
+      const d = +data.decoupling;
+      pushTile((d >= 0 ? '+' : '') + d.toFixed(1) + '%', 'Pwr:HR Decoup.', Math.abs(d) < 5 ? 'green' : 'red');
+    }
+    if (data.total_elevation_gain != null && data.total_elevation_gain > 0) {
+      pushTile(Math.round(data.total_elevation_gain) + ' m', 'Elev Gain');
+    }
+    if (data.max_heartrate != null) {
+      pushTile(Math.round(data.max_heartrate) + ' bpm', 'Max HR', 'red');
+    }
+    if (data.max_speed != null) {
+      pushTile((data.max_speed * 3.6).toFixed(1) + ' km/h', 'Max Speed', 'yellow');
+    }
+    if (data.icu_w_prime != null) {
+      pushTile((data.icu_w_prime / 1000).toFixed(1) + ' kJ', "W' Balance", 'accent');
+    }
+    if (data.average_cadence != null) {
+      pushTile(Math.round(data.average_cadence) + ' rpm', 'Avg Cadence', 'purple');
+    }
+  } else if (isRunning(sport)) {
+    // Run summary — Intervals IF + elev + cadence/stride
+    if (data.icu_intensity != null) {
+      pushTile((data.icu_intensity / 100).toFixed(2), 'Intensity Factor', 'yellow');
+    }
+    if (data.total_elevation_gain != null && data.total_elevation_gain > 0) {
+      pushTile(Math.round(data.total_elevation_gain) + ' m', 'Elev Gain', 'green');
+    }
+    if (data.total_elevation_loss != null && data.total_elevation_loss > 0) {
+      pushTile('-' + Math.round(data.total_elevation_loss) + ' m', 'Elev Loss');
+    }
+    if (data.max_heartrate != null) {
+      pushTile(Math.round(data.max_heartrate) + ' bpm', 'Max HR', 'red');
+    }
+    if (data.max_speed != null && data.max_speed > 0) {
+      pushTile(fmtPace(data.max_speed), 'Best Pace', 'green');
+    }
+    if (data.average_cadence != null) {
+      pushTile(Math.round(data.average_cadence) + ' spm', 'Avg Cadence', 'purple');
+    }
+    if (data.average_stride != null) {
+      pushTile((+data.average_stride).toFixed(2) + ' m', 'Stride Length');
+    }
+    if (data.decoupling != null) {
+      const d = +data.decoupling;
+      pushTile((d >= 0 ? '+' : '') + d.toFixed(1) + '%', 'Pace:HR Decoup.', Math.abs(d) < 5 ? 'green' : 'red');
+    }
+    if (data.trimp != null) {
+      pushTile(Math.round(data.trimp) + '', 'TRIMP');
+    }
+    if (data.polarization_index != null && +data.polarization_index > 0) {
+      pushTile((+data.polarization_index).toFixed(1), 'Polarization Idx');
+    }
+  } else if (isRowing(sport)) {
+    // Row (lower-rung) — fewer tiles, only what Intervals reliably populates
+    if (data.icu_average_watts != null) {
+      pushTile(Math.round(data.icu_average_watts) + 'W', 'Avg Power', 'accent');
+    }
+    if (data.icu_joules != null) {
+      pushTile(Math.round(data.icu_joules / 1000) + ' kJ', 'Total Work', 'orange');
+    }
+    if (data.average_cadence != null) {
+      pushTile(Math.round(data.average_cadence) + ' spm', 'Stroke Rate', 'purple');
+    }
+    if (data.max_heartrate != null) {
+      pushTile(Math.round(data.max_heartrate) + ' bpm', 'Max HR', 'red');
+    }
+    if (data.trimp != null) {
+      pushTile(Math.round(data.trimp) + '', 'TRIMP');
+    }
+  } else {
+    // Fallback for Workout / Cardio / Other
+    if (data.icu_average_watts != null) {
+      pushTile(Math.round(data.icu_average_watts) + 'W', 'Avg Power', 'accent');
+    }
+    if (data.max_heartrate != null) {
+      pushTile(Math.round(data.max_heartrate) + ' bpm', 'Max HR', 'red');
+    }
+    if (data.trimp != null) {
+      pushTile(Math.round(data.trimp) + '', 'TRIMP');
+    }
+  }
+
+  const wrap = document.getElementById('act-summary');
+  const grid = document.getElementById('as-grid');
+  const titleEl = document.getElementById('as-title');
+  const metaEl = document.getElementById('as-meta');
+  if (!wrap || !grid) return;
+
+  if (!tiles.length) {
+    wrap.style.display = 'none';
+    return;
+  }
+  wrap.style.display = 'block';
+
+  // Sport-appropriate header colour
+  titleEl.className = 'as-title' + (isRunning(sport) ? ' c-green' : isRowing(sport) ? ' c-purple' : '');
+  titleEl.textContent = isCycling(sport) ? 'Ride Summary' :
+                        isRunning(sport) ? 'Run Summary' :
+                        isRowing(sport)  ? 'Row Summary' :
+                        'Activity Summary';
+
+  // Meta line — FTP / HRmax / sync time
+  const metaBits = [];
+  if (data.icu_ftp != null) metaBits.push(`FTP ${Math.round(data.icu_ftp)}${isCycling(sport) ? 'W' : ''}`);
+  if (data.athlete_max_hr != null) metaBits.push(`HRmax ${Math.round(data.athlete_max_hr)}`);
+  if (data.synced_at) {
+    const d = new Date(data.synced_at);
+    metaBits.push(`synced ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`);
+  }
+  metaEl.textContent = metaBits.join(' · ');
+
+  // Rowing gets compact 4-column grid; others use 6-column
+  grid.className = 'as-grid' + (isRowing(sport) ? ' cols-4' : '');
+  grid.innerHTML = tiles.map(t => `
+    <div class="as-tile">
+      <div class="as-val ${t.vcls}">${t.val}</div>
+      <div class="as-lbl">${t.lbl}</div>
+    </div>
+  `).join('');
 }
 
 /* ── SUMMARY CARDS ── */
@@ -1379,7 +1760,13 @@ async function init() {
     }
   }
 
-  buildSummaryCards(data, ftp);
+  // Layer 2a — new Cockpit hero + Intervals-driven summary panel
+  buildHero(data);
+  buildSummaryPanel(data);
+  // buildSummaryCards and buildWorkoutStats are retained for Layer 2b/3
+  // The old summary-cards container is no longer in the DOM (removed in Layer 2a),
+  // so buildSummaryCards is a no-op for now. buildWorkoutStats still renders
+  // inside the existing map-stats split row until Layer 2b replaces that section.
   buildWorkoutStats(data, ftp);
   buildElevationChart(data, ftp, hrmax);
 

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parkrun 5K — Training OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root{--cream:#f8f6f1;--cream-dk:#f0ece3;--cream-border:#e2ddd4;--ink:#1a1714;--ink-soft:#4a4540;--ink-muted:#8c857c;--tc:#c85a1e;--tc-lt:#fef0e8;--run:#2d6a4f;--run-lt:#e8f5ee;--run-mid:#b7deca;--amber:#d4860c;--blue:#1e4a7a;--z1r:#93c5fd;--z2r:#34d399;--z3r:#fbbf24;--z4r:#2d6a4f;--z5r:#dc2626;--r-sm:6px;--r-md:10px;--r-lg:16px;--sh:0 1px 4px rgba(26,23,20,.07)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;display:flex}
+.sidebar{width:200px;min-width:200px;background:#fff;border-right:1px solid var(--cream-border);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:200;box-shadow:var(--sh)}
+.sb-brand{padding:1.25rem 1rem 1rem;border-bottom:1px solid var(--cream-border);display:flex;align-items:center;gap:10px}
+.sb-initials{width:34px;height:34px;border-radius:8px;background:var(--run);color:#fff;font-weight:700;font-size:.8rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sb-name{font-family:'Lora',serif;font-weight:700;font-size:.85rem;line-height:1.25;color:var(--ink)}
+.sb-name span{color:var(--run)}
+.sb-nav{padding:.75rem 0;flex:1;overflow-y:auto}
+.sb-item{display:flex;align-items:center;gap:9px;padding:.55rem 1rem;font-size:.82rem;color:var(--ink-muted);text-decoration:none;transition:all .15s;border-left:3px solid transparent}
+.sb-item:hover{color:var(--ink);background:var(--cream)}
+.sb-item.active{color:var(--run);background:var(--run-lt);border-left-color:var(--run);font-weight:500}
+.sb-icon{font-size:13px;width:18px;text-align:center}
+.sb-footer{padding:.75rem 1rem;border-top:1px solid var(--cream-border);font-size:.72rem;color:var(--ink-muted)}
+.main{margin-left:200px;flex:1;min-width:0}
+.topnav{background:#fff;border-bottom:1px solid var(--cream-border);padding:0 1.75rem;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:var(--sh)}
+.topnav-left{display:flex;align-items:center;gap:1rem}
+.back-link{display:flex;align-items:center;gap:5px;font-size:.78rem;font-weight:500;color:var(--ink-muted);text-decoration:none;letter-spacing:.04em;text-transform:uppercase;transition:color .15s}
+.back-link:hover{color:var(--run)}
+.back-link svg{width:12px;height:12px}
+.bc-sep{color:var(--cream-border);font-size:.9rem}
+.bc-cur{font-size:.78rem;color:var(--ink-muted)}
+.topnav-right{display:flex;align-items:center;gap:.75rem}
+.kudos{display:flex;align-items:center;gap:5px;background:var(--cream);border:1px solid var(--cream-border);border-radius:20px;padding:4px 12px;font-size:.75rem;font-weight:500;color:var(--ink-soft)}
+.kudos .hrt{color:#e53e3e}
+.ext-btn{display:inline-flex;align-items:center;gap:5px;font-size:.75rem;font-weight:500;padding:5px 12px;border-radius:var(--r-sm);text-decoration:none;border:1px solid;transition:all .15s}
+.ext-btn.strava{color:#fc4c02;border-color:#fcd9c7;background:#fff5f1}
+.ext-btn.strava:hover{background:#ffe8dd}
+.ext-btn.icu{color:var(--blue);border-color:#c5d8f0;background:#f0f5fc}
+.ext-btn.icu:hover{background:#daeaf8}
+.hero{background:#fff;border-bottom:1px solid var(--cream-border);padding:1.5rem 1.75rem 1.25rem}
+.hero-badge{display:inline-flex;align-items:center;gap:5px;font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--run);background:var(--run-lt);padding:3px 10px;border-radius:20px;margin-bottom:.6rem}
+.hero-title{font-family:'Lora',serif;font-size:1.9rem;font-weight:700;color:var(--ink);letter-spacing:-.02em;line-height:1.15;margin-bottom:.35rem}
+.hero-title .pfx{color:var(--run)}
+.hero-meta{font-size:.78rem;color:var(--ink-muted)}
+.hero-meta b{color:var(--ink-soft);font-weight:500}
+.stats-strip{display:grid;grid-template-columns:repeat(8,1fr);background:var(--cream-dk);border-top:1px solid var(--cream-border);border-bottom:1px solid var(--cream-border)}
+.sc{background:var(--cream-dk);padding:.85rem 1rem;border-right:1px solid var(--cream-border)}
+.sc:last-child{border-right:none}
+.sc.hi{background:#fff;border-top:2px solid var(--run)}
+.sv{font-family:'Lora',serif;font-size:1.3rem;font-weight:700;color:var(--ink);letter-spacing:-.02em;line-height:1}
+.sv .u{font-size:.75rem;font-weight:400;font-family:'DM Sans',sans-serif;color:var(--ink-muted);margin-left:1px}
+.sv .sub{display:block;font-size:.65rem;color:var(--ink-muted);font-family:'DM Sans',sans-serif;margin-top:1px}
+.sl{font-size:.62rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-muted);margin-top:3px}
+.sc.hi .sl,.sc.hi .sv{color:var(--run)}
+.body{padding:1.5rem 1.75rem;max-width:1300px}
+.sec{margin-bottom:1.75rem}
+.sec-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem}
+.sec-title{font-family:'Lora',serif;font-size:1rem;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:8px}
+.sec-title::before{content:'';display:inline-block;width:3px;height:16px;background:var(--run);border-radius:2px}
+.sec-sub{font-size:.75rem;color:var(--ink-muted)}
+.card{background:#fff;border:1px solid var(--cream-border);border-radius:var(--r-lg);box-shadow:var(--sh);overflow:hidden}
+.cb{padding:1.1rem 1.25rem}
+.tlabel{font-size:.65rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-muted);margin-bottom:.4rem;display:flex;align-items:center;justify-content:space-between}
+.tpeak{font-size:.72rem;color:var(--run);font-family:'Lora',serif;letter-spacing:0;text-transform:none;font-weight:600}
+.chart-wrap{position:relative;width:100%}
+.stream-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+.stream-card{background:#fff;border:1px solid var(--cream-border);border-radius:var(--r-lg);box-shadow:var(--sh);padding:1rem 1.1rem}
+.stag{font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem;display:inline-flex;align-items:center;gap:4px}
+.stag .dot{width:6px;height:6px;border-radius:50%}
+.stag.pace{color:var(--run)}.stag.pace .dot{background:var(--run)}
+.stag.hr{color:#e53e3e}.stag.hr .dot{background:#e53e3e}
+.stag.elev{color:var(--blue)}.stag.elev .dot{background:var(--blue)}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.9rem;margin-bottom:.9rem}
+.kpi{background:#fff;border:1px solid var(--cream-border);border-radius:var(--r-md);padding:.9rem 1.1rem;box-shadow:var(--sh);position:relative;overflow:hidden}
+.kpi::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--cream-border)}
+.kpi.hi::after{background:var(--run)}.kpi.good::after{background:var(--amber)}.kpi.warn::after{background:#e53e3e}.kpi.neu::after{background:var(--blue)}
+.kv{font-family:'Lora',serif;font-size:1.4rem;font-weight:700;color:var(--ink);letter-spacing:-.02em;line-height:1;margin-bottom:4px}
+.kv .ku{font-size:.8rem;font-weight:400;font-family:'DM Sans',sans-serif;color:var(--ink-muted)}
+.kl{font-size:.65rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-muted)}
+.kn{font-size:.7rem;color:var(--ink-muted);margin-top:3px;font-style:italic}
+.zones-list{display:flex;flex-direction:column;gap:.55rem}
+.zrow{display:grid;grid-template-columns:26px 90px 1fr 38px 38px;align-items:center;gap:.6rem;font-size:.8rem}
+.zbadge{width:24px;height:24px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:700}
+.zname{color:var(--ink-soft);font-weight:500;font-size:.78rem}
+.ztrack{height:7px;background:var(--cream-dk);border-radius:4px;overflow:hidden}
+.zfill{height:100%;border-radius:4px}
+.zpct{font-size:.75rem;font-weight:600;text-align:right}
+.ztime{font-size:.72rem;color:var(--ink-muted);text-align:right}
+.pace-bands{display:flex;flex-direction:column;gap:.45rem}
+.pbrow{display:flex;align-items:center;gap:.6rem;font-size:.78rem}
+.pk{min-width:28px;font-size:.7rem;color:var(--ink-muted);font-weight:600}
+.pp{min-width:48px;font-family:'Lora',serif;font-weight:600;color:var(--ink);font-size:.85rem}
+.pbt{flex:1;height:7px;background:var(--cream-dk);border-radius:4px;overflow:hidden}
+.pbf{height:100%;border-radius:4px;background:var(--run)}
+.pd{min-width:42px;font-size:.7rem;text-align:right}
+.pd.pos{color:#dc2626}.pd.neg{color:var(--run)}
+.seg-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
+.seg-card{display:flex;align-items:center;gap:.75rem;background:var(--cream);border:1px solid var(--cream-border);border-radius:var(--r-md);padding:.75rem 1rem;transition:border-color .15s}
+.seg-card:hover{border-color:var(--ink-muted)}
+.medal{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0}
+.medal.g{background:#fef3c7;color:#92400e;border:1.5px solid #fbbf24}
+.medal.s{background:#f1f5f9;color:#475569;border:1.5px solid #cbd5e1}
+.medal.b{background:var(--run-lt);color:var(--run);border:1.5px solid var(--run-mid)}
+.seg-body{flex:1;min-width:0}
+.seg-name{font-size:.8rem;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seg-detail{font-size:.7rem;color:var(--ink-muted);margin-top:1px}
+.seg-time{font-family:'Lora',serif;font-size:.95rem;font-weight:600;color:var(--ink);white-space:nowrap}
+.seg-rank{font-size:.68rem;color:var(--ink-muted);text-align:right;margin-top:1px}
+.lap-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.79rem}
+thead th{font-size:.64rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-muted);padding:.55rem .9rem;text-align:left;background:var(--cream);border-bottom:1px solid var(--cream-border)}
+tbody td{padding:.58rem .9rem;border-bottom:1px solid var(--cream-dk);color:var(--ink-soft);vertical-align:middle}
+tbody td:first-child{font-weight:600;color:var(--ink-muted);font-size:.72rem}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--cream)}
+.pv{font-weight:600;color:var(--run)}
+.g3-1{display:grid;grid-template-columns:1.6fr 1fr;gap:1rem}
+.pg-footer{text-align:center;padding:1.5rem;color:var(--ink-muted);font-size:.72rem;border-top:1px solid var(--cream-border);margin-top:.5rem}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.hero{animation:fadeUp .35s ease both}.stats-strip{animation:fadeUp .38s .04s ease both}.card,.stream-card{animation:fadeUp .35s .18s ease both}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sb-brand"><div class="sb-initials">LH</div><div class="sb-name">Training<br><span>OS</span></div></div>
+  <nav class="sb-nav">
+    <a href="index.html" class="sb-item"><span class="sb-icon">◈</span>Overview</a>
+    <a href="cycling.html" class="sb-item"><span class="sb-icon">⬡</span>Cycling</a>
+    <a href="running.html" class="sb-item active"><span class="sb-icon">▷</span>Running</a>
+    <a href="rowing.html" class="sb-item"><span class="sb-icon">⊕</span>Rowing</a>
+    <a href="cardio.html" class="sb-item"><span class="sb-icon">◎</span>Cardio</a>
+    <a href="other.html" class="sb-item"><span class="sb-icon">○</span>Other</a>
+    <a href="race-stream.html" class="sb-item"><span class="sb-icon">📺</span>Race Stream</a>
+    <a href="about.html" class="sb-item"><span class="sb-icon">⚙</span>Architecture</a>
+  </nav>
+  <div class="sb-footer">Activity Flyweight</div>
+</aside>
+<div class="main">
+  <div class="topnav">
+    <div class="topnav-left">
+      <a href="running.html" class="back-link"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 4L6 8l4 4"/></svg>Running</a>
+      <span class="bc-sep">/</span><span class="bc-cur">Parkrun 5K — Bute Park</span>
+    </div>
+    <div class="topnav-right">
+      <div class="kudos"><span class="hrt">♥</span><strong>24</strong>&nbsp;kudos</div>
+      <a href="https://www.strava.com/activities/example" class="ext-btn strava" target="_blank">Strava →</a>
+      <a href="https://intervals.icu/activities/example" class="ext-btn icu" target="_blank">Intervals →</a>
+    </div>
+  </div>
+  <div class="hero">
+    <div class="hero-badge">▷ Run</div>
+    <h1 class="hero-title"><span class="pfx">Parkrun:</span> Bute Park 5K</h1>
+    <p class="hero-meta">Saturday, 5 April 2026 &nbsp;·&nbsp; <b>Cardiff</b></p>
+  </div>
+  <div class="stats-strip">
+    <div class="sc"><div class="sv">24:38</div><div class="sl">Time</div></div>
+    <div class="sc"><div class="sv">5.02<span class="u">km</span></div><div class="sl">Distance</div></div>
+    <div class="sc hi"><div class="sv">4:54<span class="u">/km</span></div><div class="sl">Avg Pace</div></div>
+    <div class="sc"><div class="sv">4:41<span class="u">/km</span></div><div class="sl">Best Km</div></div>
+    <div class="sc"><div class="sv">168<span class="u">bpm</span><span class="sub">max 181</span></div><div class="sl">Avg HR</div></div>
+    <div class="sc"><div class="sv">174<span class="u">spm</span></div><div class="sl">Cadence</div></div>
+    <div class="sc"><div class="sv">52</div><div class="sl">TSS</div></div>
+    <div class="sc"><div class="sv">42<span class="u">m</span></div><div class="sl">Elevation</div></div>
+  </div>
+  <div class="body">
+    <div class="sec">
+      <div class="sec-hd"><h2 class="sec-title">Telemetry — Pace Profile</h2></div>
+      <div class="card" style="margin-bottom:1rem"><div class="cb">
+        <div class="tlabel">Pace (min/km) <span class="tpeak">Best 4:41/km &nbsp;·&nbsp; Avg 4:54/km &nbsp;·&nbsp; +8s positive split</span></div>
+        <div class="chart-wrap" style="height:150px"><canvas id="ch-pace"></canvas></div>
+      </div></div>
+    </div>
+    <div class="sec">
+      <div class="sec-hd"><h2 class="sec-title">Workout Analysis</h2></div>
+      <div class="kpi-grid">
+        <div class="kpi hi"><div class="kv">4:54<span class="ku">/km</span></div><div class="kl">Avg Pace</div><div class="kn">24:38 finish</div></div>
+        <div class="kpi good"><div class="kv">4:41<span class="ku">/km</span></div><div class="kl">Best km Split</div><div class="kn">km 3</div></div>
+        <div class="kpi neu"><div class="kv">168<span class="ku">bpm</span></div><div class="kl">Avg Heart Rate</div><div class="kn">Max 181bpm</div></div>
+        <div class="kpi warn"><div class="kv">+8<span class="ku">s</span></div><div class="kl">Positive Split</div><div class="kn">2nd half slower</div></div>
+      </div>
+      <div class="kpi-grid" style="grid-template-columns:repeat(2,1fr);max-width:50%">
+        <div class="kpi"><div class="kv">174<span class="ku">spm</span></div><div class="kl">Avg Cadence</div></div>
+        <div class="kpi"><div class="kv">1.24<span class="ku">m</span></div><div class="kl">Stride Length</div></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-hd"><h2 class="sec-title">Route &amp; HR Zones</h2></div>
+      <div class="g3-1">
+        <div style="display:flex;flex-direction:column;gap:1rem">
+          <div class="card"><div class="cb">
+            <div style="height:180px;background:linear-gradient(135deg,#e8f5ee,#f0ece3,#e8f0fa);border-radius:8px;display:flex;align-items:center;justify-content:center;border:1px solid var(--cream-border);position:relative;overflow:hidden">
+              <svg viewBox="0 0 300 180" width="100%" height="100%" style="position:absolute;inset:0">
+                <path d="M60,90 Q80,50 130,45 Q180,40 210,70 Q240,100 230,140 Q210,170 170,165 Q130,160 100,140 Q70,120 60,90Z" fill="none" stroke="#2d6a4f" stroke-width="3" stroke-linecap="round" opacity=".75"/>
+                <circle cx="130" cy="45" r="5" fill="#2d6a4f"/>
+              </svg>
+              <span style="font-size:.72rem;color:var(--ink-muted);background:rgba(255,255,255,.75);padding:4px 10px;border-radius:20px;font-weight:500;position:relative">GPS Route — Bute Park</span>
+            </div>
+          </div></div>
+          <div class="card"><div class="cb">
+            <div class="tlabel">HR Zones — Entire Run</div>
+            <div class="zones-list">
+              <div class="zrow"><div class="zbadge" style="background:#dbeafe;color:#1e40af">Z1</div><div class="zname">Easy</div><div class="ztrack"><div class="zfill" style="width:0%;background:var(--z1r)"></div></div><div class="zpct" style="color:#93c5fd">0%</div><div class="ztime">0m</div></div>
+              <div class="zrow"><div class="zbadge" style="background:#d1fae5;color:#065f46">Z2</div><div class="zname">Aerobic</div><div class="ztrack"><div class="zfill" style="width:4%;background:var(--z2r)"></div></div><div class="zpct" style="color:#34d399">4%</div><div class="ztime">1m</div></div>
+              <div class="zrow"><div class="zbadge" style="background:#fef9c3;color:#854d0e">Z3</div><div class="zname">Tempo</div><div class="ztrack"><div class="zfill" style="width:18%;background:var(--z3r)"></div></div><div class="zpct" style="color:#d97706">18%</div><div class="ztime">4m</div></div>
+              <div class="zrow"><div class="zbadge" style="background:var(--run-lt);color:var(--run)">Z4</div><div class="zname">Threshold</div><div class="ztrack"><div class="zfill" style="width:62%;background:var(--z4r)"></div></div><div class="zpct" style="color:var(--run);font-weight:700">62%</div><div class="ztime">15m</div></div>
+              <div class="zrow"><div class="zbadge" style="background:#fee2e2;color:#991b1b">Z5</div><div class="zname">Max</div><div class="ztrack"><div class="zfill" style="width:16%;background:var(--z5r)"></div></div><div class="zpct" style="color:#dc2626">16%</div><div class="ztime">4m</div></div>
+            </div>
+          </div></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:1rem">
+          <div class="card"><div class="cb">
+            <div class="tlabel">Per Km — Pace <span class="tpeak">Best km 3 · 4:41</span></div>
+            <div class="chart-wrap" style="height:160px"><canvas id="ch-kmbar"></canvas></div>
+          </div></div>
+          <div class="card"><div class="cb">
+            <div class="tlabel">Km Splits — Pace vs Avg</div>
+            <div class="pace-bands" id="pace-bands-list"></div>
+          </div></div>
+        </div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-hd"><h2 class="sec-title">Data Streams</h2></div>
+      <div class="stream-grid">
+        <div class="stream-card"><div class="stag pace"><span class="dot"></span>Stream — Pace</div><div class="chart-wrap" style="height:90px"><canvas id="ch-pace-stream"></canvas></div></div>
+        <div class="stream-card"><div class="stag hr"><span class="dot"></span>Stream — Heart Rate</div><div class="chart-wrap" style="height:90px"><canvas id="ch-hr"></canvas></div></div>
+        <div class="stream-card"><div class="stag elev"><span class="dot"></span>Stream — Elevation</div><div class="chart-wrap" style="height:90px"><canvas id="ch-elev"></canvas></div></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-hd"><h2 class="sec-title">Achievements</h2><span class="sec-sub">Segments — 4 qualifying</span></div>
+      <div class="seg-grid">
+        <div class="seg-card"><div class="medal g">1st</div><div class="seg-body"><div class="seg-name">Bute Park 5K Sprint Finish</div><div class="seg-detail">400 m · Personal Record</div></div><div><div class="seg-time">1:38</div><div class="seg-rank">🥇 PR</div></div></div>
+        <div class="seg-card"><div class="medal s">2nd</div><div class="seg-body"><div class="seg-name">Canal Bank Straight</div><div class="seg-detail">1.2 km · 2nd Best</div></div><div><div class="seg-time">5:44</div><div class="seg-rank">🥈 2nd Best</div></div></div>
+        <div class="seg-card"><div class="medal b">3rd</div><div class="seg-body"><div class="seg-name">Bute Park Full Loop</div><div class="seg-detail">5.02 km · 3rd Best</div></div><div><div class="seg-time">24:38</div><div class="seg-rank">🥉 3rd Best</div></div></div>
+        <div class="seg-card"><div class="medal b">3rd</div><div class="seg-body"><div class="seg-name">Parkrun Finish Straight</div><div class="seg-detail">200 m</div></div><div><div class="seg-time">0:46</div><div class="seg-rank">🥉 3rd Best</div></div></div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-hd"><h2 class="sec-title">Splits</h2><span class="sec-sub">Km Splits — 5 km + finish</span></div>
+      <div class="card"><div class="lap-wrap"><table><thead><tr><th>Km</th><th>Pace</th><th>HR</th><th>Cadence</th><th>Gain</th><th>Effort</th></tr></thead><tbody id="splits-body"></tbody></table></div></div>
+    </div>
+  </div>
+  <div class="pg-footer">Activity Flyweight &nbsp;·&nbsp; Stream data available 14 days</div>
+</div>
+<script>
+function genPace(n){return Array.from({length:n},(_,i)=>Math.round(294+i/n*8+(Math.random()-.5)*30));}
+const paceRaw=genPace(246);
+const hrRaw=Array.from({length:246},(_,i)=>Math.round(155+i/246*18+(Math.random()-.5)*5));
+const elevRaw=Array.from({length:246},(_,i)=>{const t=i/246;return Math.round(10+Math.sin(t*Math.PI*2)*8+Math.sin(t*Math.PI*6)*3+(Math.random()-.5)*2);});
+const kmPaces=[281,286,281,273,297,299];
+const kmSplits=[['1 km','4:41',165,173,'+3m',274],['2 km','4:46',167,174,'+1m',286],['3 km','4:41',170,175,'—',273],['4 km','4:53',171,174,'-2m',293],['5 km','4:57',173,175,'+1m',297],['0.02 km','0:47',175,176,'—',47]];
+const base={responsive:true,maintainAspectRatio:false,animation:{duration:700,easing:'easeInOutQuart'},plugins:{legend:{display:false},tooltip:{backgroundColor:'#fff',titleColor:'#1a1714',bodyColor:'#4a4540',borderColor:'#e2ddd4',borderWidth:1,padding:9,cornerRadius:8}},scales:{x:{display:false},y:{display:true,grid:{color:'#f0ece3',drawBorder:false},ticks:{font:{family:'DM Sans,sans-serif',size:10},color:'#8c857c',maxTicksLimit:4},border:{display:false}}}};
+const mk=(d,c,f)=>({data:d.map((y,i)=>({x:i,y})),borderColor:c,borderWidth:1.8,backgroundColor:f,fill:true,tension:0.35,pointRadius:0,pointHoverRadius:3});
+new Chart(document.getElementById('ch-pace'),{type:'line',data:{datasets:[mk(paceRaw,'#2d6a4f','rgba(45,106,79,0.1)')]},options:{...base,scales:{...base.scales,y:{...base.scales.y,reverse:true,min:250,max:340,ticks:{...base.scales.y.ticks,callback:v=>Math.floor(v/60)+':'+(v%60<10?'0':'')+v%60}}}}});
+new Chart(document.getElementById('ch-pace-stream'),{type:'line',data:{datasets:[mk(paceRaw,'#2d6a4f','rgba(45,106,79,0.1)')]},options:{...base,scales:{...base.scales,y:{...base.scales.y,reverse:true,min:250,max:340,ticks:{...base.scales.y.ticks,callback:v=>Math.floor(v/60)+':'+(v%60<10?'0':'')+v%60}}}}});
+new Chart(document.getElementById('ch-hr'),{type:'line',data:{datasets:[mk(hrRaw,'#e53e3e','rgba(229,62,62,0.08)')]},options:{...base,scales:{...base.scales,y:{...base.scales.y,min:140,max:190}}}});
+new Chart(document.getElementById('ch-elev'),{type:'line',data:{datasets:[mk(elevRaw,'#1e4a7a','rgba(30,74,122,0.08)')]},options:{...base,scales:{...base.scales,y:{...base.scales.y,ticks:{...base.scales.y.ticks,callback:v=>v+'m'}}}}});
+const minP=Math.min(...kmPaces);
+new Chart(document.getElementById('ch-kmbar'),{type:'bar',data:{labels:['km 1','km 2','km 3','km 4','km 5','finish'],datasets:[{data:kmPaces,backgroundColor:kmPaces.map(p=>p===minP?'rgba(45,106,79,0.9)':'rgba(45,106,79,0.45)'),borderRadius:4,borderSkipped:false}]},options:{...base,scales:{x:{display:true,grid:{display:false},ticks:{font:{family:'DM Sans,sans-serif',size:9},color:'#8c857c'},border:{display:false}},y:{...base.scales.y,reverse:true,min:260,max:320,ticks:{...base.scales.y.ticks,callback:v=>Math.floor(v/60)+':'+(v%60<10?'0':'')+v%60}}}}});
+const bl=document.getElementById('pace-bands-list');
+kmSplits.forEach(([km,pace,hr,cad,gain,secs])=>{const f=secs<294;const bp=Math.min(100,Math.abs(secs-minP)/(320-minP)*100);const d=document.createElement('div');d.className='pbrow';d.innerHTML=`<span class="pk">${km}</span><span class="pp">${pace}</span><div class="pbt"><div class="pbf" style="width:${bp}%;opacity:${f?.8:.4}"></div></div><span class="pd ${f?'neg':'pos'}">${f?'↑ fast':'↓ slow'}</span>`;bl.appendChild(d);});
+const sb=document.getElementById('splits-body');const mx=Math.max(...kmSplits.map(s=>s[5]));
+kmSplits.forEach(([km,pace,hr,cad,gain,secs])=>{const bw=Math.round((secs/mx)*60);const tr=document.createElement('tr');tr.innerHTML=`<td>${km}</td><td class="pv">${pace}/km</td><td>${hr} bpm</td><td>${cad} spm</td><td>${gain}</td><td><div style="display:inline-block;width:${bw}px;height:5px;background:var(--run);opacity:.5;border-radius:3px"></div></td>`;sb.appendChild(tr);});
+</script>
+</body>
+</html>

@@ -182,46 +182,6 @@
   .as-grid     { grid-template-columns: repeat(2, 1fr); }
 }
 
-/* ── SUMMARY CARDS ── */
-.summary-cards {
-  display: flex; gap: 8px; flex-wrap: wrap;
-  margin-bottom: 16px;
-}
-.sc {
-  background: var(--bg-surface); border: 1px solid var(--border);
-  border-radius: var(--radius-md); padding: 10px 14px;
-  min-width: 90px; position: relative; overflow: hidden;
-  transition: all var(--transition); flex: 1;
-}
-.sc::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-}
-.sc.c-accent::before { background: var(--accent); }
-.sc.c-green::before  { background: var(--green); }
-.sc.c-orange::before { background: var(--orange); }
-.sc.c-red::before    { background: var(--red); }
-.sc.c-purple::before { background: var(--purple); }
-.sc.c-yellow::before { background: var(--yellow); }
-.sc:hover { border-color: var(--border-bright); background: var(--bg-elevated); }
-.sc-val {
-  font-size: 18px; font-weight: 800; font-family: var(--font-mono);
-  letter-spacing: -0.5px; color: #fff; line-height: 1;
-  white-space: nowrap;
-}
-.sc-val.accent { color: var(--accent); }
-.sc-val.green  { color: var(--green); }
-.sc-val.orange { color: var(--orange); }
-.sc-val.red    { color: var(--red); }
-.sc-val.yellow { color: var(--yellow); }
-.sc-lbl {
-  font-size: 9px; font-weight: 700; letter-spacing: 1.2px;
-  text-transform: uppercase; color: var(--text-muted); margin-top: 4px;
-}
-.sc-sub {
-  font-size: 9px; font-family: var(--font-mono); color: var(--text-muted);
-  margin-top: 1px;
-}
-
 /* ── SECTION CARDS ── */
 .act-card {
   background: var(--bg-surface); border: 1px solid var(--border);
@@ -369,27 +329,6 @@
   padding: 8px 0;
 }
 
-/* ── WORKOUT STATS PANEL ── */
-.workout-stats {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 8px; margin-top: 4px;
-}
-.ws-item { display: flex; flex-direction: column; }
-.ws-val {
-  font-size: 22px; font-weight: 800; font-family: var(--font-mono);
-  letter-spacing: -0.5px; color: #fff;
-}
-.ws-val.accent { color: var(--accent); }
-.ws-val.orange { color: var(--orange); }
-.ws-lbl {
-  font-size: 9px; font-weight: 700; letter-spacing: 1px;
-  text-transform: uppercase; color: var(--text-muted); margin-top: 3px;
-}
-.ws-divider {
-  grid-column: 1 / -1; height: 1px;
-  background: var(--border); margin: 4px 0;
-}
-
 /* ═══════════════════════════════════════════════════════════
    CHART CARD HEAD (Layer 2b) — reusable header strip for
    Primary/HR/Cadence/Speed. Title + inline meta row.
@@ -527,19 +466,42 @@
 .hz-pct { font-size: 11px; font-family: var(--font-mono); font-weight: 700; color: var(--text-primary); }
 .hz-mins { font-size: 9px; font-family: var(--font-mono); color: var(--text-muted); }
 
-/* ── SEGMENTS ── */
-.seg-items { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+/* ── SEGMENTS (Layer 2b) — accent-bar rows with stat column ── */
+.seg-items { display: flex; flex-direction: column; gap: 7px; margin-top: 8px; }
 .seg-item {
-  display: grid; grid-template-columns: 1fr auto;
-  gap: 12px; align-items: center;
-  padding: 10px 12px; background: var(--bg-elevated);
+  display: grid; grid-template-columns: 4px 1fr auto auto;
+  gap: 14px; align-items: center;
+  padding: 10px 14px 10px 0;
+  background: var(--bg-elevated);
   border: 1px solid var(--border); border-radius: var(--radius-sm);
   transition: all var(--transition);
+  overflow: hidden;
 }
-.seg-item:hover { border-color: var(--border-bright); }
-.seg-name { font-size: 12px; font-weight: 600; color: #fff; margin-bottom: 3px; }
+.seg-item:hover { border-color: var(--border-bright); background: var(--bg-hover); }
+.seg-accent {
+  width: 4px; height: 100%; min-height: 42px;
+  background: var(--text-faint);
+}
+.seg-accent.acc-gold   { background: var(--gold); }
+.seg-accent.acc-silver { background: var(--silver); }
+.seg-accent.acc-bronze { background: var(--bronze); }
+.seg-accent.acc-top    { background: var(--accent); }
+.seg-accent.acc-ag     { background: var(--orange); }
+.seg-body { min-width: 0; }
+.seg-name { font-size: 12px; font-weight: 600; color: var(--text-primary); margin-bottom: 3px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .seg-meta { font-size: 10px; font-family: var(--font-mono); color: var(--text-muted); }
-.seg-badges { display: flex; gap: 4px; flex-wrap: wrap; }
+.seg-time {
+  font-size: 14px; font-weight: 800; font-family: var(--font-mono);
+  letter-spacing: -0.3px; color: var(--text-primary);
+  text-align: right; line-height: 1;
+}
+.seg-time-lbl {
+  font-size: 8px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--text-muted);
+  text-align: right; margin-top: 3px;
+}
+.seg-badges { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; }
 .seg-badge {
   font-size: 10px; font-weight: 700; padding: 2px 7px;
   border-radius: 4px; white-space: nowrap;
@@ -551,24 +513,57 @@
 .sb-ag     { background: var(--orange-dim);      color: var(--orange); border: 1px solid rgba(255,107,43,0.3); }
 .seg-empty { font-size: 11px; font-family: var(--font-mono); color: var(--text-muted); padding: 12px 0; text-align: center; }
 
-/* ── LAP TABLE ── */
-.laps-table {
-  width: 100%; border-collapse: collapse;
-  font-family: var(--font-mono); font-size: 11px; margin-top: 8px;
-}
-.laps-table th {
-  text-align: left; padding: 6px 10px; font-size: 9px; font-weight: 700;
-  letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted);
+/* ── LAP SPLITS (Layer 2b) — accent-bar row cards ── */
+.laps-list { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; }
+.laps-head {
+  display: grid; gap: 12px;
+  padding: 0 14px 6px 18px;
+  font-family: var(--font-mono);
+  font-size: 9px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--text-muted);
   border-bottom: 1px solid var(--border);
 }
-.laps-table td {
-  padding: 7px 10px; color: var(--text-primary);
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+.laps-head > div { white-space: nowrap; }
+.laps-head > div:not(:first-child) { text-align: right; }
+.lap-row {
+  display: grid; gap: 12px;
+  align-items: center;
+  padding: 9px 14px 9px 0;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition);
+  overflow: hidden;
+  font-family: var(--font-mono); font-size: 11px;
 }
-.laps-table tr:hover td { background: var(--bg-hover); cursor: pointer; }
-.laps-table tr.lap-hl td { background: var(--bg-active); color: var(--accent); }
-.laps-table td.acc { color: var(--accent); font-weight: 700; }
-.laps-table td.grn { color: var(--green);  font-weight: 700; }
+.lap-row:hover { border-color: var(--border-bright); background: var(--bg-hover); }
+.lap-row.lap-hl { border-color: var(--accent-border); background: var(--bg-active); }
+.lap-accent {
+  width: 4px; align-self: stretch; min-height: 30px;
+  background: transparent;
+}
+.lap-accent.sig { background: var(--accent); }
+.lap-accent.sig-hot { background: var(--orange); }
+.lap-accent.sig-red { background: var(--red); }
+.lap-cell { color: var(--text-primary); text-align: right; white-space: nowrap; }
+.lap-cell.first { text-align: left; font-weight: 700; }
+.lap-cell.acc { color: var(--accent); font-weight: 700; }
+.lap-cell.grn { color: var(--green); font-weight: 700; }
+.lap-cell.muted { color: var(--text-muted); }
+.lap-bar-wrap {
+  position: relative; height: 4px; width: 100%;
+  background: rgba(255,255,255,0.05); border-radius: 2px;
+  overflow: hidden; margin-top: 4px;
+}
+.lap-bar-fill {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  background: var(--accent); opacity: 0.55;
+  transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+}
+.lap-bar-fill.hot { background: var(--orange); opacity: 0.7; }
+.lap-bar-fill.red { background: var(--red); opacity: 0.7; }
+.lap-bar-fill.grn { background: var(--green); opacity: 0.55; }
 
 /* ── STRAVA / INTERVALS SOCIAL ── */
 .strava-row {
@@ -603,8 +598,6 @@
   .split-row,
   .split-row.wide-left,
   .split-row.wide-right { grid-template-columns: 1fr; }
-  .summary-cards { gap: 6px; }
-  .sc { min-width: 70px; }
   .act-header { flex-direction: column; }
 }
 </style>
@@ -805,10 +798,8 @@
       <!-- 9. LAP SPLITS -->
       <div class="act-card" id="laps-section">
         <div class="act-card-title">Lap Splits <span id="laps-meta" style="font-weight:400;letter-spacing:0;text-transform:none;font-size:10px;color:var(--text-muted)"></span></div>
-        <table class="laps-table">
-          <thead><tr id="laps-thead"></tr></thead>
-          <tbody id="laps-tbody"></tbody>
-        </table>
+        <div class="laps-head" id="laps-head"></div>
+        <div class="laps-list" id="laps-list"></div>
       </div>
 
     </div><!-- /activity-content -->
@@ -919,7 +910,7 @@ document.addEventListener('act-xhair', e => {
   if (_lapStartSec.length) {
     let li=0;
     _lapStartSec.forEach((s,i)=>{ if(sec>=s) li=i; });
-    document.querySelectorAll('#laps-tbody tr').forEach((r,i)=>{
+    document.querySelectorAll('#laps-list .lap-row').forEach((r,i)=>{
       r.classList.toggle('lap-hl', i===li);
     });
   }
@@ -1536,68 +1527,6 @@ function buildSummaryPanel(data) {
       <div class="as-lbl">${t.lbl}</div>
     </div>
   `).join('');
-}
-
-/* ── SUMMARY CARDS ── */
-function buildSummaryCards(data, ftp) {
-  const s = data.streams||{};
-  const time = s.time||[];
-  const totalSecs  = time.length ? time[time.length-1] : null;
-  const totalDistM = s.distance?.length ? s.distance[s.distance.length-1] : null;
-  const avgHr   = avg(s.heartrate);
-  const maxHr   = maxVal(s.heartrate);
-  const avgCad  = avg(s.cadence);
-  const avgWatts= avg(s.watts);
-  const sport   = data.sport_type;
-  const avgMps  = avg(s.velocity_smooth);
-
-  let np=null, tss=null, ifVal=null;
-  if(s.watts?.length>=30) {
-    const w=s.watts; let sum4=0,cnt=0;
-    for(let i=29;i<w.length;i++){
-      const sl=w.slice(i-29,i+1), mn=sl.reduce((a,b)=>a+(b||0),0)/30;
-      sum4+=Math.pow(mn,4); cnt++;
-    }
-    np=cnt?Math.round(Math.pow(sum4/cnt,0.25)):null;
-  }
-  if(np&&ftp&&totalSecs) {
-    ifVal=+(np/ftp).toFixed(2);
-    tss=Math.round((totalSecs*np*ifVal)/(ftp*3600)*100);
-  }
-
-  const workKj=avgWatts&&totalSecs?Math.round(avgWatts*totalSecs/1000):null;
-  const cards = [];
-
-  if(totalSecs)  cards.push({val:fmtDuration(totalSecs), lbl:'Duration',  cls:'c-accent'});
-  if(totalDistM) cards.push({val:fmtDist(totalDistM),    lbl:'Distance',  cls:'c-accent'});
-
-  if(isCycling(sport)) {
-    if(avgMps)  cards.push({val:(avgMps*3.6).toFixed(1)+' km/h', lbl:'Avg Speed', cls:'c-yellow', vcls:'yellow'});
-    if(avgHr)   cards.push({val:Math.round(avgHr)+'',      lbl:'Avg HR',    cls:'c-red',    vcls:'red',    sub:maxHr?`max ${Math.round(maxHr)}`:''});
-    if(avgWatts)cards.push({val:Math.round(avgWatts)+'W',  lbl:'Avg Power', cls:'c-accent'});
-    if(avgCad)  cards.push({val:Math.round(avgCad)+'',     lbl:'Cadence',   cls:'c-purple', sub:'rpm'});
-    if(tss)     cards.push({val:tss,                       lbl:'TSS',       cls:'c-orange', vcls:'orange'});
-    if(np)      cards.push({val:np+'W',                    lbl:'NP',        cls:'c-accent', vcls:'accent'});
-    if(workKj)  cards.push({val:workKj+' kJ',              lbl:'Work',      cls:'c-orange', vcls:'orange'});
-  } else if(isRunning(sport)) {
-    if(avgMps)  cards.push({val:fmtPace(avgMps),           lbl:'Avg Pace',  cls:'c-green',  vcls:'green'});
-    if(avgHr)   cards.push({val:Math.round(avgHr)+'',      lbl:'Avg HR',    cls:'c-red',    vcls:'red',    sub:maxHr?`max ${Math.round(maxHr)}`:''});
-    if(avgCad)  cards.push({val:Math.round(avgCad)+'',     lbl:'Cadence',   cls:'c-purple', sub:'spm'});
-    if(tss)     cards.push({val:tss,                       lbl:'TSS',       cls:'c-orange', vcls:'orange'});
-  } else {
-    if(avgHr)   cards.push({val:Math.round(avgHr)+'',      lbl:'Avg HR',    cls:'c-red',    vcls:'red'});
-    if(avgWatts)cards.push({val:Math.round(avgWatts)+'W',  lbl:'Avg Power', cls:'c-orange', vcls:'orange'});
-    if(workKj)  cards.push({val:workKj+' kJ',              lbl:'Work',      cls:'c-orange'});
-  }
-
-  const el = document.getElementById('summary-cards');
-  el.innerHTML = cards.map(c=>
-    `<div class="sc ${c.cls||""}">
-      <div class="sc-val ${c.vcls||""}"> ${c.val}</div>
-      <div class="sc-lbl">${c.lbl}</div>
-      ${c.sub ? `<div class="sc-sub">${c.sub}</div>` : ''}
-    </div>`
-  ).join('');
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -2456,63 +2385,181 @@ function buildCadenceSpeed(data) {
 }
 
 /* ── SEGMENTS ── */
+/* ═══════════════════════════════════════════════════════════
+   SEGMENTS (Layer 2b) — accent-bar rows
+   Left edge coloured by highest achievement: gold/silver/bronze
+   (PR rank) > top (overall KOM) > ag (AG QOM). Four-column grid:
+   accent bar / name+meta / time / badges stacked.
+   ─────────────────────────────────────────────────────────── */
 function buildSegments(segments) {
-  const el=document.getElementById('seg-items');
-  const meta=document.getElementById('segments-meta');
-  if(!segments?.length) {
-    el.innerHTML='<div class="seg-empty">No qualifying segment achievements.<br><span style="opacity:.6;font-size:9px">Showing only PR top 3, overall top 10, and age group top 10</span></div>';
-    meta.textContent=''; return;
+  const el = document.getElementById('seg-items');
+  const meta = document.getElementById('segments-meta');
+  if (!segments?.length) {
+    el.innerHTML = '<div class="seg-empty">No qualifying segment achievements.<br><span style="opacity:.6;font-size:9px">Showing only PR top 3, overall top 10, and age group top 10</span></div>';
+    meta.textContent = '';
+    return;
   }
-  meta.textContent=`— ${segments.length} qualifying`;
-  const sorted=[...segments].sort((a,b)=>{
-    return (a.pr_rank??99)-(b.pr_rank??99) || (a.kom_rank??99)-(b.kom_rank??99) || (a.qom_rank??99)-(b.qom_rank??99);
+  meta.textContent = `— ${segments.length} qualifying`;
+  const sorted = [...segments].sort((a, b) => {
+    return (a.pr_rank ?? 99) - (b.pr_rank ?? 99)
+        || (a.kom_rank ?? 99) - (b.kom_rank ?? 99)
+        || (a.qom_rank ?? 99) - (b.qom_rank ?? 99);
   });
-  el.innerHTML=sorted.map(seg=>{
-    const badges=[];
-    if(seg.pr_rank===1) badges.push(`<span class="seg-badge sb-gold">🥇 PR</span>`);
-    else if(seg.pr_rank===2) badges.push(`<span class="seg-badge sb-silver">🥈 2nd Best</span>`);
-    else if(seg.pr_rank===3) badges.push(`<span class="seg-badge sb-bronze">🥉 3rd Best</span>`);
-    if(seg.kom_rank!=null&&seg.kom_rank<=10) badges.push(`<span class="seg-badge sb-top10">🏆 Top ${seg.kom_rank}</span>`);
-    if(seg.qom_rank!=null&&seg.qom_rank<=10) badges.push(`<span class="seg-badge sb-ag">👴 Top ${seg.qom_rank} AG</span>`);
+
+  const accentClass = seg => {
+    if (seg.pr_rank === 1) return 'acc-gold';
+    if (seg.pr_rank === 2) return 'acc-silver';
+    if (seg.pr_rank === 3) return 'acc-bronze';
+    if (seg.kom_rank != null && seg.kom_rank <= 10) return 'acc-top';
+    if (seg.qom_rank != null && seg.qom_rank <= 10) return 'acc-ag';
+    return '';
+  };
+
+  el.innerHTML = sorted.map(seg => {
+    const badges = [];
+    if (seg.pr_rank === 1) badges.push('<span class="seg-badge sb-gold">🥇 PR</span>');
+    else if (seg.pr_rank === 2) badges.push('<span class="seg-badge sb-silver">🥈 2nd Best</span>');
+    else if (seg.pr_rank === 3) badges.push('<span class="seg-badge sb-bronze">🥉 3rd Best</span>');
+    if (seg.kom_rank != null && seg.kom_rank <= 10) badges.push(`<span class="seg-badge sb-top10">🏆 Top ${seg.kom_rank}</span>`);
+    if (seg.qom_rank != null && seg.qom_rank <= 10) badges.push(`<span class="seg-badge sb-ag">👴 Top ${seg.qom_rank} AG</span>`);
+    const metaBits = [
+      seg.distance_m ? fmtDist(seg.distance_m) : '',
+    ].filter(Boolean).join(' · ');
     return `<div class="seg-item">
+      <div class="seg-accent ${accentClass(seg)}"></div>
+      <div class="seg-body">
+        <div class="seg-name">${seg.name || 'Unnamed'}</div>
+        <div class="seg-meta">${metaBits}</div>
+      </div>
       <div>
-        <div class="seg-name">${seg.name||'Unnamed'}</div>
-        <div class="seg-meta">${[seg.distance_m?fmtDist(seg.distance_m):'',seg.elapsed_time_s?fmtDuration(seg.elapsed_time_s):''].filter(Boolean).join(' · ')}</div>
+        <div class="seg-time">${seg.elapsed_time_s ? fmtDuration(seg.elapsed_time_s) : '—'}</div>
+        <div class="seg-time-lbl">Time</div>
       </div>
       <div class="seg-badges">${badges.join('')}</div>
     </div>`;
   }).join('');
 }
 
-/* ── LAP SPLITS ── */
-function buildLaps(laps, sport) {
-  if(!laps?.length) { document.getElementById('laps-section').style.display='none'; return; }
-  document.getElementById('laps-meta').textContent=`— ${laps.length} laps`;
-  const isCyc=isCycling(sport), isRun=isRunning(sport);
-  const cols=[
-    {lbl:'Lap',   key:'lap',       fmt:v=>v},
-    {lbl:'Time',  key:'elapsed_s', fmt:v=>fmtDuration(v)},
-    {lbl:'Dist',  key:'distance_m',fmt:v=>v?fmtDist(v):'—'},
-  ];
-  if(isCyc) {
-    cols.push({lbl:'Avg W', key:'avg_watts',   fmt:v=>v?Math.round(v)+'W':'—', cls:'acc'});
-    cols.push({lbl:'NP',    key:'np_watts',    fmt:v=>v?Math.round(v)+'W':'—'});
-    cols.push({lbl:'Avg HR',key:'avg_hr',      fmt:v=>v?Math.round(v):'—'});
-    cols.push({lbl:'Cad',   key:'avg_cadence', fmt:v=>v?Math.round(v):'—'});
-  } else if(isRun) {
-    cols.push({lbl:'Pace',  key:'avg_speed',   fmt:v=>v&&v>0?fmtPace(v):'—', cls:'grn'});
-    cols.push({lbl:'Avg HR',key:'avg_hr',      fmt:v=>v?Math.round(v):'—'});
-    cols.push({lbl:'Cad',   key:'avg_cadence', fmt:v=>v?Math.round(v):'—'});
-  } else {
-    cols.push({lbl:'Avg W', key:'avg_watts',   fmt:v=>v?Math.round(v)+'W':'—', cls:'acc'});
-    cols.push({lbl:'Avg HR',key:'avg_hr',      fmt:v=>v?Math.round(v):'—'});
-    cols.push({lbl:'S/R',   key:'avg_cadence', fmt:v=>v?Math.round(v):'—'});
+/* ═══════════════════════════════════════════════════════════
+   LAP SPLITS (Layer 2b) — accent-bar row cards
+   Significance rules (any triggers the accent bar):
+     - Lap IF >= 0.95 (avg_watts / icu_ftp)           → hot (orange)
+     - Lap IF >= 1.05                                  → red
+     - Lap zone (from Intervals) >= 4                  → hot
+     - Lap HR zone >= 4                                → hot
+     - Lap work fraction >= 10% of total activity work → accent (cyan)
+   Inline mini-bar shows avg power (cycling) / avg pace (running) as
+   a fraction of the activity's max lap value. Crosshair sync on click.
+   ─────────────────────────────────────────────────────────── */
+function buildLaps(laps, sport, ftp, hrmax, totalWorkKj) {
+  if (!laps?.length) {
+    document.getElementById('laps-section').style.display = 'none';
+    return;
   }
-  document.getElementById('laps-thead').innerHTML=cols.map(c=>`<th>${c.lbl}</th>`).join('');
-  _lapStartSec=laps.map(l=>l.start_time??0);
-  document.getElementById('laps-tbody').innerHTML=laps.map((lap,i)=>`<tr onclick="dispatchCrosshair(${_lapStartSec[i]??0})">${
-    cols.map(c=>`<td${c.cls?` class="${c.cls}"`:''}>${c.fmt(lap[c.key])}</td>`).join('')
-  }</tr>`).join('');
+  document.getElementById('laps-meta').textContent = `— ${laps.length} laps`;
+  const isCyc = isCycling(sport), isRun = isRunning(sport);
+
+  // Sport-dispatched column definitions. Each: {lbl, key, fmt, cls?, barFrom?}
+  // barFrom: 'power' | 'pace' — which metric drives the inline mini-bar
+  let cols;
+  if (isCyc) {
+    cols = [
+      { lbl: 'Lap',    key: 'lap',         fmt: v => v,                                                 cls: 'first' },
+      { lbl: 'Time',   key: 'elapsed_s',   fmt: v => v ? fmtDuration(v) : '—' },
+      { lbl: 'Dist',   key: 'distance_m',  fmt: v => v ? fmtDist(v) : '—' },
+      { lbl: 'Avg W',  key: 'avg_watts',   fmt: v => v ? Math.round(v) + 'W' : '—',     cls: 'acc', barFrom: 'power' },
+      { lbl: 'NP',     key: 'np_watts',    fmt: v => v ? Math.round(v) + 'W' : '—' },
+      { lbl: 'HR',     key: 'avg_hr',      fmt: v => v ? Math.round(v) : '—' },
+      { lbl: 'Cad',    key: 'avg_cadence', fmt: v => v ? Math.round(v) : '—', cls: 'muted' }
+    ];
+  } else if (isRun) {
+    cols = [
+      { lbl: 'Lap',    key: 'lap',         fmt: v => v,                                                 cls: 'first' },
+      { lbl: 'Time',   key: 'elapsed_s',   fmt: v => v ? fmtDuration(v) : '—' },
+      { lbl: 'Dist',   key: 'distance_m',  fmt: v => v ? fmtDist(v) : '—' },
+      { lbl: 'Pace',   key: 'avg_speed',   fmt: v => v && v > 0 ? fmtPace(v) : '—',       cls: 'grn', barFrom: 'pace' },
+      { lbl: 'HR',     key: 'avg_hr',      fmt: v => v ? Math.round(v) : '—' },
+      { lbl: 'Cad',    key: 'avg_cadence', fmt: v => v ? Math.round(v) : '—', cls: 'muted' }
+    ];
+  } else {
+    cols = [
+      { lbl: 'Lap',    key: 'lap',         fmt: v => v,                                                 cls: 'first' },
+      { lbl: 'Time',   key: 'elapsed_s',   fmt: v => v ? fmtDuration(v) : '—' },
+      { lbl: 'Dist',   key: 'distance_m',  fmt: v => v ? fmtDist(v) : '—' },
+      { lbl: 'Avg W',  key: 'avg_watts',   fmt: v => v ? Math.round(v) + 'W' : '—',     cls: 'acc', barFrom: 'power' },
+      { lbl: 'HR',     key: 'avg_hr',      fmt: v => v ? Math.round(v) : '—' }
+    ];
+  }
+
+  // Grid template: 4px accent + 1fr first col + rest auto
+  const gridTemplate = `4px 1fr ${cols.slice(1).map(() => 'auto').join(' ')}`;
+
+  // Head row — skip accent column, match data cols
+  const head = document.getElementById('laps-head');
+  head.style.gridTemplateColumns = gridTemplate;
+  head.innerHTML = '<div></div>' + cols.map(c => `<div>${c.lbl}</div>`).join('');
+
+  _lapStartSec = laps.map(l => l.start_time ?? 0);
+
+  // Significance thresholds
+  const maxLapPower = Math.max(...laps.map(l => +l.avg_watts || 0));
+  const maxLapSpeed = Math.max(...laps.map(l => +l.avg_speed || 0));
+  const maxBar = isCyc ? maxLapPower : maxLapSpeed;
+
+  const sigFor = lap => {
+    const w = +lap.avg_watts || 0;
+    const hr = +lap.avg_hr || 0;
+    const z = +lap.zone || 0;
+    if (ftp && w > 0) {
+      const lapIf = w / ftp;
+      if (lapIf >= 1.05) return 'sig-red';
+      if (lapIf >= 0.95) return 'sig-hot';
+    }
+    if (hrmax && hr > 0 && getHrZone(hr, hrmax) >= 4) return 'sig-hot';
+    if (z >= 4) return 'sig-hot';
+    // Work fraction significance
+    if (totalWorkKj && w > 0 && lap.elapsed_s > 0) {
+      const lapKj = w * lap.elapsed_s / 1000;
+      if (lapKj / totalWorkKj >= 0.10) return 'sig';
+    }
+    return '';
+  };
+
+  const barClassFor = (lap, sigClass) => {
+    if (sigClass === 'sig-red') return 'red';
+    if (sigClass === 'sig-hot') return 'hot';
+    if (!isCyc) return 'grn';
+    return '';
+  };
+
+  const list = document.getElementById('laps-list');
+  list.innerHTML = laps.map((lap, i) => {
+    const sig = sigFor(lap);
+    // Mini-bar width — cycling uses avg_watts / max; running uses avg_speed / max
+    let barPct = 0;
+    if (maxBar > 0) {
+      const v = isCyc ? (+lap.avg_watts || 0) : (+lap.avg_speed || 0);
+      barPct = Math.min(100, Math.round(v / maxBar * 100));
+    }
+    const barCls = barClassFor(lap, sig);
+    const cellsHtml = cols.map((c, ci) => {
+      const val = c.fmt(lap[c.key]);
+      const cellCls = ['lap-cell', c.cls || ''].filter(Boolean).join(' ');
+      // Inject mini-bar under the cell flagged barFrom
+      if (c.barFrom && barPct > 0) {
+        return `<div class="${cellCls}">
+          <div>${val}</div>
+          <div class="lap-bar-wrap"><div class="lap-bar-fill ${barCls}" style="width:${barPct}%"></div></div>
+        </div>`;
+      }
+      return `<div class="${cellCls}">${val}</div>`;
+    }).join('');
+    return `<div class="lap-row" style="grid-template-columns:${gridTemplate}"
+                 onclick="dispatchCrosshair(${_lapStartSec[i] ?? 0})">
+      <div class="lap-accent ${sig}"></div>
+      ${cellsHtml}
+    </div>`;
+  }).join('');
 }
 
 /* ── MAIN INIT ── */
@@ -2563,13 +2610,10 @@ async function init() {
     }
   }
 
-  // Layer 2a — new Cockpit hero + Intervals-driven summary panel
+  // Layer 2a — Cockpit hero + Intervals-driven summary panel
   buildHero(data);
   buildSummaryPanel(data);
-  // buildSummaryCards and buildWorkoutStats are retained for Layer 2b/3
-  // The old summary-cards container is no longer in the DOM (removed in Layer 2a),
-  // so buildSummaryCards is a no-op for now. buildWorkoutStats still renders
-  // inside the existing map-stats split row until Layer 2b replaces that section.
+  // Layer 2b — Intervals telemetry stats panel (was buildWorkoutStats)
   buildWorkoutStats(data, ftp);
   buildMapRibbon(data);
   buildElevationChart(data, ftp, hrmax);
@@ -2586,7 +2630,10 @@ async function init() {
   buildHrSection(data, hrmax);
   buildCadenceSpeed(data);
   buildSegments(data.segments);
-  buildLaps(data.laps, sport);
+  {
+    const totalWorkKj = data.icu_joules != null ? data.icu_joules / 1000 : null;
+    buildLaps(data.laps, sport, ftp, hrmax, totalWorkKj);
+  }
 
   document.getElementById('loading-state').classList.add('hidden');
   document.getElementById('activity-content').classList.remove('hidden');

@@ -666,7 +666,7 @@
             </div>
             <!-- Zone stack bar injected here by post-render patch -->
             <!-- Zone bar chart -->
-            <div id="rl-zone-bar-mount" style="margin-top:10px;height:90px;position:relative;">
+            <div id="rl-zone-bar-mount" style="margin-top:10px;height:110px;position:relative;">
               <canvas id="chart-hr-zones"></canvas>
             </div>
             <!-- Hidden — JS still builds these, we just don't show them -->
@@ -2573,35 +2573,64 @@ function rlPatch(data) {
     ];
     rlSetKvs('hr-row-kvs', kvs);
 
-    // Zone bar chart — one bar per zone, Chart.js
+    // Zone bar chart — dominant highlighted, others light tint, pct labels above
     const zoneCanvas = document.getElementById('chart-hr-zones');
     if (zoneCanvas) {
-      const rlZoneColors = ['#8492a5','#1e88e5','#0aa876','#d97706','#d73838'];
-      const rlZoneLabels = ['Z1\nRecovery','Z2\nAerobic','Z3\nTempo','Z4\nThreshold','Z5\nMax'];
       const pcts = counts.map(c => total > 0 ? +(c/total*100).toFixed(1) : 0);
+      const shortNames = ['Z1\nRecovery', 'Z2\nAerobic', 'Z3\nTempo', 'Z4\nThreshold', 'Z5\nMax'];
+
+      // Solid cyan for dominant zone, light tint for others
+      const solidColor = 'rgba(10,110,138,0.85)';
+      const tintColor  = 'rgba(10,110,138,0.18)';
+      const bgColors   = pcts.map((_, i) => i === dom ? solidColor : tintColor);
+
+      // Inline plugin: draw pct labels above each bar
+      const pctLabelPlugin = {
+        id: 'pctLabels',
+        afterDatasetDraw(chart) {
+          const { ctx, data: d, scales: { x, y } } = chart;
+          const ds = chart.getDatasetMeta(0);
+          ctx.save();
+          ctx.font = "600 11px 'Geist Mono', ui-monospace, monospace";
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ds.data.forEach((bar, i) => {
+            const val = d.datasets[0].data[i];
+            if (val <= 0) return;
+            ctx.fillStyle = i === dom ? 'rgba(10,110,138,0.9)' : 'rgba(80,95,110,0.6)';
+            ctx.fillText(val + '%', bar.x, bar.y - 3);
+          });
+          ctx.restore();
+        }
+      };
+
       new Chart(zoneCanvas, {
         type: 'bar',
+        plugins: [pctLabelPlugin],
         data: {
-          labels: ['Z1','Z2','Z3','Z4','Z5'],
+          labels: ['Z1', 'Z2', 'Z3', 'Z4', 'Z5'],
           datasets: [{
             data: pcts,
-            backgroundColor: rlZoneColors.map(c => c + 'cc'),
-            borderColor: rlZoneColors,
-            borderWidth: 1,
-            borderRadius: 3,
+            backgroundColor: bgColors,
+            borderColor: 'transparent',
+            borderWidth: 0,
+            borderRadius: 5,
+            borderSkipped: false,
           }]
         },
         options: {
           responsive: true, maintainAspectRatio: false, animation: false,
-          layout: { padding: { top: 4, bottom: 0 } },
+          layout: { padding: { top: 22, bottom: 0, left: 4, right: 4 } },
           plugins: {
             legend: { display: false },
             tooltip: {
               backgroundColor: 'rgba(15,22,32,0.88)',
               callbacks: {
+                title: items => shortNames[items[0].dataIndex].replace('\n', ' '),
                 label: item => {
                   const mins = Math.round(counts[item.dataIndex] / 60);
-                  return ` ${item.raw}%  (${mins}m)`;
+                  const secs = counts[item.dataIndex] % 60;
+                  return ` ${item.raw}%  (${mins}m ${secs}s)`;
                 }
               }
             }
@@ -2611,14 +2640,15 @@ function rlPatch(data) {
               grid: { display: false },
               border: { display: false },
               ticks: {
-                color: ctx => rlZoneColors[ctx.index],
-                font: { size: 9, family: "'Geist Mono',monospace", weight: '600' }
+                color: (ctx) => ctx.index === dom ? 'rgba(10,110,138,0.95)' : 'rgba(80,95,110,0.65)',
+                font: { size: 9, family: "'Geist Mono', monospace", weight: ctx => ctx.index === dom ? '700' : '400' },
+                padding: 4
               }
             },
             y: {
               display: false,
               min: 0,
-              max: Math.max(...pcts) * 1.25
+              max: Math.max(...pcts) * 1.35
             }
           }
         }

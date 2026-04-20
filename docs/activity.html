@@ -86,78 +86,82 @@
 .rl-btn-kudos:hover { opacity:.88; }
 
 /* ═════════════════════════════════════════════════════
-   2. HERO ROW
-   buildHero() writes .ah-cell tiles into #act-hero.
-   We keep the ID but give it new grid + card styling.
+   2. HERO CARDS — Intervals.icu style
    ═════════════════════════════════════════════════════ */
 #act-hero { display:grid;grid-template-columns:repeat(5,1fr);gap:var(--rl-gap);margin-bottom:var(--rl-gap); }
 
 #act-hero .ah-cell {
-  background:var(--rl-bg1) !important;
+  background:var(--rl-bg1);
   border:1px solid var(--rl-line);
   border-radius:var(--rl-r);
-  padding:16px 16px 12px;
+  padding:14px 16px 10px;
   position:relative;overflow:hidden;
+  display:flex;flex-direction:column;
   min-height:130px;
-  display:flex;flex-direction:column;gap:0;
   transition:box-shadow .15s;
 }
-#act-hero .ah-cell::before { display:none; } /* kill old top-border stripe */
 #act-hero .ah-cell:hover { box-shadow:inset 0 0 0 1px var(--rl-linehi); }
 
-/* Colour washes */
-#act-hero .ah-cell.c-accent::after,
-#act-hero .ah-cell.c-green::after,
-#act-hero .ah-cell.c-red::after,
-#act-hero .ah-cell.c-yellow::after,
-#act-hero .ah-cell.c-orange::after,
-#act-hero .ah-cell.c-purple::after {
-  content:''; position:absolute;inset:0;pointer-events:none;
+/* Label row — dot + text + delta badge */
+#act-hero .ah-top {
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:6px;
 }
-#act-hero .ah-cell.c-accent::after { background:radial-gradient(ellipse at 0% 0%, rgba(10,110,138,.13), transparent 65%); }
-#act-hero .ah-cell.c-green::after  { background:radial-gradient(ellipse at 0% 0%, rgba(10,168,118,.13), transparent 65%); }
-#act-hero .ah-cell.c-red::after    { background:radial-gradient(ellipse at 0% 0%, rgba(215,56,56,.10),   transparent 65%); }
-#act-hero .ah-cell.c-yellow::after { background:radial-gradient(ellipse at 0% 0%, rgba(217,119,6,.12),   transparent 65%); }
-#act-hero .ah-cell.c-orange::after { background:radial-gradient(ellipse at 0% 0%, rgba(217,119,6,.12),   transparent 65%); }
-#act-hero .ah-cell.c-purple::after { background:radial-gradient(ellipse at 0% 0%, rgba(106,70,232,.10),  transparent 65%); }
-
-/* Label — dot + uppercase */
 #act-hero .ah-lbl {
   font-family:'Geist Mono',ui-monospace,monospace;
-  font-size:10px;letter-spacing:2px;text-transform:uppercase;
-  color:var(--rl-fg2);margin:0 0 8px;
+  font-size:9px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--rl-fg2);
   display:flex;align-items:center;gap:5px;
-  position:relative;z-index:1;
-  order:0;
 }
-#act-hero .ah-lbl::before { content:'';display:inline-block;width:4px;height:4px;border-radius:50%;flex-shrink:0; }
-#act-hero .ah-cell.c-accent .ah-lbl::before { background:var(--rl-cyan); }
-#act-hero .ah-cell.c-green  .ah-lbl::before { background:var(--rl-z3); }
-#act-hero .ah-cell.c-red    .ah-lbl::before { background:var(--rl-hr); }
-#act-hero .ah-cell.c-yellow .ah-lbl::before { background:var(--rl-z4); }
-#act-hero .ah-cell.c-orange .ah-lbl::before { background:var(--rl-z4); }
-#act-hero .ah-cell.c-purple .ah-lbl::before { background:var(--rl-cad); }
+#act-hero .ah-lbl::before {
+  content:'•'; font-size:10px; flex-shrink:0;
+}
+#act-hero .ah-cell.c-accent .ah-lbl::before { color:var(--rl-cyan); }
+#act-hero .ah-cell.c-green  .ah-lbl::before { color:var(--rl-z3); }
+#act-hero .ah-cell.c-red    .ah-lbl::before { color:var(--rl-hr); }
+#act-hero .ah-cell.c-yellow .ah-lbl::before { color:var(--rl-z4); }
+#act-hero .ah-cell.c-orange .ah-lbl::before { color:var(--rl-z4); }
+#act-hero .ah-cell.c-purple .ah-lbl::before { color:var(--rl-cad); }
 
-/* Big number */
-#act-hero .ah-val {
-  font-family:'Geist Mono',ui-monospace,monospace !important;
+/* Delta badge */
+#act-hero .ah-delta {
+  font-family:'Geist Mono',ui-monospace,monospace;
+  font-size:9px;font-weight:600;
+  padding:2px 6px;border-radius:999px;
+  white-space:nowrap;
+}
+#act-hero .ah-delta.up   { background:rgba(10,168,118,.12);color:var(--rl-z3); }
+#act-hero .ah-delta.down { background:rgba(215,56,56,.10);  color:var(--rl-hr); }
+#act-hero .ah-delta.neu  { background:rgba(20,20,20,.06);   color:var(--rl-fg2); }
+
+/* Big number — split num + unit */
+#act-hero .ah-num-row {
+  display:flex;align-items:baseline;gap:4px;
+  margin-bottom:3px;flex:1;
+}
+#act-hero .ah-num {
+  font-family:'Geist Mono',ui-monospace,monospace;
   font-variant-numeric:tabular-nums;
-  font-size:36px !important;font-weight:500 !important;
-  letter-spacing:-1.6px !important;line-height:1 !important;
-  color:var(--rl-fg0) !important;
-  margin-bottom:5px;
-  position:relative;z-index:1;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  order:1;
+  font-size:38px;font-weight:500;letter-spacing:-1.8px;line-height:1;
+  color:var(--rl-fg0);white-space:nowrap;
+}
+#act-hero .ah-unit {
+  font-family:'Geist Mono',ui-monospace,monospace;
+  font-size:13px;color:var(--rl-fg2);
+  padding-bottom:3px;
 }
 
-/* Sub/hint */
+/* Subtitle */
 #act-hero .ah-sub {
   font-family:'Geist Mono',ui-monospace,monospace;
   font-size:10px;color:var(--rl-fg2);
-  position:relative;z-index:1;
-  order:2;
-  margin-top:2px;
+  margin-bottom:6px;min-height:14px;
+}
+
+/* Sparkline sits at the bottom of the card */
+#act-hero .ah-spark {
+  width:100%;height:40px;display:block;margin-top:auto;
+  opacity:.85;
 }
 
 /* ═════════════════════════════════════════════════════
@@ -512,10 +516,9 @@
         </div>
       </header>
 
-      <!-- 2. HERO ROW ──────────────────────────────────────────
-           buildHero() renders .ah-cell tiles into this div.
-           The rl-hero CSS grid + ah-cell overrides turn them into
-           white card tiles with dot labels and 36px mono numbers. -->
+      <!-- 2. HERO CARDS ─────────────────────────────────────
+           buildHero() renders Intervals-style cards into this div.
+           Each card: label · delta badge · big num + unit · subtitle · sparkline. -->
       <div id="act-hero"></div>
 
       <!-- 3. ELEVATION PROFILE (full width) ─────────────────── -->
@@ -1232,96 +1235,250 @@ function initMap(latlng, powerArr, hrArr, sport, ftp, hrmax) {
    ─────────────────────────────────────────────────────────── */
 function buildHero(data) {
   const sport = data.sport_type || '';
+  const s = data.streams || {};
   const cells = [];
 
-  // Universal: Duration + Distance always lead the hero
+  // Helper: push a card definition
+  // { lbl, num, unit, sub, delta, cls, sparkKey, sparkReverse }
+  //   delta: { dir:'up'|'down'|'neu', text:'▲ 4m' }
+  //   sparkKey: key into data.streams for sparkline data
+  const push = (cfg) => cells.push(cfg);
+
+  // ── Universal: Moving Time ──────────────────────────────
   if (data.moving_time != null) {
-    cells.push({ val: fmtDuration(data.moving_time), lbl: 'Duration', cls: 'c-accent' });
-  }
-  if (data.distance != null && data.distance > 0) {
-    cells.push({ val: fmtDist(data.distance), lbl: 'Distance', cls: 'c-accent' });
+    const h = Math.floor(data.moving_time / 3600);
+    const m = Math.floor((data.moving_time % 3600) / 60);
+    push({
+      lbl: 'Moving Time',
+      num: h > 0 ? `${h}:${String(m).padStart(2,'0')}` : `${m}`,
+      unit: h > 0 ? 'h:m' : 'min',
+      sub: data.elapsed_time && data.elapsed_time > data.moving_time
+        ? `+ ${Math.round((data.elapsed_time - data.moving_time)/60)} min stopped` : '',
+      cls: 'c-accent',
+      sparkKey: 'velocity_smooth',
+    });
   }
 
+  // ── Universal: Distance ─────────────────────────────────
+  if (data.distance != null && data.distance > 0) {
+    const km = (data.distance / 1000).toFixed(1);
+    push({
+      lbl: 'Distance',
+      num: km,
+      unit: 'km',
+      sub: data.icu_lap_count ? `${data.icu_lap_count} laps` : '',
+      cls: 'c-green',
+      sparkKey: 'distance',
+    });
+  }
+
+  // ── Universal: Elevation ────────────────────────────────
+  if (data.total_elevation_gain != null && data.total_elevation_gain > 0) {
+    const gain = Math.round(data.total_elevation_gain);
+    const maxA  = data.max_altitude != null ? Math.round(data.max_altitude) : null;
+    push({
+      lbl: 'Elevation',
+      num: gain,
+      unit: 'm↑',
+      sub: maxA != null ? `${((gain / (data.distance||1))*100).toFixed(1)}% max · ${maxA} m` : '',
+      cls: 'c-accent',
+      sparkKey: 'altitude',
+    });
+  }
+
+  // ── Sport-specific cards ────────────────────────────────
   if (isCycling(sport)) {
-    // Ride: Avg Speed · Avg HR · Avg Power · TSS
-    if (data.average_speed != null) {
-      cells.push({ val: (data.average_speed * 3.6).toFixed(1) + ' km/h', lbl: 'Avg Speed', cls: 'c-yellow', vcls: 'yellow' });
-    }
-    if (data.average_heartrate != null) {
-      cells.push({
-        val: Math.round(data.average_heartrate) + '',
-        lbl: 'Avg HR', cls: 'c-red', vcls: 'red',
-        sub: data.max_heartrate ? `max ${Math.round(data.max_heartrate)}` : ''
+    if (data.icu_average_watts != null) {
+      const np = data.icu_weighted_avg_watts ? Math.round(data.icu_weighted_avg_watts) : null;
+      const IF = data.icu_intensity != null ? (data.icu_intensity/100).toFixed(2) : null;
+      push({
+        lbl: 'Avg Power',
+        num: Math.round(data.icu_average_watts),
+        unit: 'W',
+        sub: [np ? `NP ${np} W` : null, IF ? `IF ${IF}` : null].filter(Boolean).join(' · '),
+        cls: 'c-accent',
+        sparkKey: 'watts',
       });
     }
-    if (data.icu_average_watts != null) {
-      cells.push({ val: Math.round(data.icu_average_watts) + 'W', lbl: 'Avg Power', cls: 'c-accent' });
-    }
-    if (data.icu_training_load != null && data.icu_training_load > 0) {
-      cells.push({ val: Math.round(data.icu_training_load) + '', lbl: 'TSS', cls: 'c-orange', vcls: 'orange' });
+    if (data.average_heartrate != null) {
+      const dom = (() => {
+        if (!s.heartrate?.length || !data.athlete_max_hr) return null;
+        const counts = [0,0,0,0,0];
+        s.heartrate.forEach(v => { if (v>0) counts[Math.min(getHrZone(v, data.athlete_max_hr),4)]++; });
+        const d = counts.indexOf(Math.max(...counts));
+        return `Z${d+1} ${Math.round(counts[d]/s.heartrate.length*100)}%`;
+      })();
+      push({
+        lbl: 'Avg Heart',
+        num: Math.round(data.average_heartrate),
+        unit: 'bpm',
+        sub: [data.max_heartrate ? `max ${Math.round(data.max_heartrate)}` : null, dom].filter(Boolean).join(' · '),
+        cls: 'c-red',
+        sparkKey: 'heartrate',
+      });
     }
   } else if (isRunning(sport)) {
-    // Run: Avg Pace · Avg HR · Cadence · TSS
     if (data.average_speed != null && data.average_speed > 0) {
-      cells.push({ val: fmtPace(data.average_speed), lbl: 'Avg Pace', cls: 'c-green', vcls: 'green' });
-    }
-    if (data.average_heartrate != null) {
-      cells.push({
-        val: Math.round(data.average_heartrate) + '',
-        lbl: 'Avg HR', cls: 'c-red', vcls: 'red',
-        sub: data.max_heartrate ? `max ${Math.round(data.max_heartrate)}` : ''
+      const paceStr = fmtPace(data.average_speed);
+      const [pm, ps] = paceStr.replace('/km','').split(':');
+      push({
+        lbl: 'Avg Pace',
+        num: `${pm}:${ps}`,
+        unit: '/km',
+        sub: data.max_speed > 0 ? `best ${fmtPace(data.max_speed)}` : '',
+        cls: 'c-green',
+        sparkKey: 'velocity_smooth',
+        sparkReverse: true,
       });
     }
-    if (data.average_cadence != null) {
-      cells.push({ val: Math.round(data.average_cadence) + '', lbl: 'Cadence', cls: 'c-purple', vcls: 'purple', sub: 'spm' });
+    if (data.average_heartrate != null) {
+      const dom = (() => {
+        if (!s.heartrate?.length || !data.athlete_max_hr) return null;
+        const counts = [0,0,0,0,0];
+        s.heartrate.forEach(v => { if (v>0) counts[Math.min(getHrZone(v, data.athlete_max_hr),4)]++; });
+        const d = counts.indexOf(Math.max(...counts));
+        return `Z${d+1} ${Math.round(counts[d]/s.heartrate.length*100)}%`;
+      })();
+      push({
+        lbl: 'Avg Heart',
+        num: Math.round(data.average_heartrate),
+        unit: 'bpm',
+        sub: [data.max_heartrate ? `max ${Math.round(data.max_heartrate)}` : null, dom].filter(Boolean).join(' · '),
+        cls: 'c-red',
+        sparkKey: 'heartrate',
+      });
     }
     if (data.icu_training_load != null && data.icu_training_load > 0) {
-      cells.push({ val: Math.round(data.icu_training_load) + '', lbl: 'TSS', cls: 'c-orange', vcls: 'orange' });
+      push({
+        lbl: 'TSS',
+        num: Math.round(data.icu_training_load),
+        unit: '',
+        sub: data.trimp ? `TRIMP ${Math.round(data.trimp)}` : '',
+        cls: 'c-orange',
+        sparkKey: null,
+      });
     }
   } else if (isRowing(sport)) {
-    // Row (lower-rung): 500m Split · Avg HR. TSS only if present.
     if (data.average_speed != null && data.average_speed > 0) {
-      // 500m split derived from average speed (m/s). Intervals stores this in `pace`
-      // but the unit is minutes/km — convert to m:ss/500m for rowing convention.
       const splitSecs = 500 / data.average_speed;
-      const m = Math.floor(splitSecs / 60), s = (splitSecs % 60).toFixed(1);
-      cells.push({ val: `${m}:${s.padStart(4, '0')}`, lbl: '/500m Split', cls: 'c-green', vcls: 'green' });
+      const m = Math.floor(splitSecs/60), sc = (splitSecs%60).toFixed(1);
+      push({
+        lbl: '/500m Split',
+        num: `${m}:${String(sc).padStart(4,'0')}`,
+        unit: '',
+        sub: data.icu_average_watts ? `avg ${Math.round(data.icu_average_watts)} W` : '',
+        cls: 'c-green',
+        sparkKey: 'watts',
+      });
     }
     if (data.average_heartrate != null) {
-      cells.push({
-        val: Math.round(data.average_heartrate) + '',
-        lbl: 'Avg HR', cls: 'c-red', vcls: 'red',
-        sub: data.max_heartrate ? `max ${Math.round(data.max_heartrate)}` : ''
+      push({
+        lbl: 'Avg Heart',
+        num: Math.round(data.average_heartrate),
+        unit: 'bpm',
+        sub: data.max_heartrate ? `max ${Math.round(data.max_heartrate)}` : '',
+        cls: 'c-red',
+        sparkKey: 'heartrate',
       });
     }
     if (data.icu_training_load != null && data.icu_training_load > 0) {
-      cells.push({ val: Math.round(data.icu_training_load) + '', lbl: 'TSS', cls: 'c-orange', vcls: 'orange' });
+      push({ lbl:'TSS', num:Math.round(data.icu_training_load), unit:'', sub:'', cls:'c-orange', sparkKey:null });
     }
   } else {
-    // Fallback: Avg HR · TSS
     if (data.average_heartrate != null) {
-      cells.push({ val: Math.round(data.average_heartrate) + '', lbl: 'Avg HR', cls: 'c-red', vcls: 'red' });
+      push({ lbl:'Avg Heart', num:Math.round(data.average_heartrate), unit:'bpm', sub:'', cls:'c-red', sparkKey:'heartrate' });
     }
     if (data.icu_training_load != null && data.icu_training_load > 0) {
-      cells.push({ val: Math.round(data.icu_training_load) + '', lbl: 'TSS', cls: 'c-orange', vcls: 'orange' });
+      push({ lbl:'TSS', num:Math.round(data.icu_training_load), unit:'', sub:'', cls:'c-orange', sparkKey:null });
     }
   }
 
   const el = document.getElementById('act-hero');
-  if (!el) return;
-  if (!cells.length) {
-    el.style.display = 'none';
-    return;
-  }
-  // Dynamic column count so 4-cell heroes don't look sparse
+  if (!el || !cells.length) { if(el) el.style.display='none'; return; }
   el.style.gridTemplateColumns = `repeat(${Math.min(cells.length, 6)}, 1fr)`;
-  el.innerHTML = cells.map(c => `
-    <div class="ah-cell ${c.cls || ''}">
-      <div class="ah-val ${c.vcls || ''}">${c.val}</div>
-      <div class="ah-lbl">${c.lbl}</div>
-      ${c.sub ? `<div class="ah-sub">${c.sub}</div>` : ''}
-    </div>
-  `).join('');
+
+  // Sparkline colour map (matches card colour class)
+  const sparkColors = {
+    'c-accent': { stroke:'rgba(10,110,138,0.7)',  fill:'rgba(10,110,138,0.10)' },
+    'c-green':  { stroke:'rgba(10,168,118,0.7)',  fill:'rgba(10,168,118,0.10)' },
+    'c-red':    { stroke:'rgba(215,56,56,0.65)',  fill:'rgba(215,56,56,0.08)'  },
+    'c-yellow': { stroke:'rgba(217,119,6,0.7)',   fill:'rgba(217,119,6,0.10)'  },
+    'c-orange': { stroke:'rgba(217,119,6,0.7)',   fill:'rgba(217,119,6,0.10)'  },
+    'c-purple': { stroke:'rgba(106,70,232,0.65)', fill:'rgba(106,70,232,0.08)' },
+  };
+
+  el.innerHTML = cells.map((c, idx) => {
+    const deltaHtml = c.delta
+      ? `<span class="ah-delta ${c.delta.dir}">${c.delta.text}</span>` : '';
+    return `
+      <div class="ah-cell ${c.cls || ''}" data-hero-idx="${idx}">
+        <div class="ah-top">
+          <div class="ah-lbl">${c.lbl}</div>
+          ${deltaHtml}
+        </div>
+        <div class="ah-num-row">
+          <span class="ah-num">${c.num}</span>
+          ${c.unit ? `<span class="ah-unit">${c.unit}</span>` : ''}
+        </div>
+        <div class="ah-sub">${c.sub || ''}</div>
+        ${c.sparkKey && s[c.sparkKey]?.length ? `<canvas class="ah-spark" id="ah-spark-${idx}"></canvas>` : '<div class="ah-spark"></div>'}
+      </div>`;
+  }).join('');
+
+  // Draw sparklines after DOM is present
+  requestAnimationFrame(() => {
+    cells.forEach((c, idx) => {
+      if (!c.sparkKey || !s[c.sparkKey]?.length) return;
+      const canvas = document.getElementById(`ah-spark-${idx}`);
+      if (!canvas) return;
+      const raw = s[c.sparkKey];
+      // Thin 40-point sample
+      const step = Math.max(1, Math.floor(raw.length / 60));
+      const pts = [];
+      for (let i = 0; i < raw.length; i += step) {
+        const v = raw[i];
+        if (v != null && v > 0) pts.push(v);
+      }
+      if (pts.length < 2) return;
+
+      const W = canvas.offsetWidth, H = canvas.offsetHeight;
+      if (!W || !H) return;
+      canvas.width = W * devicePixelRatio;
+      canvas.height = H * devicePixelRatio;
+      const ctx2 = canvas.getContext('2d');
+      ctx2.scale(devicePixelRatio, devicePixelRatio);
+
+      const min = Math.min(...pts), max = Math.max(...pts);
+      const range = Math.max(max - min, 1);
+      const col = sparkColors[c.cls] || sparkColors['c-accent'];
+
+      const pad = 3;
+      const xStep = (W - pad*2) / (pts.length - 1);
+      const yFor = v => H - pad - ((c.sparkReverse ? (max - v) : (v - min)) / range) * (H - pad*2);
+
+      // Fill
+      const grad = ctx2.createLinearGradient(0, 0, 0, H);
+      grad.addColorStop(0, col.fill.replace(')', ', 1)').replace('rgba', 'rgba').replace(/, [^,]+\)$/, ', 0.18)'));
+      grad.addColorStop(1, col.fill.replace(/, [^,]+\)$/, ', 0)'));
+      ctx2.beginPath();
+      ctx2.moveTo(pad, yFor(pts[0]));
+      pts.forEach((v, i) => ctx2.lineTo(pad + i * xStep, yFor(v)));
+      ctx2.lineTo(pad + (pts.length-1)*xStep, H);
+      ctx2.lineTo(pad, H);
+      ctx2.closePath();
+      ctx2.fillStyle = grad;
+      ctx2.fill();
+
+      // Stroke
+      ctx2.beginPath();
+      ctx2.moveTo(pad, yFor(pts[0]));
+      pts.forEach((v, i) => ctx2.lineTo(pad + i * xStep, yFor(v)));
+      ctx2.strokeStyle = col.stroke;
+      ctx2.lineWidth = 1.5;
+      ctx2.lineJoin = 'round';
+      ctx2.stroke();
+    });
+  });
 }
 
 /* ═══════════════════════════════════════════════════════════

@@ -284,6 +284,9 @@
 }
 .act-stats-title.c-green::before  { background: var(--green); }
 .act-stats-title.c-purple::before { background: var(--purple); }
+.act-stats-title.c-red::before    { background: var(--red); }
+.act-stats-title.c-yellow::before { background: var(--yellow); }
+.act-stats-title.c-orange::before { background: var(--orange); }
 .act-stats-sub {
   font-size: 9px; font-family: var(--font-mono);
   color: var(--text-muted); letter-spacing: 0.5px;
@@ -387,6 +390,73 @@
 }
 .metric-toggle.active { opacity: 1; }
 .metric-toggle:hover  { opacity: 0.7; }
+
+/* ═══════════════════════════════════════════════════════════
+   HR ZONE THERMOMETER (Layer 2b) — vertical stacked blocks
+   Each zone renders as a horizontal band whose height is
+   proportional to time spent in that zone. Stacked Z5 on top,
+   Z1 on bottom. Zero-time zones collapse to a thin sliver so
+   they remain visible in the legend without distorting the viz.
+   ─────────────────────────────────────────────────────────── */
+.hr-thermo {
+  display: flex; flex-direction: column;
+  height: 240px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+}
+.ht-block {
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 12px;
+  min-height: 18px;
+  position: relative;
+  transition: filter var(--transition);
+  border-bottom: 1px solid rgba(0,0,0,0.25);
+}
+.ht-block:last-child { border-bottom: none; }
+.ht-block:hover { filter: brightness(1.15); }
+.ht-block.empty { opacity: 0.4; }
+.ht-left {
+  display: flex; align-items: baseline; gap: 8px;
+  color: rgba(10,14,20,0.92);
+  font-family: var(--font-mono);
+}
+.ht-zone {
+  font-size: 11px; font-weight: 800; letter-spacing: 0.5px;
+}
+.ht-name {
+  font-size: 9px; font-weight: 600; letter-spacing: 0.8px;
+  text-transform: uppercase; opacity: 0.7;
+}
+.ht-right {
+  display: flex; align-items: baseline; gap: 10px;
+  color: rgba(10,14,20,0.92);
+  font-family: var(--font-mono);
+}
+.ht-pct {
+  font-size: 11px; font-weight: 800;
+}
+.ht-mins {
+  font-size: 9px; font-weight: 600; opacity: 0.7;
+}
+.ht-empty-state {
+  display: flex; align-items: center; justify-content: center;
+  height: 100%;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-align: center;
+  padding: 0 20px;
+}
+
+/* Override text colour on dark-background zones (Z1 grey, Z5 red)
+   so contrast stays readable. Mid zones have lighter backgrounds. */
+.ht-block[data-zone="0"] .ht-left,
+.ht-block[data-zone="0"] .ht-right,
+.ht-block[data-zone="4"] .ht-left,
+.ht-block[data-zone="4"] .ht-right { color: rgba(255,255,255,0.92); }
 
 /* ── HR ZONE BARS ── */
 .hr-zone-bars { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; }
@@ -630,17 +700,23 @@
         </div>
       </div>
 
-      <!-- 6. SPLIT: HR trace | HR zone bars -->
+      <!-- 6. SPLIT: HR trace | HR zone thermometer -->
       <div class="split-row">
         <div class="act-card">
-          <div class="act-card-title">Heart Rate</div>
+          <div class="chart-card-head">
+            <span class="act-stats-title c-red" id="hr-trace-title">Heart Rate</span>
+            <div class="chart-hmeta" id="hr-hmeta"></div>
+          </div>
           <div class="chart-wrap cw-200">
             <canvas id="chart-hr"></canvas>
           </div>
         </div>
         <div class="act-card">
-          <div class="act-card-title">HR Zones</div>
-          <div class="hr-zone-bars" id="hr-zone-bars"></div>
+          <div class="chart-card-head">
+            <span class="act-stats-title c-red">HR Zone Distribution</span>
+            <div class="chart-hmeta" id="hrz-hmeta"></div>
+          </div>
+          <div class="hr-thermo" id="hr-thermo"></div>
         </div>
       </div>
 
@@ -2038,38 +2114,126 @@ async function buildDurationCurve(canvasId, type, rawStream, ref, unit, tickFmt,
 }
 
 /* ── HR TRACE + ZONE BARS ── */
+/* ═══════════════════════════════════════════════════════════
+   HR SECTION (Layer 2b) — trace + thermometer zone breakdown
+   Trace: zone-coloured + gradient fill + HRmax/Avg reference lines
+          + header meta strip (Avg / Max / HR Load)
+   Thermometer: vertical stacked blocks Z5→Z1 with height
+                proportional to time-in-zone.
+                Primary source: data.icu_hr_zone_times (seconds per zone)
+                Fallback: count HR stream samples
+   ─────────────────────────────────────────────────────────── */
 function buildHrSection(data, hrmax) {
-  const s=data.streams||{}, time=s.time||[];
-  if(!s.heartrate?.length) { document.querySelector('.split-row:has(#chart-hr)').style.display='none'; return; }
+  const s = data.streams || {}, time = s.time || [];
+  if (!s.heartrate?.length) {
+    document.querySelector('.split-row:has(#chart-hr)').style.display = 'none';
+    return;
+  }
 
-  const dec=decimateChartData(time,s.heartrate);
-  const zoneColors=hrmax ? dec.data.map(v=>v!=null?HR_ZONE_COLOURS[getHrZone(v,hrmax)]:'#9ca3af') : null;
-  const ds={label:'HR',data:dec.time.map((t,i)=>({x:t,y:dec.data[i]??null})),
-    borderColor:zoneColors?'transparent':'#ef4444',_zoneColors:zoneColors,
-    backgroundColor:'transparent',fill:true,
-    _gradientTop:'rgba(239,68,68,0.45)',_gradientBottom:'rgba(239,68,68,0.0)',
-    borderWidth:2,pointRadius:0,tension:0};
-  makeChart('chart-hr',[ds],{},dec.time);
+  // ── Trace ───────────────────────────────────────────────
+  const dec = decimateChartData(time, s.heartrate);
+  const zoneColors = hrmax ? dec.data.map(v => v != null ? HR_ZONE_COLOURS[getHrZone(v, hrmax)] : '#9ca3af') : null;
+  const ds = {
+    label: 'HR',
+    data: dec.time.map((t, i) => ({ x: t, y: dec.data[i] ?? null })),
+    borderColor: zoneColors ? 'transparent' : '#ef4444',
+    _zoneColors: zoneColors,
+    backgroundColor: 'transparent', fill: true,
+    _gradientTop: 'rgba(239,68,68,0.45)',
+    _gradientBottom: 'rgba(239,68,68,0.0)',
+    borderWidth: 2, pointRadius: 0, tension: 0
+  };
 
-  const hzEl=document.getElementById('hr-zone-bars');
-  if(!hrmax) { hzEl.innerHTML='<div style="color:var(--text-muted);font-size:11px;font-family:var(--font-mono)">Set max HR to see zones</div>'; return; }
-  const counts=new Array(5).fill(0);
-  s.heartrate.filter(v=>v!=null&&v>0).forEach(v=>counts[Math.min(getHrZone(v,hrmax),4)]++);
-  const total=counts.reduce((a,b)=>a+b,0)||1;
-  hzEl.innerHTML=counts.map((c,i)=>{
-    const pct=Math.round(c/total*100), mins=Math.round(c/60);
-    return `<div class="hz-row" style="border-left-color:${HR_ZONE_COLOURS[i]}">
-      <div>
-        <div class="hz-zone">Z${i+1}</div>
-        <div class="hz-zone-name">${HR_ZONE_NAMES[i]}</div>
-      </div>
-      <div class="hz-bar-bg"><div class="hz-bar-fill" style="width:${pct}%;background:${HR_ZONE_COLOURS[i]}"></div></div>
-      <div class="hz-stats">
-        <div class="hz-pct">${pct}%</div>
-        <div class="hz-mins">${mins}m</div>
-      </div>
-    </div>`;
-  }).join('');
+  // Header meta strip: Avg / Max / HR Load (all from Intervals)
+  renderChartMeta('hr-hmeta', [
+    data.average_heartrate != null ? { val: Math.round(data.average_heartrate), lbl: 'Avg', vcls: 'red' } : null,
+    data.max_heartrate != null ? { val: Math.round(data.max_heartrate), lbl: 'Max', vcls: 'red' } : null,
+    data.hr_load != null ? { val: Math.round(data.hr_load), lbl: 'HR Load', vcls: 'orange' } : null
+  ]);
+
+  // Reference lines — HRmax (if set) + Avg HR (from Intervals)
+  const hLines = [];
+  if (hrmax) {
+    hLines.push({ y: hrmax, color: 'rgba(239,68,68,0.55)', label: `MAX ${Math.round(hrmax)}`, dash: [6, 4] });
+  }
+  if (data.average_heartrate != null) {
+    hLines.push({ y: data.average_heartrate, color: 'rgba(200,204,216,0.35)', label: 'AVG', dash: [4, 4] });
+  }
+
+  const chart = makeChart('chart-hr', [ds], {}, dec.time);
+  if (chart && hLines.length) {
+    chart.options.plugins.hLines = hLines;
+    chart.update('none');
+  }
+
+  // ── Thermometer ─────────────────────────────────────────
+  const thermEl = document.getElementById('hr-thermo');
+  if (!thermEl) return;
+
+  if (!hrmax) {
+    thermEl.innerHTML = '<div class="ht-empty-state">Set max HR to see zone distribution</div>';
+    renderChartMeta('hrz-hmeta', []);
+    return;
+  }
+
+  // Prefer Intervals pre-calculated zone times (seconds per zone)
+  // Fallback: count HR stream samples (1 sample ≈ 1 second)
+  let zoneSecs;
+  const icuTimes = data.icu_hr_zone_times;
+  if (Array.isArray(icuTimes) && icuTimes.length >= 5) {
+    // Intervals stores zone times as an array. Use first 5 zones for display.
+    zoneSecs = icuTimes.slice(0, 5).map(v => +v || 0);
+  } else {
+    // Fallback: count stream samples
+    zoneSecs = new Array(5).fill(0);
+    s.heartrate.filter(v => v != null && v > 0).forEach(v => zoneSecs[Math.min(getHrZone(v, hrmax), 4)]++);
+  }
+
+  const total = zoneSecs.reduce((a, b) => a + b, 0);
+  if (total === 0) {
+    thermEl.innerHTML = '<div class="ht-empty-state">No zone data available</div>';
+    renderChartMeta('hrz-hmeta', []);
+    return;
+  }
+
+  // Header meta strip: show the dominant zone
+  const dominantIdx = zoneSecs.indexOf(Math.max(...zoneSecs));
+  const dominantPct = Math.round(zoneSecs[dominantIdx] / total * 100);
+  renderChartMeta('hrz-hmeta', [
+    { val: `Z${dominantIdx + 1}`, lbl: 'Dominant', vcls: 'red' },
+    { val: dominantPct + '%', lbl: 'Time', vcls: 'red' },
+    { val: fmtDuration(total), lbl: 'Total', vcls: '' }
+  ]);
+
+  // Build thermometer — Z5 on top, Z1 on bottom.
+  // Zones with 0 time still render as a thin 18px slice (CSS min-height)
+  // so the legend remains visible. Non-zero zones expand proportionally.
+  //
+  // Flex-basis strategy: each block's flex-basis = (secs/total) * 100%.
+  // Blocks with zero time get flex-basis:0 but min-height keeps them visible.
+  const blocks = [];
+  for (let i = 4; i >= 0; i--) {
+    const secs = zoneSecs[i];
+    const pct  = total > 0 ? (secs / total * 100) : 0;
+    const mins = Math.round(secs / 60);
+    const isEmpty = secs === 0;
+    // Compute flex-basis — giving a small baseline for non-empty zones
+    // so the smallest zone remains legible.
+    const basis = isEmpty ? 0 : Math.max(pct, 4);
+    blocks.push(`
+      <div class="ht-block${isEmpty ? ' empty' : ''}" data-zone="${i}"
+           style="background:${HR_ZONE_COLOURS[i]};flex-basis:${basis}%">
+        <div class="ht-left">
+          <span class="ht-zone">Z${i + 1}</span>
+          <span class="ht-name">${HR_ZONE_NAMES[i].replace(/^Z\d+ /, '')}</span>
+        </div>
+        <div class="ht-right">
+          <span class="ht-pct">${Math.round(pct)}%</span>
+          <span class="ht-mins">${mins}m</span>
+        </div>
+      </div>`);
+  }
+  thermEl.innerHTML = blocks.join('');
 }
 
 /* ── CADENCE + SPEED CHARTS ── */

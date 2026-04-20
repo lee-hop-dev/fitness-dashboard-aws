@@ -375,6 +375,7 @@
 /* ── CHARTS ── */
 .chart-wrap { position: relative; }
 .chart-wrap canvas { display: block; width: 100% !important; }
+.cw-170 { height: 170px; }
 .cw-180 { height: 180px; }
 .cw-200 { height: 200px; }
 .cw-220 { height: 220px; }
@@ -722,15 +723,21 @@
 
       <!-- 7. SPLIT: Cadence | Speed -->
       <div class="split-row" id="cad-speed-row">
-        <div class="act-card">
-          <div class="act-card-title" id="cadence-title">Cadence</div>
-          <div class="chart-wrap cw-180">
+        <div class="act-card" id="cadence-card">
+          <div class="chart-card-head">
+            <span class="act-stats-title c-purple" id="cadence-title">Cadence</span>
+            <div class="chart-hmeta" id="cadence-hmeta"></div>
+          </div>
+          <div class="chart-wrap cw-170">
             <canvas id="chart-cadence"></canvas>
           </div>
         </div>
         <div class="act-card" id="speed-card">
-          <div class="act-card-title">Speed</div>
-          <div class="chart-wrap cw-180">
+          <div class="chart-card-head">
+            <span class="act-stats-title c-yellow" id="speed-title">Speed</span>
+            <div class="chart-hmeta" id="speed-hmeta"></div>
+          </div>
+          <div class="chart-wrap cw-170">
             <canvas id="chart-speed"></canvas>
           </div>
         </div>
@@ -2236,41 +2243,109 @@ function buildHrSection(data, hrmax) {
   thermEl.innerHTML = blocks.join('');
 }
 
-/* ── CADENCE + SPEED CHARTS ── */
+/* ═══════════════════════════════════════════════════════════
+   CADENCE + SPEED (Layer 2b)
+   Cadence: purple trace with gradient fill + Avg reference line.
+            Card title + unit dispatched by sport (rpm/spm/strokes).
+   Speed (cycling only): amber gradient trace + Avg/Max reference
+            lines. Running gets cadence full-width.
+   ─────────────────────────────────────────────────────────── */
 function buildCadenceSpeed(data) {
-  const s=data.streams||{}, time=s.time||[], sport=data.sport_type;
-  const isCyc=isCycling(sport), isRun=isRunning(sport);
+  const s = data.streams || {}, time = s.time || [], sport = data.sport_type;
+  const isCyc = isCycling(sport), isRun = isRunning(sport);
 
+  // ── Cadence ────────────────────────────────────────────
   if (s.cadence?.length) {
-    document.getElementById('cadence-title').textContent =
-      isCyc ? 'Cadence (rpm)' : isRun ? 'Cadence (spm)' : 'Stroke Rate';
+    const titleEl = document.getElementById('cadence-title');
+    if (titleEl) {
+      titleEl.textContent = isCyc ? 'Cadence' : isRun ? 'Cadence' : 'Stroke Rate';
+    }
+
+    const unit = isCyc ? 'rpm' : isRun ? 'spm' : 'spm';
+
+    // Meta strip: Avg / Max — from Intervals where possible, stream max as fallback
+    const avgCad = data.average_cadence != null ? Math.round(data.average_cadence) : null;
+    const maxCad = (() => {
+      const m = maxVal(s.cadence);
+      return m != null ? Math.round(m) : null;
+    })();
+    renderChartMeta('cadence-hmeta', [
+      avgCad != null ? { val: avgCad, lbl: `Avg ${unit}`, vcls: 'purple' } : null,
+      maxCad != null ? { val: maxCad, lbl: `Max ${unit}`, vcls: 'purple' } : null
+    ]);
+
     const dec = decimateChartData(time, s.cadence);
-    makeChart('chart-cadence', [{
-      label:'Cadence',
-      data: dec.time.map((t,i) => ({x:t, y:dec.data[i]??null})),
-      borderColor:'#a78bfa', backgroundColor:'rgba(167,139,250,0.07)',
-      fill:true, borderWidth:1.5, pointRadius:0, tension:0
-    }], {}, dec.time);
+    const chart = makeChart('chart-cadence', [{
+      label: 'Cadence',
+      data: dec.time.map((t, i) => ({ x: t, y: dec.data[i] ?? null })),
+      borderColor: '#a78bfa',
+      backgroundColor: 'transparent', fill: true,
+      _gradientTop: 'rgba(167,139,250,0.38)',
+      _gradientBottom: 'rgba(167,139,250,0.0)',
+      borderWidth: 1.5, pointRadius: 0, tension: 0
+    }], {
+      y: {
+        grid: { color: 'rgba(255,255,255,0.04)' },
+        border: { color: 'rgba(255,255,255,0.08)' },
+        ticks: { maxTicksLimit: 5, color: '#a78bfa', callback: v => Math.round(v) },
+        afterFit: axis => { axis.width = 50; }
+      }
+    }, dec.time);
+
+    // Avg reference line
+    if (chart && avgCad != null) {
+      chart.options.plugins.hLines = [
+        { y: avgCad, color: 'rgba(167,139,250,0.45)', label: 'AVG', dash: [4, 4] }
+      ];
+      chart.update('none');
+    }
   } else {
-    document.getElementById('cad-speed-row').querySelector('.act-card').style.display='none';
+    const cadCard = document.getElementById('cadence-card');
+    if (cadCard) cadCard.style.display = 'none';
   }
 
+  // ── Speed (cycling only) ───────────────────────────────
   if (isCyc && s.velocity_smooth?.length) {
-    const speedArr = s.velocity_smooth.map(v => v!=null ? +(v*3.6).toFixed(2) : null);
+    // Meta strip: Avg / Max — pre-calculated by Intervals when available
+    const avgKmh = data.average_speed != null ? +(data.average_speed * 3.6).toFixed(1) : null;
+    const maxKmh = data.max_speed != null ? +(data.max_speed * 3.6).toFixed(1) : null;
+    renderChartMeta('speed-hmeta', [
+      avgKmh != null ? { val: avgKmh + ' km/h', lbl: 'Avg', vcls: 'yellow' } : null,
+      maxKmh != null ? { val: maxKmh + ' km/h', lbl: 'Max', vcls: 'yellow' } : null
+    ]);
+
+    const speedArr = s.velocity_smooth.map(v => v != null ? +(v * 3.6).toFixed(2) : null);
     const dec = decimateChartData(time, speedArr);
-    makeChart('chart-speed', [{
-      label:'Speed',
-      data: dec.time.map((t,i) => ({x:t, y:dec.data[i]??null})),
-      borderColor:'#fbbf24', backgroundColor:'transparent',
-      fill:true, _gradientTop:'rgba(251,191,36,0.45)', _gradientBottom:'rgba(251,191,36,0.0)',
-      borderWidth:1.5, pointRadius:0, tension:0
+    const chart = makeChart('chart-speed', [{
+      label: 'Speed',
+      data: dec.time.map((t, i) => ({ x: t, y: dec.data[i] ?? null })),
+      borderColor: '#fbbf24',
+      backgroundColor: 'transparent', fill: true,
+      _gradientTop: 'rgba(251,191,36,0.42)',
+      _gradientBottom: 'rgba(251,191,36,0.0)',
+      borderWidth: 1.5, pointRadius: 0, tension: 0
     }], {
-      y:{ticks:{maxTicksLimit:5, callback:v=>v.toFixed(0)+' km/h'},
-         grid:{color:'rgba(255,255,255,0.04)'}, border:{color:'rgba(255,255,255,0.08)'}}
+      y: {
+        ticks: { maxTicksLimit: 5, color: '#fbbf24', callback: v => v.toFixed(0) + ' km/h' },
+        grid: { color: 'rgba(255,255,255,0.04)' },
+        border: { color: 'rgba(255,255,255,0.08)' },
+        afterFit: axis => { axis.width = 50; }
+      }
     }, dec.time);
+
+    // Avg + Max reference lines
+    const hLines = [];
+    if (avgKmh != null) hLines.push({ y: avgKmh, color: 'rgba(251,191,36,0.45)', label: 'AVG', dash: [4, 4] });
+    if (maxKmh != null) hLines.push({ y: maxKmh, color: 'rgba(251,191,36,0.28)', label: 'MAX', dash: [2, 3] });
+    if (chart && hLines.length) {
+      chart.options.plugins.hLines = hLines;
+      chart.update('none');
+    }
   } else {
-    document.getElementById('speed-card').style.display='none';
-    document.getElementById('cad-speed-row').style.gridTemplateColumns='1fr';
+    const speedCard = document.getElementById('speed-card');
+    if (speedCard) speedCard.style.display = 'none';
+    const row = document.getElementById('cad-speed-row');
+    if (row) row.style.gridTemplateColumns = '1fr';
   }
 }
 

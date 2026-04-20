@@ -264,6 +264,59 @@
 .zone-pip { width: 10px; height: 10px; border-radius: 2px; }
 .zone-lbl { font-size: 9px; font-family: var(--font-mono); color: var(--text-muted); margin-right: 3px; }
 
+/* ═══════════════════════════════════════════════════════════
+   STATS PANEL (Layer 2b) — Intervals telemetry sidekick
+   Sits next to GPS map. All values passthrough from Intervals.
+   No browser-side recalculation of NP/IF/TSS/decoupling etc.
+   ─────────────────────────────────────────────────────────── */
+.act-stats-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-bottom: 14px;
+}
+.act-stats-title {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-size: 10px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--text-secondary);
+}
+.act-stats-title::before {
+  content: ''; display: inline-block;
+  width: 3px; height: 14px; background: var(--accent);
+}
+.act-stats-title.c-green::before  { background: var(--green); }
+.act-stats-title.c-purple::before { background: var(--purple); }
+.act-stats-sub {
+  font-size: 9px; font-family: var(--font-mono);
+  color: var(--text-muted); letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.act-stats-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 12px 16px;
+}
+.act-stats-grid.cols-1 { grid-template-columns: 1fr; }
+.asg-tile { display: flex; flex-direction: column; gap: 3px; }
+.asg-val {
+  font-size: 20px; font-weight: 800; font-family: var(--font-mono);
+  letter-spacing: -0.5px; color: var(--text-primary); line-height: 1;
+  white-space: nowrap;
+}
+.asg-val.accent { color: var(--accent); }
+.asg-val.green  { color: var(--green); }
+.asg-val.orange { color: var(--orange); }
+.asg-val.red    { color: var(--red); }
+.asg-val.yellow { color: var(--yellow); }
+.asg-val.purple { color: var(--purple); }
+.asg-lbl {
+  font-size: 9px; font-weight: 700; letter-spacing: 1.1px;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.asg-empty {
+  grid-column: 1 / -1;
+  font-size: 11px; font-family: var(--font-mono);
+  color: var(--text-muted);
+  padding: 8px 0;
+}
+
 /* ── WORKOUT STATS PANEL ── */
 .workout-stats {
   display: grid; grid-template-columns: 1fr 1fr;
@@ -508,8 +561,11 @@
           <div id="activity-map"></div>
         </div>
         <div class="act-card" id="workout-stats-card">
-          <div class="act-card-title">Entire Workout</div>
-          <div class="workout-stats" id="workout-stats"></div>
+          <div class="act-stats-head">
+            <span class="act-stats-title" id="ws-title">Entire Workout</span>
+            <span class="act-stats-sub" id="ws-sub"></span>
+          </div>
+          <div class="act-stats-grid" id="workout-stats"></div>
           <div class="strava-row" id="strava-row" style="display:none">
             <a class="strava-link" id="strava-link" href="#" target="_blank" rel="noopener">
               View on Strava →
@@ -1221,60 +1277,155 @@ function buildSummaryCards(data, ftp) {
   ).join('');
 }
 
-/* ── WORKOUT STATS PANEL ── */
-function buildWorkoutStats(data, ftp) {
-  const s = data.streams||{};
-  const time = s.time||[];
-  const totalSecs = time.length ? time[time.length-1] : null;
-  const avgWatts = avg(s.watts);
-  const avgHr    = avg(s.heartrate);
-
-  let np=null, ifVal=null, tss=null, vi=null, wkg=null, workKj=null, decoupling=null;
-
-  if(s.watts?.length>=30) {
-    const w=s.watts; let sum4=0,cnt=0;
-    for(let i=29;i<w.length;i++){
-      const sl=w.slice(i-29,i+1), mn=sl.reduce((a,b)=>a+(b||0),0)/30;
-      sum4+=Math.pow(mn,4); cnt++;
+/* ═══════════════════════════════════════════════════════════
+   STATS PANEL BUILDER (Layer 2b) — Intervals telemetry sidekick
+   Reads pre-calculated Intervals values verbatim. No browser-side
+   recalculation. The only derived value is W/kg from two Intervals
+   fields (weighted_avg_watts / weight) — a trivial division, not a
+   reconstruction.
+   Signature unchanged (data, ftp) — ftp arg ignored (data.icu_ftp
+   used directly). Kept for call-site compatibility.
+   ─────────────────────────────────────────────────────────── */
+function buildWorkoutStats(data, _ftp) {
+  const sport = data.sport_type || '';
+  const tiles = [];
+  const push = (val, lbl, vcls) => {
+    if (val != null && val !== '' && !Number.isNaN(val)) {
+      tiles.push({ val, lbl, vcls: vcls || '' });
     }
-    np=cnt?Math.round(Math.pow(sum4/cnt,0.25)):null;
-  }
-  if(np&&ftp&&totalSecs) {
-    ifVal=+(np/ftp).toFixed(2);
-    tss=Math.round((totalSecs*np*ifVal)/(ftp*3600)*100);
-  }
-  if(np&&avgWatts) vi=+(np/avgWatts).toFixed(2);
-  if(np&&data.icu_weight) wkg=+(np/data.icu_weight).toFixed(2);
-  if(avgWatts&&totalSecs) workKj=Math.round(avgWatts*totalSecs/1000);
+  };
 
-  if(s.watts&&s.heartrate&&s.watts.length>=60) {
-    const half=Math.floor(s.watts.length/2);
-    const w1=avg(s.watts.slice(0,half)), h1=avg(s.heartrate.slice(0,half));
-    const w2=avg(s.watts.slice(half)),   h2=avg(s.heartrate.slice(half));
-    if(w1&&h1&&w2&&h2) {
-      const r1=w1/h1, r2=w2/h2;
-      decoupling=+(((r1-r2)/r1)*100).toFixed(1);
+  if (isCycling(sport)) {
+    if (data.icu_weighted_avg_watts != null) {
+      push(Math.round(data.icu_weighted_avg_watts) + 'W', 'Normalised Power', 'accent');
+    }
+    if (data.icu_intensity != null) {
+      push((data.icu_intensity / 100).toFixed(2), 'Intensity Factor', 'yellow');
+    }
+    if (data.icu_variability_index != null) {
+      push((+data.icu_variability_index).toFixed(2), 'Variability Index');
+    }
+    if (data.icu_efficiency_factor != null) {
+      push((+data.icu_efficiency_factor).toFixed(2), 'Efficiency Factor', 'green');
+    }
+    if (data.icu_weighted_avg_watts != null && data.icu_weight) {
+      const wkg = data.icu_weighted_avg_watts / data.icu_weight;
+      push(wkg.toFixed(2) + ' W/kg', 'Watts per kg', 'accent');
+    }
+    if (data.icu_joules != null) {
+      push(Math.round(data.icu_joules / 1000) + ' kJ', 'Total Work', 'orange');
+    }
+    if (data.decoupling != null) {
+      const d = +data.decoupling;
+      push((d >= 0 ? '+' : '') + d.toFixed(1) + '%', 'Pwr:HR Decoup.',
+        Math.abs(d) < 5 ? 'green' : 'red');
+    }
+    if (data.icu_training_load != null && data.icu_training_load > 0) {
+      push(Math.round(data.icu_training_load), 'TSS', 'orange');
+    }
+    if (data.icu_w_prime != null) {
+      push((data.icu_w_prime / 1000).toFixed(1) + ' kJ', "W' Balance", 'accent');
+    }
+    if (data.average_heartrate != null) {
+      push(Math.round(data.average_heartrate) + ' bpm', 'Avg Heart Rate', 'red');
+    }
+  } else if (isRunning(sport)) {
+    if (data.icu_intensity != null) {
+      push((data.icu_intensity / 100).toFixed(2), 'Intensity Factor', 'yellow');
+    }
+    if (data.icu_training_load != null && data.icu_training_load > 0) {
+      push(Math.round(data.icu_training_load), 'TSS', 'orange');
+    }
+    if (data.total_elevation_gain != null && data.total_elevation_gain > 0) {
+      push(Math.round(data.total_elevation_gain) + ' m', 'Elev Gain', 'green');
+    }
+    if (data.total_elevation_loss != null && data.total_elevation_loss > 0) {
+      push('-' + Math.round(data.total_elevation_loss) + ' m', 'Elev Loss');
+    }
+    if (data.average_stride != null) {
+      push((+data.average_stride).toFixed(2) + ' m', 'Stride Length', 'purple');
+    }
+    if (data.decoupling != null) {
+      const d = +data.decoupling;
+      push((d >= 0 ? '+' : '') + d.toFixed(1) + '%', 'Pace:HR Decoup.',
+        Math.abs(d) < 5 ? 'green' : 'red');
+    }
+    if (data.trimp != null) {
+      push(Math.round(data.trimp), 'TRIMP');
+    }
+    if (data.polarization_index != null && +data.polarization_index > 0) {
+      push((+data.polarization_index).toFixed(1), 'Polarization Idx');
+    }
+    if (data.average_heartrate != null) {
+      push(Math.round(data.average_heartrate) + ' bpm', 'Avg Heart Rate', 'red');
+    }
+  } else if (isRowing(sport)) {
+    if (data.icu_average_watts != null) {
+      push(Math.round(data.icu_average_watts) + 'W', 'Avg Power', 'accent');
+    }
+    if (data.icu_joules != null) {
+      push(Math.round(data.icu_joules / 1000) + ' kJ', 'Total Work', 'orange');
+    }
+    if (data.average_cadence != null) {
+      push(Math.round(data.average_cadence) + ' spm', 'Stroke Rate', 'purple');
+    }
+    if (data.icu_training_load != null && data.icu_training_load > 0) {
+      push(Math.round(data.icu_training_load), 'TSS', 'orange');
+    }
+    if (data.trimp != null) {
+      push(Math.round(data.trimp), 'TRIMP');
+    }
+    if (data.average_heartrate != null) {
+      push(Math.round(data.average_heartrate) + ' bpm', 'Avg Heart Rate', 'red');
+    }
+  } else {
+    if (data.icu_training_load != null && data.icu_training_load > 0) {
+      push(Math.round(data.icu_training_load), 'TSS', 'orange');
+    }
+    if (data.icu_average_watts != null) {
+      push(Math.round(data.icu_average_watts) + 'W', 'Avg Power', 'accent');
+    }
+    if (data.average_heartrate != null) {
+      push(Math.round(data.average_heartrate) + ' bpm', 'Avg Heart Rate', 'red');
+    }
+    if (data.trimp != null) {
+      push(Math.round(data.trimp), 'TRIMP');
     }
   }
 
-  const items = [];
-  if(np)        items.push({val:np+'W',           lbl:'Normalised Power', vcls:'accent'});
-  if(ifVal)     items.push({val:ifVal,             lbl:'Intensity Factor', vcls:'yellow'});
-  if(vi)        items.push({val:vi,                lbl:'Variability Index'});
-  if(wkg)       items.push({val:wkg+' W/kg',       lbl:'Watts per kg',    vcls:'accent'});
-  if(workKj)    items.push({val:workKj+' kJ',      lbl:'Work',            vcls:'orange'});
-  if(decoupling!==null) items.push({val:decoupling+'%', lbl:'Pwr:HR Decoupling', vcls: Math.abs(decoupling)<5?'green':'red'});
-  if(tss)       items.push({val:tss,               lbl:'TSS',             vcls:'orange'});
-  if(avgHr)     items.push({val:Math.round(avgHr)+' bpm', lbl:'Avg Heart Rate', vcls:'red'});
+  // Title + sub
+  const titleEl = document.getElementById('ws-title');
+  const subEl   = document.getElementById('ws-sub');
+  if (titleEl) {
+    titleEl.className = 'act-stats-title' +
+      (isRunning(sport) ? ' c-green' : isRowing(sport) ? ' c-purple' : '');
+    titleEl.textContent = isCycling(sport) ? 'Ride Telemetry' :
+                          isRunning(sport) ? 'Run Telemetry' :
+                          isRowing(sport)  ? 'Row Telemetry' :
+                          'Workout Telemetry';
+  }
+  if (subEl) {
+    const bits = [];
+    if (data.icu_ftp != null) bits.push(`FTP ${Math.round(data.icu_ftp)}${isCycling(sport) ? 'W' : ''}`);
+    if (data.athlete_max_hr != null) bits.push(`HRmax ${Math.round(data.athlete_max_hr)}`);
+    subEl.textContent = bits.join(' · ');
+  }
 
   const el = document.getElementById('workout-stats');
-  if(!items.length) { el.innerHTML='<div style="color:var(--text-muted);font-size:11px;font-family:var(--font-mono)">No power data available</div>'; return; }
-  el.innerHTML = items.map(it=>
-    `<div class="ws-item">
-      <div class="ws-val ${it.vcls||''}">${it.val}</div>
-      <div class="ws-lbl">${it.lbl}</div>
-    </div>`
-  ).join('');
+  if (!el) return;
+
+  if (!tiles.length) {
+    el.className = 'act-stats-grid cols-1';
+    el.innerHTML = '<div class="asg-empty">No pre-calculated metrics available for this activity.</div>';
+    return;
+  }
+  el.className = 'act-stats-grid';
+  el.innerHTML = tiles.map(t => `
+    <div class="asg-tile">
+      <div class="asg-val ${t.vcls}">${t.val}</div>
+      <div class="asg-lbl">${t.lbl}</div>
+    </div>
+  `).join('');
 }
 
 /* ── ELEVATION PROFILE CHART ── */

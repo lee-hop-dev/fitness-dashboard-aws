@@ -592,17 +592,6 @@
 
       </div><!-- /rl-split -->
 
-      <!-- Hidden act-summary — kept as buildSummaryPanel() target,
-           suppressed visually. The kv-table above (workout-stats) is
-           the visible summary on this redesign. -->
-      <div id="act-summary" style="display:none!important">
-        <div class="as-head">
-          <div class="as-title" id="as-title">Activity Summary</div>
-          <div class="as-meta"  id="as-meta"></div>
-        </div>
-        <div class="as-grid" id="as-grid"></div>
-      </div>
-
       <!-- 5. RAIL ───────────────────────────────────────────── -->
       <div class="rl-rail">
 
@@ -1331,163 +1320,6 @@ function buildHero(data) {
       <div class="ah-val ${c.vcls || ''}">${c.val}</div>
       <div class="ah-lbl">${c.lbl}</div>
       ${c.sub ? `<div class="ah-sub">${c.sub}</div>` : ''}
-    </div>
-  `).join('');
-}
-
-/* ═══════════════════════════════════════════════════════════
-   SUMMARY PANEL BUILDER — Intervals pre-calculated tile grid
-   All values pass through from Intervals — no browser-side calc.
-   Null values drop the tile. Sport dispatches a different tile set.
-   ─────────────────────────────────────────────────────────── */
-function buildSummaryPanel(data) {
-  const sport = data.sport_type || '';
-  const tiles = [];
-  const pushTile = (val, lbl, vcls) => {
-    if (val != null && val !== '' && !Number.isNaN(val)) {
-      tiles.push({ val, lbl, vcls: vcls || '' });
-    }
-  };
-
-  if (isCycling(sport)) {
-    // Ride summary — Intervals pre-calculated power metrics
-    if (data.icu_weighted_avg_watts != null) {
-      pushTile(Math.round(data.icu_weighted_avg_watts) + 'W', 'Normalised Power', 'accent');
-    }
-    if (data.icu_intensity != null) {
-      // icu_intensity is stored on a 0-100 scale; divide by 100 for IF display
-      pushTile((data.icu_intensity / 100).toFixed(2), 'Intensity Factor', 'yellow');
-    }
-    if (data.icu_variability_index != null) {
-      pushTile((+data.icu_variability_index).toFixed(2), 'Variability Index');
-    }
-    if (data.icu_efficiency_factor != null) {
-      pushTile((+data.icu_efficiency_factor).toFixed(2), 'Efficiency Factor', 'green');
-    }
-    if (data.icu_weighted_avg_watts != null && data.icu_weight) {
-      const wkg = data.icu_weighted_avg_watts / data.icu_weight;
-      pushTile(wkg.toFixed(2) + ' W/kg', 'Watts per kg', 'accent');
-    }
-    if (data.icu_joules != null) {
-      pushTile(Math.round(data.icu_joules / 1000) + ' kJ', 'Total Work', 'orange');
-    }
-    if (data.decoupling != null) {
-      const d = +data.decoupling;
-      pushTile((d >= 0 ? '+' : '') + d.toFixed(1) + '%', 'Pwr:HR Decoup.', Math.abs(d) < 5 ? 'green' : 'red');
-    }
-    if (data.total_elevation_gain != null && data.total_elevation_gain > 0) {
-      pushTile(Math.round(data.total_elevation_gain) + ' m', 'Elev Gain');
-    }
-    if (data.max_heartrate != null) {
-      pushTile(Math.round(data.max_heartrate) + ' bpm', 'Max HR', 'red');
-    }
-    if (data.max_speed != null) {
-      pushTile((data.max_speed * 3.6).toFixed(1) + ' km/h', 'Max Speed', 'yellow');
-    }
-    if (data.icu_w_prime != null) {
-      pushTile((data.icu_w_prime / 1000).toFixed(1) + ' kJ', "W' Balance", 'accent');
-    }
-    if (data.average_cadence != null) {
-      pushTile(Math.round(data.average_cadence) + ' rpm', 'Avg Cadence', 'purple');
-    }
-  } else if (isRunning(sport)) {
-    // Run summary — Intervals IF + elev + cadence/stride
-    if (data.icu_intensity != null) {
-      pushTile((data.icu_intensity / 100).toFixed(2), 'Intensity Factor', 'yellow');
-    }
-    if (data.total_elevation_gain != null && data.total_elevation_gain > 0) {
-      pushTile(Math.round(data.total_elevation_gain) + ' m', 'Elev Gain', 'green');
-    }
-    if (data.total_elevation_loss != null && data.total_elevation_loss > 0) {
-      pushTile('-' + Math.round(data.total_elevation_loss) + ' m', 'Elev Loss');
-    }
-    if (data.max_heartrate != null) {
-      pushTile(Math.round(data.max_heartrate) + ' bpm', 'Max HR', 'red');
-    }
-    if (data.max_speed != null && data.max_speed > 0) {
-      pushTile(fmtPace(data.max_speed), 'Best Pace', 'green');
-    }
-    if (data.average_cadence != null) {
-      pushTile(Math.round(data.average_cadence) + ' spm', 'Avg Cadence', 'purple');
-    }
-    if (data.average_stride != null) {
-      pushTile((+data.average_stride).toFixed(2) + ' m', 'Stride Length');
-    }
-    if (data.decoupling != null) {
-      const d = +data.decoupling;
-      pushTile((d >= 0 ? '+' : '') + d.toFixed(1) + '%', 'Pace:HR Decoup.', Math.abs(d) < 5 ? 'green' : 'red');
-    }
-    if (data.trimp != null) {
-      pushTile(Math.round(data.trimp) + '', 'TRIMP');
-    }
-    if (data.polarization_index != null && +data.polarization_index > 0) {
-      pushTile((+data.polarization_index).toFixed(1), 'Polarization Idx');
-    }
-  } else if (isRowing(sport)) {
-    // Row (lower-rung) — fewer tiles, only what Intervals reliably populates
-    if (data.icu_average_watts != null) {
-      pushTile(Math.round(data.icu_average_watts) + 'W', 'Avg Power', 'accent');
-    }
-    if (data.icu_joules != null) {
-      pushTile(Math.round(data.icu_joules / 1000) + ' kJ', 'Total Work', 'orange');
-    }
-    if (data.average_cadence != null) {
-      pushTile(Math.round(data.average_cadence) + ' spm', 'Stroke Rate', 'purple');
-    }
-    if (data.max_heartrate != null) {
-      pushTile(Math.round(data.max_heartrate) + ' bpm', 'Max HR', 'red');
-    }
-    if (data.trimp != null) {
-      pushTile(Math.round(data.trimp) + '', 'TRIMP');
-    }
-  } else {
-    // Fallback for Workout / Cardio / Other
-    if (data.icu_average_watts != null) {
-      pushTile(Math.round(data.icu_average_watts) + 'W', 'Avg Power', 'accent');
-    }
-    if (data.max_heartrate != null) {
-      pushTile(Math.round(data.max_heartrate) + ' bpm', 'Max HR', 'red');
-    }
-    if (data.trimp != null) {
-      pushTile(Math.round(data.trimp) + '', 'TRIMP');
-    }
-  }
-
-  const wrap = document.getElementById('act-summary');
-  const grid = document.getElementById('as-grid');
-  const titleEl = document.getElementById('as-title');
-  const metaEl = document.getElementById('as-meta');
-  if (!wrap || !grid) return;
-
-  if (!tiles.length) {
-    wrap.style.display = 'none';
-    return;
-  }
-  wrap.style.display = 'block';
-
-  // Sport-appropriate header colour
-  titleEl.className = 'as-title' + (isRunning(sport) ? ' c-green' : isRowing(sport) ? ' c-purple' : '');
-  titleEl.textContent = isCycling(sport) ? 'Ride Summary' :
-                        isRunning(sport) ? 'Run Summary' :
-                        isRowing(sport)  ? 'Row Summary' :
-                        'Activity Summary';
-
-  // Meta line — FTP / HRmax / sync time
-  const metaBits = [];
-  if (data.icu_ftp != null) metaBits.push(`FTP ${Math.round(data.icu_ftp)}${isCycling(sport) ? 'W' : ''}`);
-  if (data.athlete_max_hr != null) metaBits.push(`HRmax ${Math.round(data.athlete_max_hr)}`);
-  if (data.synced_at) {
-    const d = new Date(data.synced_at);
-    metaBits.push(`synced ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`);
-  }
-  metaEl.textContent = metaBits.join(' · ');
-
-  // Rowing gets compact 4-column grid; others use 6-column
-  grid.className = 'as-grid' + (isRowing(sport) ? ' cols-4' : '');
-  grid.innerHTML = tiles.map(t => `
-    <div class="as-tile">
-      <div class="as-val ${t.vcls}">${t.val}</div>
-      <div class="as-lbl">${t.lbl}</div>
     </div>
   `).join('');
 }
@@ -2569,7 +2401,6 @@ async function init() {
 
   // Layer 2a — Cockpit hero + Intervals-driven summary panel
   buildHero(data);
-  buildSummaryPanel(data);
   // Layer 2b — Intervals telemetry stats panel (was buildWorkoutStats)
   buildWorkoutStats(data, ftp);
   buildMapRibbon(data);

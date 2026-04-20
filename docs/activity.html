@@ -1436,14 +1436,15 @@ function buildHero(data) {
       </div>`;
   }).join('');
 
-  // Draw sparklines after DOM is present
-  requestAnimationFrame(() => {
+  // Draw sparklines — use setTimeout to ensure layout is complete
+  setTimeout(() => {
     cells.forEach((c, idx) => {
       if (!c.sparkKey || !s[c.sparkKey]?.length) return;
       const canvas = document.getElementById(`ah-spark-${idx}`);
       if (!canvas) return;
       const raw = s[c.sparkKey];
-      // Thin 40-point sample
+
+      // Sample down to ~60 points
       const step = Math.max(1, Math.floor(raw.length / 60));
       const pts = [];
       for (let i = 0; i < raw.length; i += step) {
@@ -1452,35 +1453,38 @@ function buildHero(data) {
       }
       if (pts.length < 2) return;
 
-      const W = canvas.offsetWidth, H = canvas.offsetHeight;
-      if (!W || !H) return;
-      canvas.width = W * devicePixelRatio;
-      canvas.height = H * devicePixelRatio;
+      // Use fixed dimensions matching CSS (100% wide, 36px tall)
+      const W = canvas.parentElement?.offsetWidth || 160;
+      const H = 36;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width  = W * dpr;
+      canvas.height = H * dpr;
+      canvas.style.width  = W + 'px';
+      canvas.style.height = H + 'px';
       const ctx2 = canvas.getContext('2d');
-      ctx2.scale(devicePixelRatio, devicePixelRatio);
+      ctx2.scale(dpr, dpr);
 
+      const col = sparkColors[c.cls] || sparkColors['c-accent'];
       const min = Math.min(...pts), max = Math.max(...pts);
       const range = Math.max(max - min, 1);
-      const col = sparkColors[c.cls] || sparkColors['c-accent'];
+      const pad = 2;
+      const xStep = (W - pad * 2) / (pts.length - 1);
+      const yFor  = v => H - pad - ((c.sparkReverse ? (max - v) : (v - min)) / range) * (H - pad * 2);
 
-      const pad = 3;
-      const xStep = (W - pad*2) / (pts.length - 1);
-      const yFor = v => H - pad - ((c.sparkReverse ? (max - v) : (v - min)) / range) * (H - pad*2);
-
-      // Fill
+      // Gradient fill
       const grad = ctx2.createLinearGradient(0, 0, 0, H);
-      grad.addColorStop(0, col.fill.replace(')', ', 1)').replace('rgba', 'rgba').replace(/, [^,]+\)$/, ', 0.18)'));
-      grad.addColorStop(1, col.fill.replace(/, [^,]+\)$/, ', 0)'));
+      grad.addColorStop(0, col.stroke.replace(/[\d.]+\)$/, '0.25)'));
+      grad.addColorStop(1, col.stroke.replace(/[\d.]+\)$/, '0)'));
       ctx2.beginPath();
       ctx2.moveTo(pad, yFor(pts[0]));
       pts.forEach((v, i) => ctx2.lineTo(pad + i * xStep, yFor(v)));
-      ctx2.lineTo(pad + (pts.length-1)*xStep, H);
+      ctx2.lineTo(pad + (pts.length - 1) * xStep, H);
       ctx2.lineTo(pad, H);
       ctx2.closePath();
       ctx2.fillStyle = grad;
       ctx2.fill();
 
-      // Stroke
+      // Line
       ctx2.beginPath();
       ctx2.moveTo(pad, yFor(pts[0]));
       pts.forEach((v, i) => ctx2.lineTo(pad + i * xStep, yFor(v)));
@@ -1489,7 +1493,7 @@ function buildHero(data) {
       ctx2.lineJoin = 'round';
       ctx2.stroke();
     });
-  });
+  }, 100);
 }
 
 /* ═══════════════════════════════════════════════════════════

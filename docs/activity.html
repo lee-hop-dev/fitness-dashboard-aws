@@ -853,6 +853,46 @@ const hLinesPlugin = {
 };
 Chart.register(hLinesPlugin);
 
+/* ── V-LINES PLUGIN (Layer 2b) ──
+   Draws dashed vertical reference lines at specified x-values with
+   an optional label. Datasets opt in via chart-level option:
+     options.plugins.vLines = [{x: 300, color: 'rgba(...)', label: '5m', xAxisID: 'x'}]
+   Labels render at bottom of the line in DM Mono 9px.
+   Useful for marking common peak-effort durations on the duration curve. */
+const vLinesPlugin = {
+  id: 'vLines',
+  afterDatasetsDraw(chart) {
+    const opts = chart.options.plugins?.vLines;
+    if (!opts?.length) return;
+    const {ctx, chartArea} = chart;
+    if (!chartArea) return;
+    ctx.save();
+    opts.forEach(line => {
+      const scale = chart.scales[line.xAxisID || 'x'];
+      if (!scale) return;
+      const x = scale.getPixelForValue(line.x);
+      if (x < chartArea.left || x > chartArea.right) return;
+      ctx.beginPath();
+      ctx.setLineDash(line.dash || [3, 4]);
+      ctx.strokeStyle = line.color || 'rgba(255,255,255,0.18)';
+      ctx.lineWidth = 1;
+      ctx.moveTo(x, chartArea.top);
+      ctx.lineTo(x, chartArea.bottom);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      if (line.label) {
+        ctx.fillStyle = line.labelColor || 'rgba(200,204,216,0.7)';
+        ctx.font = '700 9px "DM Mono", monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText(line.label, x, chartArea.top + 2);
+      }
+    });
+    ctx.restore();
+  }
+};
+Chart.register(vLinesPlugin);
+
 /* ── renderChartMeta helper (Layer 2b) ──
    Renders the inline metadata strip on a chart card header.
    items: [{val, lbl, vcls}]  — same shape as the stats tile builder. */
@@ -1785,52 +1825,63 @@ async function buildPrimaryTrace(data, ftp, hrmax) {
   }
 }
 
+/* ═══════════════════════════════════════════════════════════
+   DURATION CURVE (Layer 2b) — activity vs 90-day best
+   Renders log-scale duration→best-value chart with:
+     - 90d best as dashed reference line + light fill
+     - This activity's best curve zone-coloured endpoint
+     - Vertical markers at common peak durations (5s/1m/5m/20m/60m
+       for power; 1k/5k/10k/HM for pace)
+     - Header meta strip with 2-3 peak values the athlete cares about
+   All 90d data comes from the pre-computed curves JSON in S3.
+   ─────────────────────────────────────────────────────────── */
 async function buildDurationCurve(canvasId, type, rawStream, ref, unit, tickFmt, colour, reverseY, distStream) {
   const ctx = document.getElementById(canvasId);
   if (!ctx || !rawStream?.length) return;
 
   const isPace = type === 'pace';
   const maxDur = rawStream.length;
-  const totalDistM = distStream?.length ? distStream[distStream.length-1] : 0;
+  const totalDistM = distStream?.length ? distStream[distStream.length - 1] : 0;
   const buckets = [];
 
   if (isPace && totalDistM > 0) {
-    const distBuckets = [100,200,400,800,1000,1500,2000,3000,5000,8000,10000,16000,21097,42195];
-    distBuckets.forEach(d => { if(d <= totalDistM) buckets.push(d); });
+    const distBuckets = [100, 200, 400, 800, 1000, 1500, 2000, 3000, 5000, 8000, 10000, 16000, 21097, 42195];
+    distBuckets.forEach(d => { if (d <= totalDistM) buckets.push(d); });
   } else {
-    for (let s=5; s<=maxDur; s = s<60?s+5:s<300?s+15:s<3600?s+30:s+120) buckets.push(s);
+    for (let s = 5; s <= maxDur; s = s < 60 ? s + 5 : s < 300 ? s + 15 : s < 3600 ? s + 30 : s + 120) buckets.push(s);
   }
 
   const activityBest = buckets.map(bucket => {
     if (isPace && distStream?.length) {
       let bestSec = Infinity;
-      for (let i=0; i<distStream.length; i++) {
-        const targetDist = (distStream[i]||0) + bucket;
-        let j = i+1;
-        while(j<distStream.length && (distStream[j]||0) < targetDist) j++;
-        if(j>=distStream.length) break;
+      for (let i = 0; i < distStream.length; i++) {
+        const targetDist = (distStream[i] || 0) + bucket;
+        let j = i + 1;
+        while (j < distStream.length && (distStream[j] || 0) < targetDist) j++;
+        if (j >= distStream.length) break;
         const elapsed = j - i;
-        if(elapsed < bestSec) bestSec = elapsed;
+        if (elapsed < bestSec) bestSec = elapsed;
       }
-      if(!isFinite(bestSec)) return null;
+      if (!isFinite(bestSec)) return null;
       const mps = bucket / bestSec;
-      return mps > 0 ? +(1000/mps/60).toFixed(3) : null;
+      return mps > 0 ? +(1000 / mps / 60).toFixed(3) : null;
     } else {
       const dur = bucket;
       if (dur > rawStream.length) return null;
       let best = 0;
-      for (let i=0; i<=rawStream.length-dur; i++) {
-        const slice = rawStream.slice(i, i+dur);
-        const valid = slice.filter(v=>v!=null&&v>0);
-        if (valid.length < dur*0.8) continue;
-        const mean = valid.reduce((a,b)=>a+b,0) / valid.length;
+      for (let i = 0; i <= rawStream.length - dur; i++) {
+        const slice = rawStream.slice(i, i + dur);
+        const valid = slice.filter(v => v != null && v > 0);
+        if (valid.length < dur * 0.8) continue;
+        const mean = valid.reduce((a, b) => a + b, 0) / valid.length;
         if (mean > best) best = mean;
       }
       return best > 0 ? Math.round(best) : null;
     }
   });
 
-  const datasets = [];
+  // Load 90-day best curve (pre-computed in S3)
+  let best90 = null;
   try {
     const filename = isPace ? 'pace_curves_90d.json' : 'power_curves_90d.json';
     const r = await fetch(`${CF_BASE}data/${filename}`);
@@ -1838,7 +1889,6 @@ async function buildDurationCurve(canvasId, type, rawStream, ref, unit, tickFmt,
       const cd = await r.json();
       const curve = cd?.list?.[0];
       if (curve?.values?.length) {
-        let best90;
         if (isPace) {
           const dists = curve.distance || [], times = curve.values || [];
           best90 = buckets.map(distBucket => {
@@ -1847,7 +1897,7 @@ async function buildDurationCurve(canvasId, type, rawStream, ref, unit, tickFmt,
             const sec = times[idx];
             if (!sec || sec <= 0) return null;
             const mps = dists[idx] / sec;
-            return mps > 0 ? +(1000/mps/60).toFixed(3) : null;
+            return mps > 0 ? +(1000 / mps / 60).toFixed(3) : null;
           });
         } else {
           const secs = curve.secs || [];
@@ -1858,37 +1908,108 @@ async function buildDurationCurve(canvasId, type, rawStream, ref, unit, tickFmt,
             return v ? Math.round(v) : null;
           });
         }
-        datasets.push({
-          label: '90d Best',
-          data: buckets.map((d,i) => ({x:d, y:best90[i]??null})),
-          borderColor: 'rgba(255,255,255,0.25)', backgroundColor: 'rgba(255,255,255,0.05)',
-          fill: true, borderWidth: 1.5, pointRadius: 0, tension: 0.3,
-          borderDash: [4,3], order: 10
-        });
       }
     }
-  } catch(_) {}
+  } catch (_) {}
 
+  const datasets = [];
+  if (best90) {
+    datasets.push({
+      label: '90d Best',
+      data: buckets.map((d, i) => ({ x: d, y: best90[i] ?? null })),
+      borderColor: 'rgba(255,255,255,0.28)',
+      backgroundColor: 'rgba(255,255,255,0.04)',
+      fill: true, borderWidth: 1.5, pointRadius: 0, tension: 0.3,
+      borderDash: [4, 3], order: 10
+    });
+  }
   datasets.push({
     label: 'This Activity',
-    data: buckets.map((d,i) => ({x:d, y:activityBest[i]??null})),
+    data: buckets.map((d, i) => ({ x: d, y: activityBest[i] ?? null })),
     borderColor: colour,
-    backgroundColor: colour.replace(')', ',0.1)').replace('rgb','rgba'),
+    backgroundColor: colour.replace(')', ',0.12)').replace('rgb', 'rgba'),
     fill: false, borderWidth: 2, pointRadius: 0, tension: 0.3, order: 1
   });
 
+  // ── Peak markers: common durations worth flagging ────────
+  // Cycling: 5s, 1m, 5m, 20m, 60m
+  // Running: 1k, 5k, 10k, HM
+  const markerDefs = isPace
+    ? [[1000, '1k'], [5000, '5k'], [10000, '10k'], [21097, 'HM']]
+    : [[5, '5s'], [60, '1m'], [300, '5m'], [1200, '20m'], [3600, '60m']];
+
+  const vLines = markerDefs
+    .filter(([bucket]) => buckets.includes(bucket))
+    .map(([bucket, label]) => ({
+      x: bucket, label,
+      color: 'rgba(255,255,255,0.12)',
+      labelColor: 'rgba(200,204,216,0.55)',
+      dash: [3, 4]
+    }));
+
+  // ── Header meta: surface 2-3 peak values from the activity ────────
+  // Cycling priority: 20m > 5m > 1m (threshold + VO2 indicators)
+  // Running priority: 5k > 10k > 1k (the distances that actually matter)
+  const metaBuckets = isPace
+    ? [{ b: 5000, lbl: '5k' }, { b: 10000, lbl: '10k' }, { b: 1000, lbl: '1k' }]
+    : [{ b: 1200, lbl: '20m' }, { b: 300, lbl: '5m' }, { b: 60, lbl: '1m' }];
+
+  const metaItems = metaBuckets
+    .map(({ b, lbl }) => {
+      const idx = buckets.indexOf(b);
+      if (idx === -1) return null;
+      const val = activityBest[idx];
+      if (val == null) return null;
+      const best = best90?.[idx];
+      let delta = '';
+      if (best != null && best > 0) {
+        if (isPace) {
+          // Pace: lower is better
+          const deltaSec = (val - best) * 60;
+          if (Math.abs(deltaSec) > 1) {
+            const sign = deltaSec < 0 ? '−' : '+';
+            delta = ` ${sign}${Math.abs(deltaSec).toFixed(0)}s`;
+          }
+        } else {
+          // Power: higher is better
+          const pct = ((val / best - 1) * 100);
+          if (Math.abs(pct) > 0.5) {
+            const sign = pct >= 0 ? '+' : '';
+            delta = ` ${sign}${pct.toFixed(0)}%`;
+          }
+        }
+      }
+      const vcls = isPace ? 'green' : 'accent';
+      return { val: tickFmt(val) + delta, lbl: `Best ${lbl}`, vcls };
+    })
+    .filter(Boolean)
+    .slice(0, 3);
+
+  renderChartMeta('curve-hmeta', metaItems);
+
   new Chart(ctx, {
-    type: 'line', data: {datasets},
+    type: 'line', data: { datasets },
     options: {
       responsive: true, maintainAspectRatio: false, animation: false,
-      layout: {padding:{right:0}},
-      interaction: {mode:'index', intersect:false},
+      layout: { padding: { right: 0 } },
+      interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: {display:true, labels:{color:'#b8c0d0', font:{size:9}, boxWidth:12}},
+        vLines: vLines,
+        legend: {
+          display: true, position: 'top', align: 'end',
+          labels: {
+            color: 'rgba(200,204,216,0.7)',
+            font: { size: 9, family: "'DM Mono', monospace" },
+            boxWidth: 10, boxHeight: 2, padding: 10
+          }
+        },
         tooltip: {
-          backgroundColor:'rgba(8,10,13,0.92)', borderColor:'rgba(255,255,255,0.1)', borderWidth:1,
+          backgroundColor: 'rgba(8,10,13,0.92)',
+          borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1,
           callbacks: {
-            title: items => fmtDuration(Math.round(items[0]?.parsed?.x??0)),
+            title: items => isPace
+              ? fmtDist(Math.round(items[0]?.parsed?.x ?? 0))
+              : fmtDuration(Math.round(items[0]?.parsed?.x ?? 0)),
             label: item => `${item.dataset.label}: ${tickFmt(item.parsed.y)}`
           }
         }
@@ -1896,14 +2017,19 @@ async function buildDurationCurve(canvasId, type, rawStream, ref, unit, tickFmt,
       scales: {
         x: {
           type: 'logarithmic',
-          ticks: {maxTicksLimit:8, callback:v=>fmtDuration(Math.round(v)), maxRotation:0},
-          grid: {color:'rgba(255,255,255,0.04)'}, border:{color:'rgba(255,255,255,0.08)'},
+          ticks: {
+            maxTicksLimit: 8, maxRotation: 0,
+            callback: v => isPace ? fmtDist(Math.round(v)) : fmtDuration(Math.round(v))
+          },
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          border: { color: 'rgba(255,255,255,0.08)' },
           afterFit: axis => { axis.paddingRight = 0; }
         },
         y: {
-          reverse: reverseY||false,
-          grid:{color:'rgba(255,255,255,0.04)'}, border:{color:'rgba(255,255,255,0.08)'},
-          ticks:{maxTicksLimit:5, color:colour, callback:tickFmt},
+          reverse: reverseY || false,
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          border: { color: 'rgba(255,255,255,0.08)' },
+          ticks: { maxTicksLimit: 5, color: colour, callback: tickFmt },
           afterFit: axis => { axis.width = 50; }
         }
       }

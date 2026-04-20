@@ -338,6 +338,37 @@
   background: var(--border); margin: 4px 0;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   CHART CARD HEAD (Layer 2b) — reusable header strip for
+   Primary/HR/Cadence/Speed. Title + inline meta row.
+   ─────────────────────────────────────────────────────────── */
+.chart-card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-bottom: 12px; flex-wrap: wrap;
+}
+.chart-card-head .act-stats-title {
+  margin-bottom: 0;
+}
+.chart-hmeta {
+  display: flex; align-items: center; gap: 14px;
+  font-family: var(--font-mono);
+}
+.chm-item { display: flex; flex-direction: column; gap: 1px; line-height: 1; }
+.chm-val {
+  font-size: 12px; font-weight: 700;
+  letter-spacing: -0.2px; color: var(--text-primary);
+}
+.chm-val.accent { color: var(--accent); }
+.chm-val.green  { color: var(--green); }
+.chm-val.orange { color: var(--orange); }
+.chm-val.red    { color: var(--red); }
+.chm-val.yellow { color: var(--yellow); }
+.chm-val.purple { color: var(--purple); }
+.chm-lbl {
+  font-size: 8px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--text-muted);
+}
+
 /* ── CHARTS ── */
 .chart-wrap { position: relative; }
 .chart-wrap canvas { display: block; width: 100% !important; }
@@ -580,13 +611,19 @@
       <!-- 5. SPLIT: Primary trace | Duration curve -->
       <div class="split-row" id="power-row">
         <div class="act-card">
-          <div class="act-card-title" id="primary-trace-title">Power Trace</div>
+          <div class="chart-card-head">
+            <span class="act-stats-title" id="primary-trace-title">Power Trace</span>
+            <div class="chart-hmeta" id="primary-hmeta"></div>
+          </div>
           <div class="chart-wrap cw-220">
             <canvas id="chart-primary"></canvas>
           </div>
         </div>
         <div class="act-card">
-          <div class="act-card-title" id="curve-title">Power Curve</div>
+          <div class="chart-card-head">
+            <span class="act-stats-title" id="curve-title">Power Curve</span>
+            <div class="chart-hmeta" id="curve-hmeta"></div>
+          </div>
           <div class="chart-wrap cw-220">
             <canvas id="chart-curve"></canvas>
           </div>
@@ -774,6 +811,63 @@ const gradientFillPlugin = {
   }
 };
 Chart.register(gradientFillPlugin);
+
+/* ── H-LINES PLUGIN (Layer 2b) ──
+   Draws dashed horizontal reference lines at specified y-values.
+   Datasets opt in via a chart-level option: options.plugins.hLines = [
+     {y: 280, color: 'rgba(0,229,255,0.5)', label: 'FTP', dash: [4,4], yAxisID: 'y'},
+     ...
+   ]
+   Drawn above grid but below data; no interference with tooltips. */
+const hLinesPlugin = {
+  id: 'hLines',
+  afterDatasetsDraw(chart) {
+    const opts = chart.options.plugins?.hLines;
+    if (!opts?.length) return;
+    const {ctx, chartArea} = chart;
+    if (!chartArea) return;
+    ctx.save();
+    opts.forEach(line => {
+      const scale = chart.scales[line.yAxisID || 'y'];
+      if (!scale) return;
+      const y = scale.getPixelForValue(line.y);
+      if (y < chartArea.top || y > chartArea.bottom) return;
+      ctx.beginPath();
+      ctx.setLineDash(line.dash || [4, 4]);
+      ctx.strokeStyle = line.color || 'rgba(255,255,255,0.3)';
+      ctx.lineWidth = 1;
+      ctx.moveTo(chartArea.left, y);
+      ctx.lineTo(chartArea.right, y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      if (line.label) {
+        ctx.fillStyle = line.color || 'rgba(255,255,255,0.6)';
+        ctx.font = '700 9px "DM Mono", monospace';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(line.label, chartArea.right - 4, y - 2);
+      }
+    });
+    ctx.restore();
+  }
+};
+Chart.register(hLinesPlugin);
+
+/* ── renderChartMeta helper (Layer 2b) ──
+   Renders the inline metadata strip on a chart card header.
+   items: [{val, lbl, vcls}]  — same shape as the stats tile builder. */
+function renderChartMeta(elId, items) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  const clean = items.filter(i => i && i.val != null && i.val !== '');
+  if (!clean.length) { el.innerHTML = ''; return; }
+  el.innerHTML = clean.map(i => `
+    <div class="chm-item">
+      <div class="chm-val ${i.vcls || ''}">${i.val}</div>
+      <div class="chm-lbl">${i.lbl}</div>
+    </div>
+  `).join('');
+}
 
 /* ── CHART FACTORY ── */
 const zoneSegmentPlugin = {
@@ -1546,8 +1640,14 @@ function toggleMetric(id,btn) {
   if(window._rebuildElevChart) window._rebuildElevChart();
 }
 
+/* ═══════════════════════════════════════════════════════════
+   PRIMARY TRACE (Layer 2b) — Power (cycling) / Pace (running)
+   Zone-coloured segments + gradient fill + dashed reference lines
+   for FTP/Avg. Header strip shows Avg / NP / Max inline.
+   All metrics from Intervals — no browser-side recalculation.
+   ─────────────────────────────────────────────────────────── */
 async function buildPrimaryTrace(data, ftp, hrmax) {
-  const s = data.streams||{}, time = s.time||[], sport = data.sport_type;
+  const s = data.streams || {}, time = s.time || [], sport = data.sport_type;
   const isCyc = isCycling(sport), isRun = isRunning(sport);
 
   if (!s.watts?.length && !s.velocity_smooth?.length) {
@@ -1555,52 +1655,133 @@ async function buildPrimaryTrace(data, ftp, hrmax) {
     return;
   }
 
+  // Sport-coloured title accent bar (runs green, ride accent)
+  const primaryTitleEl = document.getElementById('primary-trace-title');
+  const curveTitleEl   = document.getElementById('curve-title');
+  if (primaryTitleEl) {
+    primaryTitleEl.className = 'act-stats-title' + (isRun ? ' c-green' : '');
+  }
+  if (curveTitleEl) {
+    curveTitleEl.className = 'act-stats-title' + (isRun ? ' c-green' : '');
+  }
+
   if (isRun && s.velocity_smooth?.length) {
-    document.getElementById('primary-trace-title').textContent = 'Pace';
-    document.getElementById('curve-title').textContent = '90-Day Pace Curve';
-    const paceArr = s.velocity_smooth.map(v => v>0 ? +(1000/v/60).toFixed(3) : null);
+    // ── Running: Pace trace ────────────────────────────────
+    primaryTitleEl.textContent = 'Pace';
+    curveTitleEl.textContent   = '90-Day Pace Curve';
+
+    // Build pace array in min/km (null where velocity <= 0)
+    const paceArr = s.velocity_smooth.map(v => v > 0 ? +(1000 / v / 60).toFixed(3) : null);
     const dec = decimateChartData(time, paceArr);
-    const zc  = hrmax ? (() => {
-      const dhr = decimateChartData(time, s.heartrate||[]);
-      return dhr.data.map(v => v!=null ? HR_ZONE_COLOURS[getHrZone(v,hrmax)] : '#9ca3af');
+
+    // Zone colour by HR zone
+    const zc = hrmax ? (() => {
+      const dhr = decimateChartData(time, s.heartrate || []);
+      return dhr.data.map(v => v != null ? HR_ZONE_COLOURS[getHrZone(v, hrmax)] : '#9ca3af');
     })() : null;
-    makeChart('chart-primary', [{
+
+    // Avg pace from Intervals (pre-calculated)
+    const avgMps = data.average_speed;
+    const avgPace = avgMps > 0 ? 1000 / avgMps / 60 : null;
+
+    // Header meta strip
+    renderChartMeta('primary-hmeta', [
+      avgPace != null ? { val: `${Math.floor(avgPace)}:${String(Math.round((avgPace%1)*60)).padStart(2,'0')}`, lbl: 'Avg Pace', vcls: 'green' } : null,
+      data.max_speed > 0 ? (() => {
+        const bestPace = 1000 / data.max_speed / 60;
+        return { val: `${Math.floor(bestPace)}:${String(Math.round((bestPace%1)*60)).padStart(2,'0')}`, lbl: 'Best', vcls: 'green' };
+      })() : null,
+      data.average_heartrate != null ? { val: Math.round(data.average_heartrate), lbl: 'Avg HR', vcls: 'red' } : null
+    ]);
+
+    // Build reference lines (Avg pace only — no FTP analogue for running)
+    const hLines = [];
+    if (avgPace != null) {
+      hLines.push({ y: avgPace, color: 'rgba(0,255,135,0.45)', label: 'AVG', dash: [4, 4] });
+    }
+
+    const chart = makeChart('chart-primary', [{
       label: 'Pace',
-      data:  dec.time.map((t,i) => ({x:t, y:dec.data[i]??null})),
+      data: dec.time.map((t, i) => ({ x: t, y: dec.data[i] ?? null })),
       borderColor: zc ? 'transparent' : '#00ff87',
       _zoneColors: zc,
-      backgroundColor: 'transparent', fill: false,
+      backgroundColor: 'transparent', fill: true,
+      _gradientTop: 'rgba(0,255,135,0.35)',
+      _gradientBottom: 'rgba(0,255,135,0.0)',
       borderWidth: 2, pointRadius: 0, tension: 0, yAxisID: 'y'
     }], {
-      y: { position:'left', reverse:true,
-           grid:{color:'rgba(255,255,255,0.04)'}, border:{color:'rgba(255,255,255,0.08)'},
-           ticks:{maxTicksLimit:5, color:'#00ff87',
-             callback:v=>`${Math.floor(v)}:${String(Math.round((v%1)*60)).padStart(2,'0')}`},
-           afterFit: axis => { axis.width = 50; } }
+      y: {
+        position: 'left', reverse: true,
+        grid: { color: 'rgba(255,255,255,0.04)' },
+        border: { color: 'rgba(255,255,255,0.08)' },
+        ticks: {
+          maxTicksLimit: 5, color: '#00ff87',
+          callback: v => `${Math.floor(v)}:${String(Math.round((v%1)*60)).padStart(2,'0')}`
+        },
+        afterFit: axis => { axis.width = 50; }
+      }
     }, time);
+    if (chart && hLines.length) {
+      chart.options.plugins.hLines = hLines;
+      chart.update('none');
+    }
+
     await buildDurationCurve('chart-curve', 'pace', s.velocity_smooth, null, 'min/km',
-      v => `${Math.floor(v)}:${String(Math.round((v%1)*60)).padStart(2,'0')}`, '#00ff87', true, s.distance);
+      v => `${Math.floor(v)}:${String(Math.round((v%1)*60)).padStart(2,'0')}`,
+      '#00ff87', true, s.distance);
 
   } else if (isCyc && s.watts?.length) {
-    document.getElementById('primary-trace-title').textContent = 'Power';
-    document.getElementById('curve-title').textContent = '90-Day Power Curve';
+    // ── Cycling: Power trace ──────────────────────────────
+    primaryTitleEl.textContent = 'Power';
+    curveTitleEl.textContent   = '90-Day Power Curve';
+
     const dec = decimateChartData(time, s.watts);
-    const zc  = ftp ? dec.data.map(v => v!=null ? POWER_ZONE_COLOURS[getPowerZone(v,ftp)] : '#9ca3af') : null;
-    makeChart('chart-primary', [{
+    const zc  = ftp ? dec.data.map(v => v != null ? POWER_ZONE_COLOURS[getPowerZone(v, ftp)] : '#9ca3af') : null;
+
+    // Header meta — Avg / NP / Max all from Intervals
+    renderChartMeta('primary-hmeta', [
+      data.icu_average_watts != null ? { val: Math.round(data.icu_average_watts) + 'W', lbl: 'Avg', vcls: 'accent' } : null,
+      data.icu_weighted_avg_watts != null ? { val: Math.round(data.icu_weighted_avg_watts) + 'W', lbl: 'NP', vcls: 'accent' } : null,
+      (() => {
+        const mx = maxVal(s.watts);
+        return mx != null ? { val: Math.round(mx) + 'W', lbl: 'Max', vcls: 'yellow' } : null;
+      })()
+    ]);
+
+    // Reference lines: FTP + Avg
+    const hLines = [];
+    if (ftp) {
+      hLines.push({ y: ftp, color: 'rgba(255,214,0,0.55)', label: `FTP ${Math.round(ftp)}W`, dash: [6, 4] });
+    }
+    if (data.icu_average_watts != null) {
+      hLines.push({ y: data.icu_average_watts, color: 'rgba(0,229,255,0.35)', label: 'AVG', dash: [4, 4] });
+    }
+
+    const chart = makeChart('chart-primary', [{
       label: 'Power',
-      data:  dec.time.map((t,i) => ({x:t, y:dec.data[i]??null})),
+      data: dec.time.map((t, i) => ({ x: t, y: dec.data[i] ?? null })),
       borderColor: zc ? 'transparent' : '#00e5ff',
       _zoneColors: zc,
       backgroundColor: 'transparent', fill: true,
-      _gradientTop: 'rgba(0,255,135,0.35)', _gradientBottom: 'rgba(0,255,135,0.0)',
+      _gradientTop: 'rgba(0,255,135,0.35)',
+      _gradientBottom: 'rgba(0,255,135,0.0)',
       borderWidth: 2, pointRadius: 0, tension: 0, yAxisID: 'y'
     }], {
-      y: { position:'left',
-           grid:{color:'rgba(255,255,255,0.04)'}, border:{color:'rgba(255,255,255,0.08)'},
-           ticks:{maxTicksLimit:5, color:'#00e5ff', callback:v=>Math.round(v)+'W'},
-           afterFit: axis => { axis.width = 50; } }
+      y: {
+        position: 'left',
+        grid: { color: 'rgba(255,255,255,0.04)' },
+        border: { color: 'rgba(255,255,255,0.08)' },
+        ticks: { maxTicksLimit: 5, color: '#00e5ff', callback: v => Math.round(v) + 'W' },
+        afterFit: axis => { axis.width = 50; }
+      }
     }, time);
-    await buildDurationCurve('chart-curve', 'power', s.watts, ftp, 'W', v => Math.round(v)+'W', '#00e5ff');
+    if (chart && hLines.length) {
+      chart.options.plugins.hLines = hLines;
+      chart.update('none');
+    }
+
+    await buildDurationCurve('chart-curve', 'power', s.watts, ftp, 'W',
+      v => Math.round(v) + 'W', '#00e5ff');
   }
 }
 

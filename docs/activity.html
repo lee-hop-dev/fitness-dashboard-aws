@@ -259,7 +259,7 @@
 .rl-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
 /* ── SEGMENT ACHIEVEMENTS ──────────────────────────────────── */
-.seg-items { display: flex; flex-direction: column; gap: 7px; margin-top: 8px; }
+.seg-items { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-top: 8px; }
 .seg-item {
   display: grid; grid-template-columns: 4px 1fr auto auto;
   gap: 14px; align-items: center; padding: 10px 14px 10px 0;
@@ -347,12 +347,14 @@
 @media (max-width: 1100px) {
   #act-hero { grid-template-columns: repeat(3,1fr); }
   .rl-split { grid-template-columns: 1fr; }
+  .seg-items { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 800px) {
   .rl-row { grid-template-columns: 1fr; gap: 14px; }
   .rl-row-left { border-right: none; padding-right: 0; border-bottom: 1px solid var(--border); padding-bottom: 14px; }
   .rl-two-col { grid-template-columns: 1fr; }
   #act-hero { grid-template-columns: repeat(2,1fr); }
+  .seg-items { grid-template-columns: 1fr; }
 }
 @media (max-width: 520px) {
   .rl-title { font-size: 20px; }

@@ -254,13 +254,6 @@
 /* Hide stats panel header — card label handles it */
 .rl-kv-table .act-stats-head { display:none !important; }
 
-/* Strava / Intervals links within summary */
-.rl-kv-table .strava-row { padding:10px 0 0;border-top:1px solid var(--rl-line);margin-top:4px;display:flex;gap:10px;flex-wrap:wrap; }
-.rl-kv-table .strava-link   { font-size:11px;color:#fc4c02;font-family:'Geist Mono',monospace;text-decoration:none;font-weight:600; }
-.rl-kv-table .strava-link:hover  { text-decoration:underline; }
-.rl-kv-table .intervals-link { font-size:11px;color:var(--rl-cyan);font-family:'Geist Mono',monospace;text-decoration:none;font-weight:600; }
-.rl-kv-table .intervals-link:hover { text-decoration:underline; }
-
 /* ═════════════════════════════════════════════════════
    5. RAIL — stacked metric rows
    Grid: 220px left | 1fr right
@@ -322,37 +315,100 @@
 /* ── CADENCE|SPEED two-column ────────────────────────────── */
 .rl-two-col { display:grid;grid-template-columns:1fr 1fr;gap:var(--rl-gap); }
 
+/* ── SEGMENT ACHIEVEMENTS — base structural CSS ───────────── */
+.seg-items { display:flex;flex-direction:column;gap:7px;margin-top:8px; }
+.seg-item {
+  display:grid;grid-template-columns:4px 1fr auto auto;
+  gap:14px;align-items:center;
+  padding:10px 14px 10px 0;
+  background:var(--rl-bg2);
+  border:1px solid var(--rl-line);border-radius:var(--rl-rsm);
+  transition:all .15s;overflow:hidden;
+}
+.seg-item:hover { border-color:var(--rl-linehi);background:var(--rl-bg3); }
+.seg-accent {
+  width:4px;height:100%;min-height:42px;
+  background:var(--rl-fg3);
+}
+.seg-accent.acc-gold   { background:#ffd600; }
+.seg-accent.acc-silver { background:#c0c8d8; }
+.seg-accent.acc-bronze { background:#cd7f32; }
+.seg-accent.acc-top    { background:var(--rl-cyan); }
+.seg-accent.acc-ag     { background:var(--rl-z4); }
+.seg-body { min-width:0; }
+.seg-name { font-size:12px;font-weight:600;color:var(--rl-fg0);margin-bottom:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.seg-meta { font-size:10px;font-family:'Geist Mono',ui-monospace,monospace;color:var(--rl-fg2); }
+.seg-time {
+  font-size:14px;font-weight:800;font-family:'Geist Mono',ui-monospace,monospace;
+  letter-spacing:-0.3px;color:var(--rl-fg0);text-align:right;line-height:1;
+}
+.seg-time-lbl {
+  font-size:8px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  color:var(--rl-fg3);text-align:right;margin-top:3px;
+}
+.seg-badges { display:flex;flex-direction:column;gap:3px;align-items:flex-end; }
+.seg-badge  { font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap; }
+.sb-gold   { background:rgba(255,214,0,0.15);  color:#c8a800;border:1px solid rgba(255,214,0,0.3); }
+.sb-silver { background:rgba(192,200,216,0.15);color:#8090a8;border:1px solid rgba(192,200,216,0.3); }
+.sb-bronze { background:rgba(205,127,50,0.15); color:#a0622a;border:1px solid rgba(205,127,50,0.3); }
+.sb-top10  { background:rgba(10,110,138,0.1);  color:var(--rl-cyan);border:1px solid rgba(10,110,138,0.25); }
+.sb-ag     { background:rgba(217,119,6,0.1);   color:var(--rl-z4);border:1px solid rgba(217,119,6,0.25); }
+.seg-empty { font-size:11px;font-family:'Geist Mono',ui-monospace,monospace;color:var(--rl-fg3);padding:12px 0;text-align:center; }
+
+/* ── LAP SPLITS — base structural CSS ────────────────────── */
+.laps-list { display:flex;flex-direction:column;gap:4px;margin-top:10px; }
+.laps-head {
+  display:grid;gap:12px;
+  padding:6px 14px 6px 18px;
+  font-family:'Geist Mono',ui-monospace,monospace;
+  font-size:9px;font-weight:700;letter-spacing:1px;
+  text-transform:uppercase;color:var(--rl-fg2);
+  border-bottom:1px solid var(--rl-line);
+  background:var(--rl-bg2);
+}
+.laps-head > div { white-space:nowrap; }
+.laps-head > div:not(:first-child) { text-align:right; }
+.lap-row {
+  display:grid;gap:12px;align-items:center;
+  padding:9px 14px 9px 0;
+  background:var(--rl-bg1);
+  border:1px solid var(--rl-line);border-radius:var(--rl-rsm);
+  cursor:pointer;transition:border-color .15s,background .15s;
+  overflow:hidden;font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;
+}
+.lap-row:hover { border-color:var(--rl-linehi);background:var(--rl-bg2); }
+.lap-row.lap-hl { border-color:rgba(10,110,138,.3);background:rgba(10,110,138,.06); }
+.lap-accent { width:4px;align-self:stretch;min-height:30px;background:transparent; }
+.lap-accent.sig     { background:var(--rl-cyan); }
+.lap-accent.sig-hot { background:var(--rl-z4); }
+.lap-accent.sig-red { background:var(--rl-z5); }
+.lap-cell { color:var(--rl-fg0);text-align:right;white-space:nowrap; }
+.lap-cell.first { text-align:left;font-weight:700; }
+.lap-cell.acc   { color:var(--rl-cyan);font-weight:700; }
+.lap-cell.grn   { color:var(--rl-z3);font-weight:700; }
+.lap-cell.muted { color:var(--rl-fg3); }
+.lap-bar-wrap {
+  position:relative;height:3px;width:100%;
+  background:rgba(20,20,20,.08);border-radius:2px;overflow:hidden;margin-top:4px;
+}
+.lap-bar-fill {
+  position:absolute;left:0;top:0;bottom:0;
+  background:var(--rl-cyan);opacity:.5;
+  transition:width .8s cubic-bezier(0.4,0,0.2,1);
+}
+.lap-bar-fill.hot { background:var(--rl-z4);opacity:.65; }
+.lap-bar-fill.red { background:var(--rl-z5);opacity:.65; }
+.lap-bar-fill.grn { background:var(--rl-z3);opacity:.55; }
+
 /* ── SEGMENTS ─────────────────────────────────────────────── */
 .rl-segments-row { background:var(--rl-bg1);border:1px solid var(--rl-line);border-radius:var(--rl-r);padding:var(--rl-rowpad); }
 .rl-seg-head { display:flex;justify-content:space-between;align-items:center;margin-bottom:12px; }
-.seg-items .seg-item { background:var(--rl-bg2) !important;border-color:var(--rl-line) !important; }
-.seg-items .seg-item:hover { border-color:var(--rl-linehi) !important;background:var(--rl-bg3) !important; }
-.seg-items .seg-name { color:var(--rl-fg0) !important; }
-.seg-items .seg-meta { color:var(--rl-fg2) !important; }
-.seg-items .seg-time { color:var(--rl-fg0) !important; }
-.seg-items .seg-time-lbl { color:var(--rl-fg3) !important; }
-.seg-items .seg-empty { color:var(--rl-fg3) !important; }
 
-/* ── LAP SPLITS ──────────────────────────────────────────── */
+/* ── LAP SPLITS wrapper ───────────────────────────────────── */
 .rl-laps-row { background:var(--rl-bg1);border:1px solid var(--rl-line);border-radius:var(--rl-r);overflow:hidden; }
-.rl-laps-inner { padding:var(--rl-rowpad) var(--rl-rowpad) 10px; }
-.rl-laps-head-row { display:flex;justify-content:space-between;align-items:center; }
-.laps-head { background:var(--rl-bg2);padding:8px var(--rl-rowpad) !important;border-bottom:1px solid var(--rl-line) !important;color:var(--rl-fg2) !important; }
-.lap-row { background:var(--rl-bg1) !important;border-color:var(--rl-line) !important; }
-.lap-row:hover { background:var(--rl-bg2) !important;border-color:var(--rl-linehi) !important; }
-.lap-row.lap-hl { background:rgba(10,110,138,.06) !important;border-color:rgba(10,110,138,.25) !important; }
-.laps-list .lap-cell        { color:var(--rl-fg0) !important; }
-.laps-list .lap-cell.muted  { color:var(--rl-fg3) !important; }
-.laps-list .lap-cell.acc    { color:var(--rl-cyan) !important; }
-.laps-list .lap-cell.grn    { color:var(--rl-z3) !important; }
-.lap-bar-wrap { background:rgba(20,20,20,.07) !important; }
-.lap-bar-fill { background:var(--rl-cyan) !important;opacity:.45 !important; }
-.lap-bar-fill.hot { background:var(--rl-z4) !important;opacity:.6 !important; }
-.lap-bar-fill.red { background:var(--rl-z5) !important;opacity:.6 !important; }
-.lap-bar-fill.grn { background:var(--rl-z3) !important;opacity:.5 !important; }
-.lap-accent.sig     { background:var(--rl-cyan) !important; }
-.lap-accent.sig-hot { background:var(--rl-z4) !important; }
-.lap-accent.sig-red { background:var(--rl-z5) !important; }
+.rl-laps-inner { padding:var(--rl-rowpad) 0 0; }
+.rl-laps-head-row { display:flex;justify-content:space-between;align-items:center;padding:0 var(--rl-rowpad) 10px; }
 
 /* ── ERROR / NOT AVAIL ───────────────────────────────────── */
 .rl-not-avail { display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;gap:10px;color:var(--rl-fg3);font-family:'Geist Mono',ui-monospace,monospace;font-size:12px;text-align:center;background:var(--rl-bg1);border:1px solid var(--rl-line);border-radius:var(--rl-r);margin-top:40px; }
@@ -449,6 +505,8 @@
           <span class="rl-chip chip-tss"  id="hdr-tss-chip"  style="display:none"></span>
           <!-- STRAVA ghost button (href set by JS) -->
           <a class="rl-btn-ghost" id="strava-link-hdr" href="#" target="_blank" rel="noopener" style="display:none">STRAVA ↗</a>
+          <!-- INTERVALS ghost button (href set by JS) -->
+          <a class="rl-btn-ghost" id="intervals-link-hdr" href="#" target="_blank" rel="noopener" style="display:none">INTERVALS ↗</a>
           <!-- KUDOS solid button -->
           <button class="rl-btn-kudos">❤ KUDOS <span id="kudos-count">—</span></button>
         </div>
@@ -529,10 +587,6 @@
                rl-kv-table CSS makes each asg-tile render as a KV row. -->
           <div class="rl-kv-table">
             <div class="act-stats-grid" id="workout-stats"></div>
-            <div id="strava-row" class="strava-row" style="display:none">
-              <a class="strava-link"   id="strava-link"    href="#" target="_blank" rel="noopener">View on Strava →</a>
-              <a class="intervals-link" id="intervals-link" href="#" target="_blank" rel="noopener" style="display:none">View on Intervals.icu →</a>
-            </div>
           </div>
         </div>
 
@@ -622,7 +676,10 @@
               <canvas id="chart-hr"></canvas>
             </div>
             <!-- Zone stack bar injected here by post-render patch -->
-            <div id="rl-zone-bar-mount"></div>
+            <!-- Zone bar chart -->
+            <div id="rl-zone-bar-mount" style="margin-top:10px;height:90px;position:relative;">
+              <canvas id="chart-hr-zones"></canvas>
+            </div>
             <!-- Hidden — JS still builds these, we just don't show them -->
             <div class="hr-thermo"    id="hr-thermo"  style="display:none!important"></div>
             <div class="chart-hmeta"  id="hr-hmeta"   style="display:none"></div>
@@ -699,8 +756,8 @@
                 <span id="laps-meta" style="font-weight:400;letter-spacing:0;text-transform:none;font-size:10px;color:var(--rl-fg3)"></span>
               </div>
             </div>
+            <div class="laps-head" id="laps-head"></div>
           </div>
-          <div class="laps-head" id="laps-head"></div>
           <div class="laps-list" id="laps-list"></div>
         </div>
 
@@ -1627,8 +1684,8 @@ function buildElevationChart(data, ftp, hrmax) {
     return METRICS.filter(m=>active[m.id]).map(m=>{
       if(m.id==='elev') return {
         label:'Elevation',data:decAlt.time.map((t,i)=>({x:t,y:decAlt.data[i]??null})),
-        borderColor:'rgba(180,180,180,0.6)',backgroundColor:'rgba(140,140,140,0.45)',
-        fill:true,borderWidth:1.5,pointRadius:0,tension:0.4,yAxisID:'yElev',order:10
+        borderColor:'rgba(150,160,170,0.7)',backgroundColor:'rgba(106,116,132,0.12)',
+        fill:true,borderWidth:1,pointRadius:0,tension:0.4,yAxisID:'yElev',order:10
       };
       const dec=decStreams[m.id]; if(!dec) return null;
       return {
@@ -1641,30 +1698,30 @@ function buildElevationChart(data, ftp, hrmax) {
 
   const elevVals=decAlt.data.filter(v=>v!=null);
   const eMin=Math.min(...elevVals), eMax=Math.max(...elevVals);
-  const range = eMax - eMin;
-  const elevYMin = eMin - range * 0.3;
+  const range = Math.max(eMax - eMin, 10);
+  const elevYMin = eMin - range * 0.18;
 
   function buildScales() {
     const sc = {
-      x:{type:'linear',ticks:{maxTicksLimit:8,callback:v=>fmtDuration(v),maxRotation:0},
-        grid:{color:'rgba(255,255,255,0.04)'},border:{color:'rgba(255,255,255,0.08)'},
+      x:{type:'linear',ticks:{maxTicksLimit:8,callback:v=>fmtDuration(v),maxRotation:0,color:'rgba(60,70,80,0.7)'},
+        grid:{color:'rgba(20,20,20,0.07)'},border:{color:'rgba(20,20,20,0.1)'},
         afterFit: axis => { axis.paddingRight = 0; }},
-      yElev:{position:'left',min:elevYMin,grid:{color:'rgba(255,255,255,0.04)'},
-        border:{color:'rgba(255,255,255,0.08)'},
-        ticks:{maxTicksLimit:4,callback:v=>Math.round(v)+'m',color:'rgba(120,120,120,0.8)'},
+      yElev:{position:'left',min:elevYMin,grid:{color:'rgba(20,20,20,0.07)'},
+        border:{color:'rgba(20,20,20,0.1)'},
+        ticks:{maxTicksLimit:4,callback:v=>Math.round(v)+'m',color:'rgba(80,95,110,0.8)'},
         afterFit: axis => { axis.width = 50; }}
     };
     if(active['power']) sc.yR1={position:'right',grid:{display:false},border:{display:false},
-      ticks:{maxTicksLimit:4,color:'#00e5ff',callback:v=>Math.round(v)+'W'},
+      ticks:{maxTicksLimit:4,color:'var(--rl-cyan)',callback:v=>Math.round(v)+'W'},
       afterFit: axis => { axis.width = 50; }};
     if(active['hr'])    sc.yR2={position:'right',grid:{display:false},border:{display:false},
-      ticks:{maxTicksLimit:4,color:'#ef4444',callback:v=>Math.round(v)},
+      ticks:{maxTicksLimit:4,color:'var(--rl-hr)',callback:v=>Math.round(v)},
       afterFit: axis => { axis.width = 50; }};
     if(active['cad'])   sc.yR3={position:'right',grid:{display:false},border:{display:false},
-      ticks:{maxTicksLimit:4,color:'#a78bfa',callback:v=>Math.round(v)},
+      ticks:{maxTicksLimit:4,color:'var(--rl-cad)',callback:v=>Math.round(v)},
       afterFit: axis => { axis.width = 50; }};
     if(active['pace'])  sc.yR4={position:'right',reverse:isRun,grid:{display:false},border:{display:false},
-      ticks:{maxTicksLimit:4,color:'#fbbf24',
+      ticks:{maxTicksLimit:4,color:'var(--rl-z4)',
         callback:v=>isRun?`${Math.floor(v)}:${String(Math.round((v%1)*60)).padStart(2,'0')}`:v.toFixed(0)+' km/h'},
       afterFit: axis => { axis.width = 50; }};
     return sc;
@@ -1678,8 +1735,8 @@ function buildElevationChart(data, ftp, hrmax) {
       animation:{duration:1200,easing:'easeInQuart'},
       layout:{padding:{right:0,left:0}},
       interaction:{mode:'index',intersect:false},
-      plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(8,10,13,0.92)',
-        borderColor:'rgba(255,255,255,0.1)',borderWidth:1,
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(15,22,32,0.88)',
+        borderColor:'rgba(20,20,20,0.15)',borderWidth:1,
         callbacks:{title:items=>fmtDuration(Math.round(items[0]?.parsed?.x??0))}}},
       scales:buildScales()}
   });
@@ -1776,10 +1833,12 @@ async function buildPrimaryTrace(data, ftp, hrmax) {
     }], {
       y: {
         position: 'left', reverse: true,
-        grid: { color: 'rgba(255,255,255,0.04)' },
-        border: { color: 'rgba(255,255,255,0.08)' },
+        min: avgPace != null ? avgPace - 2.0 : undefined,
+        max: avgPace != null ? avgPace + 2.5 : undefined,
+        grid: { color: 'rgba(20,20,20,0.07)' },
+        border: { color: 'rgba(20,20,20,0.1)' },
         ticks: {
-          maxTicksLimit: 5, color: '#00ff87',
+          maxTicksLimit: 5, color: '#0aa876',
           callback: v => `${Math.floor(v)}:${String(Math.round((v%1)*60)).padStart(2,'0')}`
         },
         afterFit: axis => { axis.width = 50; }
@@ -1920,8 +1979,16 @@ async function buildDurationCurve(canvasId, type, rawStream, ref, unit, tickFmt,
             if (idx === -1) return null;
             const sec = times[idx];
             if (!sec || sec <= 0) return null;
+            // values[] is elapsed seconds for the distance (not sec/km)
+            // e.g. for 5000m in 1200s → mps = 5000/1200 → min/km = (1000/mps)/60
             const mps = dists[idx] / sec;
-            return mps > 0 ? +(1000 / mps / 60).toFixed(3) : null;
+            const minPerKm = 1000 / mps / 60;
+            // Sanity check: if minPerKm > 30 the values are likely already in sec/km
+            // In that case treat values[idx] directly as seconds per km
+            if (minPerKm > 30) {
+              return sec > 0 ? +(sec / 60).toFixed(3) : null;
+            }
+            return minPerKm > 0 ? +minPerKm.toFixed(3) : null;
           });
         } else {
           const secs = curve.secs || [];
@@ -2500,22 +2567,6 @@ async function init() {
   document.getElementById('kudos-count').textContent   = data.kudos_count??'0';
   document.title=`${data.name||'Activity'} — Training OS`;
 
-  if(data.strava_id || data.activity_id) {
-    const sr=document.getElementById('strava-row');
-    if(sr) sr.style.display='flex';
-    if(data.strava_id) {
-      const sl=document.getElementById('strava-link');
-      if(sl) {
-        sl.href=`https://www.strava.com/activities/${data.strava_id}`;
-        sl.innerHTML='<img src="https://www.strava.com/favicon.ico" style="width:14px;height:14px;vertical-align:middle;margin-right:5px" onerror="this.style.display=&quot;none&quot;">View on Strava →';
-      }
-    }
-    if(data.activity_id) {
-      const il=document.getElementById('intervals-link');
-      if(il) { il.href=`https://intervals.icu/activities/${data.activity_id}`; il.style.display='inline-flex'; }
-    }
-  }
-
   // Layer 2a — Cockpit hero + Intervals-driven summary panel
   buildHero(data);
   buildSummaryPanel(data);
@@ -2578,6 +2629,11 @@ function rlPatch(data) {
   if (data.strava_id) {
     const btn = document.getElementById('strava-link-hdr');
     if (btn) { btn.href = 'https://www.strava.com/activities/' + data.strava_id; btn.style.display = ''; }
+  }
+  // INTERVALS button in header
+  if (data.activity_id) {
+    const iBtn = document.getElementById('intervals-link-hdr');
+    if (iBtn) { iBtn.href = 'https://intervals.icu/activities/' + data.activity_id; iBtn.style.display = ''; }
   }
 
   // ── Map meta tiles ────────────────────────────────────────
@@ -2686,25 +2742,56 @@ function rlPatch(data) {
     ];
     rlSetKvs('hr-row-kvs', kvs);
 
-    // Zone stack bar — injected after HR section builds
-    const mount = document.getElementById('rl-zone-bar-mount');
-    if (mount) {
+    // Zone bar chart — one bar per zone, Chart.js
+    const zoneCanvas = document.getElementById('chart-hr-zones');
+    if (zoneCanvas) {
       const rlZoneColors = ['#8492a5','#1e88e5','#0aa876','#d97706','#d73838'];
-      const rlZoneLabels = ['Z1','Z2','Z3','Z4','Z5'];
-      const barHtml = `
-        <div class="rl-zone-bar">
-          ${counts.map((c,i) => {
-            const pct = (c/total*100).toFixed(1);
-            return `<div class="rl-zone-seg" style="width:${pct}%;background:${rlZoneColors[i]}" title="${rlZoneLabels[i]}: ${pct}%"></div>`;
-          }).join('')}
-        </div>
-        <div class="rl-zone-labels">
-          ${counts.map((c,i) => {
-            const pct = (c/total*100).toFixed(1);
-            return `<div class="rl-zone-label" style="width:${pct}%;color:${rlZoneColors[i]}">${pct > 5 ? rlZoneLabels[i] : ''}</div>`;
-          }).join('')}
-        </div>`;
-      mount.innerHTML = barHtml;
+      const rlZoneLabels = ['Z1\nRecovery','Z2\nAerobic','Z3\nTempo','Z4\nThreshold','Z5\nMax'];
+      const pcts = counts.map(c => total > 0 ? +(c/total*100).toFixed(1) : 0);
+      new Chart(zoneCanvas, {
+        type: 'bar',
+        data: {
+          labels: ['Z1','Z2','Z3','Z4','Z5'],
+          datasets: [{
+            data: pcts,
+            backgroundColor: rlZoneColors.map(c => c + 'cc'),
+            borderColor: rlZoneColors,
+            borderWidth: 1,
+            borderRadius: 3,
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, animation: false,
+          layout: { padding: { top: 4, bottom: 0 } },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: 'rgba(15,22,32,0.88)',
+              callbacks: {
+                label: item => {
+                  const mins = Math.round(counts[item.dataIndex] / 60);
+                  return ` ${item.raw}%  (${mins}m)`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              border: { display: false },
+              ticks: {
+                color: ctx => rlZoneColors[ctx.index],
+                font: { size: 9, family: "'Geist Mono',monospace", weight: '600' }
+              }
+            },
+            y: {
+              display: false,
+              min: 0,
+              max: Math.max(...pcts) * 1.25
+            }
+          }
+        }
+      });
     }
   }
 

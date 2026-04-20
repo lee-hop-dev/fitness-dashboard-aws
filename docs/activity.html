@@ -86,93 +86,99 @@
 .rl-btn-kudos:hover { opacity:.88; }
 
 /* ═════════════════════════════════════════════════════
-   2. HERO CARDS — dark tile style
+   2. HERO CARDS — metric-card style (matches index page)
    ═════════════════════════════════════════════════════ */
 #act-hero { display:grid;grid-template-columns:repeat(5,1fr);gap:var(--rl-gap);margin-bottom:var(--rl-gap); }
 
 #act-hero .ah-cell {
-  background:#1a2233;
-  border:1px solid rgba(255,255,255,0.07);
-  border-radius:var(--rl-r);
-  padding:18px 20px 16px;
-  position:relative;overflow:hidden;
-  display:flex;flex-direction:column;
-  min-height:140px;
-  transition:border-color .15s,box-shadow .15s;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column;
+  transition: all var(--transition);
+  cursor: default;
 }
 #act-hero .ah-cell:hover {
-  border-color:rgba(255,255,255,0.14);
-  box-shadow:0 4px 24px rgba(0,0,0,0.25);
+  border-color: var(--border-bright);
+  background: var(--bg-elevated);
+  transform: translateY(-1px);
 }
-/* Accent top border — colour per metric */
+/* Accent top border per colour class */
 #act-hero .ah-cell::before {
-  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  content: ''; position: absolute;
+  top: 0; left: 0; right: 0; height: 2px;
 }
-#act-hero .ah-cell.c-accent::before { background:var(--rl-cyan); }
-#act-hero .ah-cell.c-green::before  { background:var(--rl-z3); }
-#act-hero .ah-cell.c-red::before    { background:var(--rl-hr); }
-#act-hero .ah-cell.c-yellow::before { background:var(--rl-z4); }
-#act-hero .ah-cell.c-orange::before { background:var(--rl-z4); }
-#act-hero .ah-cell.c-purple::before { background:var(--rl-cad); }
+#act-hero .ah-cell.c-accent::before { background: var(--accent); }
+#act-hero .ah-cell.c-green::before  { background: var(--green); }
+#act-hero .ah-cell.c-red::before    { background: var(--red); }
+#act-hero .ah-cell.c-yellow::before { background: var(--yellow); }
+#act-hero .ah-cell.c-orange::before { background: var(--orange); }
+#act-hero .ah-cell.c-purple::before { background: var(--purple); }
 
-/* Label row */
+/* Hover glows */
+#act-hero .ah-cell.c-accent:hover { box-shadow: var(--accent-glow); }
+#act-hero .ah-cell.c-green:hover  { box-shadow: 0 0 24px rgba(0,255,135,0.3); }
+#act-hero .ah-cell.c-red:hover    { box-shadow: 0 0 24px rgba(239,68,68,0.3); }
+#act-hero .ah-cell.c-orange:hover { box-shadow: 0 0 24px rgba(255,107,43,0.3); }
+#act-hero .ah-cell.c-purple:hover { box-shadow: 0 0 24px rgba(168,85,247,0.3); }
+
+/* Label */
 #act-hero .ah-top {
-  display:flex;align-items:center;justify-content:space-between;
-  margin-bottom:10px;
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 6px;
 }
 #act-hero .ah-lbl {
-  font-family:'Geist Mono',ui-monospace,monospace;
-  font-size:9px;letter-spacing:2.5px;text-transform:uppercase;
-  color:rgba(255,255,255,0.45);
-  display:flex;align-items:center;gap:5px;
+  font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--text-muted);
+  font-family: var(--font-mono);
 }
-#act-hero .ah-cell.c-accent .ah-lbl { color:rgba(10,180,220,0.7); }
-#act-hero .ah-cell.c-green  .ah-lbl { color:rgba(10,168,118,0.7); }
-#act-hero .ah-cell.c-red    .ah-lbl { color:rgba(215,100,100,0.7); }
-#act-hero .ah-cell.c-yellow .ah-lbl { color:rgba(217,160,6,0.7); }
-#act-hero .ah-cell.c-orange .ah-lbl { color:rgba(217,140,6,0.7); }
-#act-hero .ah-cell.c-purple .ah-lbl { color:rgba(140,100,232,0.7); }
 
-/* Delta badge */
+/* Delta */
 #act-hero .ah-delta {
-  font-family:'Geist Mono',ui-monospace,monospace;
-  font-size:9px;font-weight:600;
-  padding:2px 7px;border-radius:999px;
-  white-space:nowrap;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.5);
+  font-size: 11px; font-family: var(--font-mono);
 }
-#act-hero .ah-delta.up   { background:rgba(10,168,118,.18);color:#0aa876; }
-#act-hero .ah-delta.down { background:rgba(215,56,56,.18);  color:#d73838; }
+#act-hero .ah-delta.up   { color: var(--green); }
+#act-hero .ah-delta.down { color: var(--red); }
+#act-hero .ah-delta.neu  { color: var(--text-muted); }
 
 /* Big number */
 #act-hero .ah-num-row {
-  display:flex;align-items:baseline;gap:6px;
-  margin-bottom:6px;flex:1;
+  display: flex; align-items: baseline; gap: 5px;
+  margin-bottom: 5px;
 }
 #act-hero .ah-num {
-  font-family:'Geist Mono',ui-monospace,monospace;
-  font-variant-numeric:tabular-nums;
-  font-size:42px;font-weight:700;letter-spacing:-2px;line-height:1;
-  color:#ffffff;white-space:nowrap;
+  font-size: 34px; font-weight: 800;
+  font-family: var(--font-mono);
+  letter-spacing: -1.5px; line-height: 1;
+  color: #ffffff; white-space: nowrap;
 }
 #act-hero .ah-unit {
-  font-family:'Geist Mono',ui-monospace,monospace;
-  font-size:14px;font-weight:400;
-  color:rgba(255,255,255,0.45);
-  padding-bottom:4px;
+  font-size: 13px; font-weight: 400;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  padding-bottom: 3px;
 }
+/* Colour variants for number */
+#act-hero .ah-cell.c-accent .ah-num { color: var(--accent); }
+#act-hero .ah-cell.c-green  .ah-num { color: var(--green); }
+#act-hero .ah-cell.c-red    .ah-num { color: var(--red); }
+#act-hero .ah-cell.c-orange .ah-num { color: var(--orange); }
+#act-hero .ah-cell.c-purple .ah-num { color: var(--purple); }
+#act-hero .ah-cell.c-yellow .ah-num { color: var(--yellow); }
 
 /* Subtitle */
 #act-hero .ah-sub {
-  font-family:'Geist Mono',ui-monospace,monospace;
-  font-size:10px;color:rgba(255,255,255,0.35);
-  margin-bottom:8px;min-height:14px;
-  line-height:1.4;
+  font-size: 10px; color: var(--text-secondary);
+  font-family: var(--font-mono);
+  margin-bottom: 8px; min-height: 14px;
 }
 
 /* Sparkline */
 #act-hero .ah-spark {
-  width:100%;height:36px;display:block;margin-top:auto;
-  opacity:.7;
+  width: 100%; height: 24px; display: block;
+  margin: 8px 0 0; opacity: 0.85;
 }
 
 /* ═════════════════════════════════════════════════════
@@ -1410,12 +1416,12 @@ function buildHero(data) {
 
   // Sparkline colour map (matches card colour class)
   const sparkColors = {
-    'c-accent': { stroke:'rgba(10,200,240,0.8)',  fill:'rgba(10,200,240,0.15)' },
-    'c-green':  { stroke:'rgba(10,220,150,0.8)',  fill:'rgba(10,220,150,0.15)' },
-    'c-red':    { stroke:'rgba(240,80,80,0.8)',   fill:'rgba(240,80,80,0.12)'  },
-    'c-yellow': { stroke:'rgba(250,180,30,0.8)',  fill:'rgba(250,180,30,0.12)' },
-    'c-orange': { stroke:'rgba(250,160,30,0.8)',  fill:'rgba(250,160,30,0.12)' },
-    'c-purple': { stroke:'rgba(160,120,255,0.8)', fill:'rgba(160,120,255,0.12)' },
+    'c-accent': { stroke:'#00e5ff', fill:'rgba(0,229,255,0.12)'   },
+    'c-green':  { stroke:'#00ff87', fill:'rgba(0,255,135,0.12)'   },
+    'c-red':    { stroke:'#ef4444', fill:'rgba(239,68,68,0.10)'   },
+    'c-yellow': { stroke:'#ffd600', fill:'rgba(255,214,0,0.10)'   },
+    'c-orange': { stroke:'#ff6b2b', fill:'rgba(255,107,43,0.10)'  },
+    'c-purple': { stroke:'#a855f7', fill:'rgba(168,85,247,0.10)'  },
   };
 
   el.innerHTML = cells.map((c, idx) => {

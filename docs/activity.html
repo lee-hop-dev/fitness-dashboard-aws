@@ -295,8 +295,8 @@
   letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted);
   border-bottom: 1px solid var(--border); background: var(--bg-elevated);
 }
-.laps-head > div { white-space: nowrap; }
-.laps-head > div:not(:first-child) { text-align: right; }
+.laps-head > div { white-space: nowrap; text-align: center; }
+.laps-head > div:first-child { text-align: left; }
 .lap-row {
   display: grid; gap: 12px; align-items: center; padding: 9px 14px 9px 0;
   background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
@@ -309,7 +309,7 @@
 .lap-accent.sig     { background: var(--accent); }
 .lap-accent.sig-hot { background: var(--orange); }
 .lap-accent.sig-red { background: var(--red); }
-.lap-cell { color: var(--text-primary); text-align: right; white-space: nowrap; }
+.lap-cell { color: var(--text-primary); text-align: center; white-space: nowrap; }
 .lap-cell.first { text-align: left; font-weight: 700; }
 .lap-cell.acc   { color: var(--accent); font-weight: 700; }
 .lap-cell.grn   { color: var(--green);  font-weight: 700; }
@@ -2382,8 +2382,8 @@ function buildLaps(laps, sport, ftp, hrmax, totalWorkKj) {
     ];
   }
 
-  // Grid template: 4px accent + 1fr first col + rest auto
-  const gridTemplate = `4px 1fr ${cols.slice(1).map(() => 'auto').join(' ')}`;
+  // Grid template: 4px accent + all data cols equal 1fr
+  const gridTemplate = `4px ${cols.map(() => '1fr').join(' ')}`;
 
   // Head row — skip accent column, match data cols
   const head = document.getElementById('laps-head');

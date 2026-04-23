@@ -156,3 +156,61 @@ Console: https://eu-west-2.console.aws.amazon.com/lambda/home?region=eu-west-2#/
 - `cdk/fitness_dashboard_aws/api_stack.py` — added TriggerSyncRole, TriggerSyncFunction, GET /trigger-sync route
 - `cdk/fitness_dashboard_aws/lambda/trigger_sync/handler.py` — new Lambda
 - `cdk/fitness_dashboard_aws/lambda/sync_widget/handler.py` — button changed to plain href link
+
+## Session: 2026-04-23 — Phase 8 Chart Truncation Fix
+
+### Issue: Chart Right-Side Truncation (GitHub Issue #5)
+
+**Reported Issue:** All time-series charts on activity.html showed visible truncation on the right side with dead space. Multiple prior attempts to fix had worsened the issue.
+
+**Symptoms:**
+- Power, HR, cadence, and speed charts clipped on right edge
+- Last data points not visible
+- Inconsistent chart widths across different chart types
+- Dead space visible between chart area and container edge
+
+**Root Causes Identified:**
+
+1. **Insufficient y-axis width:** Charts were using `width = 50px` which was inadequate for 3-digit power values with 'W' suffix
+2. **Incomplete x-axis padding removal:** `afterFit` only removed `paddingRight`, leaving `paddingLeft` intact
+3. **Inconsistent axis configurations:** Different chart types had varying y-axis width settings
+4. **Scale merging logic:** The spread operator `{...baseScales,...scalesOpts}` could allow individual chart configs to override critical settings
+5. **Missing explicit padding:** Layout padding wasn't setting all four sides explicitly
+
+**Fix Applied (Commit f81ae23):**
+
+Updated `makeChart()` function in `docs/activity.html`:
+- Increased y-axis width from 50px to 56px (base configuration)
+- Added explicit tick padding control (`padding: 0` for x-axis, `padding: 4` for y-axis)
+- Enhanced `afterFit` on x-axis to remove both `paddingLeft` and `paddingRight`
+- Improved scale merging logic to preserve critical `afterFit` settings
+- Set explicit layout padding for all four sides: `{top:0, right:0, bottom:0, left:0}`
+- Applied consistent 56px y-axis width across ALL chart types:
+  * Primary trace charts (power/pace)
+  * HR trace chart
+  * Cadence/Speed charts
+  * Duration curve charts
+  * Elevation profile overlay axes (yR1, yR2, yR3, yR4)
+
+**Files Changed:**
+- `docs/activity.html` (makeChart function + 10 individual chart configurations)
+
+**Testing Required After Deploy:**
+1. Open activity.html on live URL
+2. Inspect canvas elements with DevTools
+3. Verify charts extend fully to container right edge
+4. Test cycling, running, and rowing activities
+5. Confirm uniform chart widths across all chart types
+
+**Outstanding Investigation:**
+If truncation persists after this fix, the issue is likely:
+- Container div CSS width problem (check parent element computed styles)
+- Chart.js version-specific rendering behavior
+- Browser-specific canvas rendering differences
+
+**Deploy Command:**
+```bash
+cd ~/fitness-dashboard-aws && git pull && bash scripts/deploy_frontend.sh
+```
+
+---

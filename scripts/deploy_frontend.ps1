@@ -7,6 +7,7 @@
 #   data/pace_curves_90d.json
 #   data/hr_curves_90d.json
 #   data/streams/*  (Phase 8 — per-activity stream JSON files)
+#   data/youtube_videos.json
 
 $BUCKET = "fitness-dashboard-frontend-656370357696"
 $DISTRIBUTION_ID = "E2A1SYDA1ZW3KS"
@@ -20,7 +21,8 @@ aws s3 sync $DOCS_DIR "s3://$BUCKET/" `
   --exclude "data/power_curves_90d.json" `
   --exclude "data/pace_curves_90d.json" `
   --exclude "data/hr_curves_90d.json" `
-  --exclude "data/streams/*"
+  --exclude "data/streams/*" `
+  --exclude "data/youtube_videos.json"
 
 Write-Host "Invalidating CloudFront cache ..."
 aws cloudfront create-invalidation `

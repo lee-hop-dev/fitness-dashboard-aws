@@ -954,25 +954,52 @@ function makeChart(canvasId, datasets, scalesOpts, timeArr, timeStep) {
   const baseScales = {
     x: {
       type:'linear',
-      ticks:{maxTicksLimit:6, callback:v=>fmtDuration(v), maxRotation:0},
+      ticks:{
+        maxTicksLimit:6, 
+        callback:v=>fmtDuration(v), 
+        maxRotation:0,
+        autoSkip: true,
+        padding: 0
+      },
       grid:{color:'rgba(255,255,255,0.04)'},
       border:{color:'rgba(255,255,255,0.08)'},
-      afterFit: axis => { axis.paddingRight = 0; }
+      afterFit: axis => { 
+        axis.paddingRight = 0; 
+        axis.paddingLeft = 0;
+      }
     },
     y: {
       grid:{color:'rgba(255,255,255,0.04)'},
       border:{color:'rgba(255,255,255,0.08)'},
-      ticks:{maxTicksLimit:5},
-      afterFit: axis => { axis.width = 50; }
+      ticks:{
+        maxTicksLimit:5,
+        padding: 4
+      },
+      afterFit: axis => { 
+        // Fix y-axis width to prevent layout shifts
+        axis.width = 56; 
+      }
     }
   };
+  
+  // Merge scales, ensuring no hidden axes exist
+  const mergedScales = {...baseScales};
+  if (scalesOpts) {
+    Object.keys(scalesOpts).forEach(key => {
+      if (scalesOpts[key]) {
+        mergedScales[key] = {...baseScales[key], ...scalesOpts[key]};
+      }
+    });
+  }
+  
   const chart = new Chart(ctx, {
     type:'line',
     data:{datasets},
     options:{
-      responsive:true, maintainAspectRatio:false,
+      responsive:true, 
+      maintainAspectRatio:false,
       animation:false,
-      layout:{padding:{right:0,left:0}},
+      layout:{padding:{top:0, right:0, bottom:0, left:0}},
       interaction:{mode:'index',intersect:false},
       plugins:{
         legend:{display:false},
@@ -985,7 +1012,7 @@ function makeChart(canvasId, datasets, scalesOpts, timeArr, timeStep) {
           }
         }
       },
-      scales:{...baseScales,...scalesOpts},
+      scales:mergedScales,
       onHover(e,els) {
         if(!els.length) return;
         const sec = timeArr?.[els[0].index] ?? els[0].element.x;
@@ -1627,21 +1654,21 @@ function buildElevationChart(data, ftp, hrmax) {
       yElev:{position:'left',min:elevYMin,grid:{color:'rgba(20,20,20,0.07)'},
         border:{color:'rgba(20,20,20,0.1)'},
         ticks:{maxTicksLimit:4,callback:v=>Math.round(v)+'m',color:'rgba(80,95,110,0.8)'},
-        afterFit: axis => { axis.width = 50; }}
+        afterFit: axis => { axis.width = 56; }}
     };
     if(active['power']) sc.yR1={position:'right',grid:{display:false},border:{display:false},
       ticks:{maxTicksLimit:4,color:'var(--accent)',callback:v=>Math.round(v)+'W'},
-      afterFit: axis => { axis.width = 50; }};
+      afterFit: axis => { axis.width = 56; }};
     if(active['hr'])    sc.yR2={position:'right',grid:{display:false},border:{display:false},
       ticks:{maxTicksLimit:4,color:'var(--red)',callback:v=>Math.round(v)},
-      afterFit: axis => { axis.width = 50; }};
+      afterFit: axis => { axis.width = 56; }};
     if(active['cad'])   sc.yR3={position:'right',grid:{display:false},border:{display:false},
       ticks:{maxTicksLimit:4,color:'var(--purple)',callback:v=>Math.round(v)},
-      afterFit: axis => { axis.width = 50; }};
+      afterFit: axis => { axis.width = 56; }};
     if(active['pace'])  sc.yR4={position:'right',reverse:isRun,grid:{display:false},border:{display:false},
       ticks:{maxTicksLimit:4,color:'var(--orange)',
         callback:v=>isRun?`${Math.floor(v)}:${String(Math.round((v%1)*60)).padStart(2,'0')}`:v.toFixed(0)+' km/h'},
-      afterFit: axis => { axis.width = 50; }};
+      afterFit: axis => { axis.width = 56; }};
     return sc;
   }
 
@@ -1759,7 +1786,7 @@ async function buildPrimaryTrace(data, ftp, hrmax) {
           maxTicksLimit: 5, color: '#0aa876',
           callback: v => `${Math.floor(v)}:${String(Math.round((v%1)*60)).padStart(2,'0')}`
         },
-        afterFit: axis => { axis.width = 50; }
+        afterFit: axis => { axis.width = 56; }
       }
     }, time);
     if (chart && hLines.length) {
@@ -1813,7 +1840,7 @@ async function buildPrimaryTrace(data, ftp, hrmax) {
         grid: { color: 'rgba(255,255,255,0.04)' },
         border: { color: 'rgba(255,255,255,0.08)' },
         ticks: { maxTicksLimit: 5, color: '#00e5ff', callback: v => Math.round(v) + 'W' },
-        afterFit: axis => { axis.width = 50; }
+        afterFit: axis => { axis.width = 56; }
       }
     }, time);
     if (chart && hLines.length) {
@@ -2039,7 +2066,7 @@ async function buildDurationCurve(canvasId, type, rawStream, ref, unit, tickFmt,
           grid: { color: 'rgba(255,255,255,0.04)' },
           border: { color: 'rgba(255,255,255,0.08)' },
           ticks: { maxTicksLimit: 5, color: colour, callback: tickFmt },
-          afterFit: axis => { axis.width = 50; }
+          afterFit: axis => { axis.width = 56; }
         }
       }
     }
@@ -2214,7 +2241,7 @@ function buildCadenceSpeed(data) {
         grid: { color: 'rgba(255,255,255,0.04)' },
         border: { color: 'rgba(255,255,255,0.08)' },
         ticks: { maxTicksLimit: 5, color: '#a78bfa', callback: v => Math.round(v) },
-        afterFit: axis => { axis.width = 50; }
+        afterFit: axis => { axis.width = 56; }
       }
     }, dec.time);
 
@@ -2255,7 +2282,7 @@ function buildCadenceSpeed(data) {
         ticks: { maxTicksLimit: 5, color: '#fbbf24', callback: v => v.toFixed(0) + ' km/h' },
         grid: { color: 'rgba(255,255,255,0.04)' },
         border: { color: 'rgba(255,255,255,0.08)' },
-        afterFit: axis => { axis.width = 50; }
+        afterFit: axis => { axis.width = 56; }
       }
     }, dec.time);
 

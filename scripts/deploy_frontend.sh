@@ -1,15 +1,11 @@
 #!/bin/bash
 # Deploy frontend to S3 and invalidate CloudFront cache.
 #
-# IMPORTANT: Lambda-managed files (written by fitness-dashboard-data-collector):
-#   - data/segments.json
-#   - data/power_curves_90d.json
-#   - data/pace_curves_90d.json
-#   - data/hr_curves_90d.json
-#   - data/streams/*
-#   - data/youtube_videos.json
-# These files must NEVER be overwritten by this sync or they will revert
-# to empty/stale repo versions.
+# IMPORTANT: data/segments.json, data/power_curves_90d.json,
+# data/pace_curves_90d.json and data/hr_curves_90d.json are written
+# by the Lambda collector on every run. They must NEVER be overwritten
+# by this sync or segments and curves will revert to the empty/stale
+# repo versions.
 
 set -e
 
@@ -27,8 +23,7 @@ aws s3 sync "$DOCS_DIR/" "s3://$BUCKET/" \
   --exclude "data/power_curves_90d.json" \
   --exclude "data/pace_curves_90d.json" \
   --exclude "data/hr_curves_90d.json" \
-  --exclude "data/streams/*" \
-  --exclude "data/youtube_videos.json"
+  --exclude "data/streams/*"
 
 echo "Invalidating CloudFront cache ..."
 aws cloudfront create-invalidation \

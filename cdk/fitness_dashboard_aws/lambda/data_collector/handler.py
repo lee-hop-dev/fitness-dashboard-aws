@@ -970,117 +970,6 @@ def sync_streams_14d(api_key: str, access_token: str) -> dict:
     return results
 
 
-def sync_youtube_videos() -> dict:
-    """
-    Fetch latest videos from @lh_cymru YouTube channel using YouTube Data API v3.
-    Writes to S3: data/youtube_videos.json
-    
-    Returns dict with synced video count and channel info.
-    """
-    if not FRONTEND_BUCKET:
-        logger.warning("FRONTEND_BUCKET not set — YouTube videos not written to S3")
-        return {"error": "FRONTEND_BUCKET not set"}
-    
-    try:
-        # Get YouTube API key from Secrets Manager
-        response = secrets_client.get_secret_value(
-            SecretId="fitness-dashboard/youtube-api-key"
-        )
-        youtube_key = response["SecretString"]
-        
-        # Channel handle (without @)
-        handle = "lh_cymru"
-        
-        # Step 1: Resolve channel ID from handle using forHandle parameter
-        # YouTube Data API v3 channels endpoint supports forHandle lookup
-        channel_url = (
-            f"https://www.googleapis.com/youtube/v3/channels"
-            f"?part=snippet,contentDetails"
-            f"&forHandle={handle}"
-            f"&key={youtube_key}"
-        )
-        
-        req = urllib.request.Request(channel_url)
-        with urllib.request.urlopen(req) as resp:
-            channel_data = json.loads(resp.read().decode())
-        
-        if not channel_data.get("items"):
-            logger.error(f"Channel @{handle} not found")
-            return {"error": f"Channel @{handle} not found"}
-        
-        channel_item = channel_data["items"][0]
-        channel_id = channel_item["id"]
-        channel_title = channel_item["snippet"]["title"]
-        uploads_playlist_id = channel_item["contentDetails"]["relatedPlaylists"]["uploads"]
-        
-        logger.info(f"Found channel: {channel_title} (ID: {channel_id})")
-        
-        # Step 2: Fetch recent videos from the uploads playlist
-        # This is more reliable than search for getting all uploads in order
-        playlist_url = (
-            f"https://www.googleapis.com/youtube/v3/playlistItems"
-            f"?part=snippet,contentDetails"
-            f"&playlistId={uploads_playlist_id}"
-            f"&maxResults=10"
-            f"&key={youtube_key}"
-        )
-        
-        req = urllib.request.Request(playlist_url)
-        with urllib.request.urlopen(req) as resp:
-            playlist_data = json.loads(resp.read().decode())
-        
-        # Transform to simplified structure
-        videos = []
-        for item in playlist_data.get("items", []):
-            snippet = item["snippet"]
-            video_id = snippet["resourceId"]["videoId"]
-            
-            # Get the best available thumbnail (high > medium > default)
-            thumbnails = snippet.get("thumbnails", {})
-            thumbnail_url = (
-                thumbnails.get("high", {}).get("url") or
-                thumbnails.get("medium", {}).get("url") or
-                thumbnails.get("default", {}).get("url") or
-                ""
-            )
-            
-            videos.append({
-                "video_id": video_id,
-                "title": snippet["title"],
-                "description": snippet.get("description", ""),
-                "thumbnail": thumbnail_url,
-                "published_at": snippet["publishedAt"],
-                "url": f"https://www.youtube.com/watch?v={video_id}",
-            })
-        
-        # Write to S3
-        payload = {
-            "channel_handle": f"@{handle}",
-            "channel_id": channel_id,
-            "channel_title": channel_title,
-            "synced_at": datetime.now(timezone.utc).isoformat(),
-            "video_count": len(videos),
-            "videos": videos,
-        }
-        
-        s3_client.put_object(
-            Bucket=FRONTEND_BUCKET,
-            Key="data/youtube_videos.json",
-            Body=json.dumps(payload, indent=2),
-            ContentType="application/json",
-        )
-        
-        logger.info(f"Synced {len(videos)} YouTube videos from @{handle}")
-        return {
-            "synced": len(videos),
-            "channel": channel_title,
-        }
-        
-    except Exception as e:
-        logger.error(f"YouTube sync failed: {e}")
-        return {"error": str(e)}
-
-
 # ── Handler ───────────────────────────────────────────────────────────────────
 
 def handler(event, context):
@@ -1197,14 +1086,6 @@ def handler(event, context):
     except Exception as e:
         logger.error(f"Streams sync failed: {e}")
         results["streams_error"] = str(e)
-
-    # ── YouTube videos (latest from @lh_cymru) ────────────────────────────────
-    try:
-        youtube_result = sync_youtube_videos()
-        results["youtube"] = youtube_result
-    except Exception as e:
-        logger.error(f"YouTube sync failed: {e}")
-        results["youtube_error"] = str(e)
 
     logger.info(f"Sync complete: {json.dumps(results)}")
     return {"statusCode": 200, "body": json.dumps(results)}

@@ -992,7 +992,7 @@ def sync_upcoming_events(api_key: str) -> dict:
     logger.info(f"Fetching events from {oldest} to {newest}")
     
     # Call Intervals.icu events API
-    url = f"{INTERVALS_BASE_URL}/athlete/i{ATHLETE_ID}/events?oldest={oldest}&newest={newest}"
+    url = f"{INTERVALS_BASE_URL}/athlete/{ATHLETE_ID}/events?oldest={oldest}&newest={newest}"
     req = urllib.request.Request(url)
     auth_str = f"API_KEY:{api_key}"
     b64 = base64.b64encode(auth_str.encode()).decode()

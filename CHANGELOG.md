@@ -214,3 +214,53 @@ cd ~/fitness-dashboard-aws && git pull && bash scripts/deploy_frontend.sh
 ```
 
 ---
+
+## Session: 2026-04-23 — GitHub Issue #5: Upcoming Events Sync
+
+### Issue: Upcoming Events Showing Stale Past Events
+
+**Reported Issue:** Frontend displays March/April 2026 events in "Upcoming Events" section, all of which are in the past (current date: April 23, 2026).
+
+**Symptoms:**
+- `data/upcoming_events.json` contains events from March 31 - April 14, 2026
+- All events shown as "upcoming" are actually past events
+- Calendar view shows no future events despite having scheduled workouts
+
+**Root Cause:**
+V2 AWS migration never ported the upcoming events sync from V1. The `upcoming_events.json` file in the repository is static data from the old V1 system. The Lambda data collector had no function to fetch fresh upcoming events from Intervals.icu.
+
+**Fix Applied (Commit c131e4c):**
+
+Added `sync_upcoming_events()` function to Lambda handler:
+- Fetches events from Intervals.icu `/athlete/i5718022/events` API endpoint
+- Date range: today + 14 days (rolling window)
+- Writes to S3 `data/upcoming_events.json` (replaces stale static file)
+- Runs automatically every day at 06:00 UTC alongside other sync functions
+- Returns: `{"count": N, "date_range": "YYYY-MM-DD to YYYY-MM-DD", "s3_write": True}`
+
+Updated deploy script exclusions:
+- Added `--exclude "data/upcoming_events.json"` to `scripts/deploy_frontend.sh`
+- Prevents frontend deploys from overwriting Lambda-managed file
+- Consistent with existing exclusions for segments, curves, and streams
+
+**Files Changed:**
+- `cdk/fitness_dashboard_aws/lambda/data_collector/handler.py` (added function + handler call)
+- `scripts/deploy_frontend.sh` (added exclusion)
+
+**Testing Required After Deploy:**
+1. Deploy Lambda: `cd cdk && cdk deploy FitnessDashboardCollector --require-approval never --exclusively`
+2. Trigger manually: `aws lambda invoke --function-name fitness-dashboard-data-collector --payload '{}' --cli-binary-format raw-in-base64-out response.json`
+3. Check logs: `aws logs tail /aws/lambda/fitness-dashboard-data-collector --since 5m | grep "upcoming"`
+4. Verify S3 file: `aws s3 cp s3://fitness-dashboard-frontend-656370357696/data/upcoming_events.json - | jq '.[0] | {name, start_date_local}'`
+5. Expected: Events from April 23, 2026 → May 7, 2026 (today + 14 days)
+6. Verify frontend displays future events, not past events
+
+**Deploy Command:**
+```bash
+cd ~/fitness-dashboard-aws && git pull
+export PATH=~/cdk-local/node_modules/.bin:$PATH
+cd cdk
+cdk deploy FitnessDashboardCollector --require-approval never --exclusively
+```
+
+---

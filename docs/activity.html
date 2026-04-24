@@ -320,6 +320,86 @@
 .lap-bar-fill.red { background: var(--red);    opacity: .65; }
 .lap-bar-fill.grn { background: var(--green);  opacity: .55; }
 
+/* ── LAP BAR CHART ──────────────────────────────────────────── */
+.lap-chart-wrapper {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px 10px;
+  margin-bottom: 12px;
+  position: relative;
+}
+.lap-bars-container {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 120px;
+  padding: 0 2px 20px;
+  position: relative;
+}
+.lap-bar {
+  flex: 1;
+  background: #8b5cf6;
+  border-radius: 2px 2px 0 0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+  min-width: 8px;
+}
+.lap-bar.rest {
+  background: #6b7280;
+  opacity: 0.6;
+}
+.lap-bar:hover {
+  opacity: 0.85;
+  transform: scaleY(1.02);
+}
+.lap-bar.active {
+  background: var(--accent);
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.4);
+}
+.lap-time-label {
+  position: absolute;
+  bottom: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.lap-tooltip {
+  position: absolute;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-primary);
+  pointer-events: none;
+  z-index: 100;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  display: none;
+}
+.lap-tooltip.visible {
+  display: block;
+}
+.lap-tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 2px 0;
+}
+.lap-tooltip-label {
+  color: var(--text-muted);
+}
+.lap-tooltip-value {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
 /* ── SEGMENTS + LAPS WRAPPERS ──────────────────────────────── */
 .rl-segments-row { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 18px; }
 .rl-seg-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
@@ -674,6 +754,10 @@
               </div>
             </div>
             <div class="laps-head" id="laps-head"></div>
+          </div>
+          <div class="lap-chart-wrapper" id="lap-chart-wrapper">
+            <div class="lap-bars-container" id="lap-bars"></div>
+            <div class="lap-tooltip" id="lap-tooltip"></div>
           </div>
           <div class="laps-list" id="laps-list"></div>
         </div>
@@ -2369,6 +2453,143 @@ function buildSegments(segments) {
    Inline mini-bar shows avg power (cycling) / avg pace (running) as
    a fraction of the activity's max lap value. Crosshair sync on click.
    ─────────────────────────────────────────────────────────── */
+/* ── LAP BAR CHART ── */
+function buildLapChart(laps, sport) {
+  const container = document.getElementById('lap-bars');
+  const tooltip = document.getElementById('lap-tooltip');
+  const wrapper = document.getElementById('lap-chart-wrapper');
+  
+  if (!laps?.length) {
+    wrapper.style.display = 'none';
+    return;
+  }
+
+  const isCyc = isCycling(sport);
+  const isRun = isRunning(sport);
+  
+  // Determine primary metric for bar height
+  let primaryMetric = 'avg_watts'; // default for cycling/rowing
+  if (isRun) primaryMetric = 'avg_speed';
+  
+  // Calculate max value for scaling
+  const maxValue = Math.max(...laps.map(l => +l[primaryMetric] || 0));
+  if (maxValue === 0) {
+    wrapper.style.display = 'none';
+    return;
+  }
+  
+  // Cumulative time for x-axis labels
+  let cumulativeTime = 0;
+  const timeLabels = [];
+  
+  container.innerHTML = laps.map((lap, i) => {
+    const value = +lap[primaryMetric] || 0;
+    const heightPct = (value / maxValue) * 100;
+    
+    // Determine if this is a rest/recovery lap
+    const isRest = isCyc ? (value < maxValue * 0.3) : (value < maxValue * 0.5);
+    const barClass = isRest ? 'lap-bar rest' : 'lap-bar';
+    
+    // Format cumulative time for label
+    const mins = Math.floor(cumulativeTime / 60);
+    const secs = cumulativeTime % 60;
+    const timeLabel = `${mins}:${secs.toString().padStart(2, '0')}`;
+    timeLabels.push(timeLabel);
+    
+    // Update cumulative for next lap
+    cumulativeTime += lap.elapsed_s || 0;
+    
+    // Show label on select laps (every 3rd lap, or if total < 10 show more)
+    const showLabel = laps.length <= 10 ? (i % 2 === 0) : (i % 3 === 0);
+    
+    return `<div class="${barClass}" 
+                 style="height: ${heightPct}%"
+                 data-lap="${lap.lap}"
+                 data-idx="${i}">
+              ${showLabel ? `<div class="lap-time-label">${timeLabel}</div>` : ''}
+            </div>`;
+  }).join('');
+  
+  // Add hover interactions
+  const bars = container.querySelectorAll('.lap-bar');
+  bars.forEach((bar, i) => {
+    const lap = laps[i];
+    
+    bar.addEventListener('mouseenter', (e) => {
+      // Build tooltip content based on sport
+      let tooltipHtml = `<div class="lap-tooltip-row">
+        <span class="lap-tooltip-label">Lap ${lap.lap}</span>
+        <span class="lap-tooltip-value">${fmtDuration(lap.elapsed_s)}</span>
+      </div>`;
+      
+      if (isCyc) {
+        tooltipHtml += `<div class="lap-tooltip-row">
+          <span class="lap-tooltip-label">Avg Power</span>
+          <span class="lap-tooltip-value">${Math.round(lap.avg_watts || 0)}W</span>
+        </div>`;
+        if (lap.avg_speed) {
+          tooltipHtml += `<div class="lap-tooltip-row">
+            <span class="lap-tooltip-label">Avg Speed</span>
+            <span class="lap-tooltip-value">${(lap.avg_speed * 3.6).toFixed(1)} km/h</span>
+          </div>`;
+        }
+      } else if (isRun) {
+        tooltipHtml += `<div class="lap-tooltip-row">
+          <span class="lap-tooltip-label">Avg Pace</span>
+          <span class="lap-tooltip-value">${fmtPace(lap.avg_speed)}</span>
+        </div>`;
+      } else {
+        tooltipHtml += `<div class="lap-tooltip-row">
+          <span class="lap-tooltip-label">Avg Power</span>
+          <span class="lap-tooltip-value">${Math.round(lap.avg_watts || 0)}W</span>
+        </div>`;
+      }
+      
+      tooltipHtml += `<div class="lap-tooltip-row">
+        <span class="lap-tooltip-label">Avg HR</span>
+        <span class="lap-tooltip-value">${Math.round(lap.avg_hr || 0)} bpm</span>
+      </div>`;
+      
+      if (lap.distance_m) {
+        tooltipHtml += `<div class="lap-tooltip-row">
+          <span class="lap-tooltip-label">Distance</span>
+          <span class="lap-tooltip-value">${fmtDist(lap.distance_m)}</span>
+        </div>`;
+      }
+      
+      tooltip.innerHTML = tooltipHtml;
+      tooltip.classList.add('visible');
+      
+      // Position tooltip
+      const barRect = bar.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+      tooltip.style.left = `${barRect.left - containerRect.left + barRect.width / 2}px`;
+      tooltip.style.top = `${barRect.top - containerRect.top - 10}px`;
+      tooltip.style.transform = 'translate(-50%, -100%)';
+      
+      // Highlight bar
+      bar.classList.add('active');
+      
+      // Dispatch crosshair event
+      if (_lapStartSec[i] !== undefined) {
+        dispatchCrosshair(_lapStartSec[i]);
+      }
+    });
+    
+    bar.addEventListener('mouseleave', () => {
+      tooltip.classList.remove('visible');
+      bar.classList.remove('active');
+    });
+    
+    // Click to lock crosshair
+    bar.addEventListener('click', () => {
+      if (_lapStartSec[i] !== undefined) {
+        dispatchCrosshair(_lapStartSec[i]);
+      }
+    });
+  });
+}
+
 function buildLaps(laps, sport, ftp, hrmax, totalWorkKj) {
   if (!laps?.length) {
     document.getElementById('laps-section').style.display = 'none';
@@ -2533,6 +2754,7 @@ async function init() {
   buildSegments(data.segments);
   {
     const totalWorkKj = data.icu_joules != null ? data.icu_joules / 1000 : null;
+    buildLapChart(data.laps, sport);
     buildLaps(data.laps, sport, ftp, hrmax, totalWorkKj);
   }
 

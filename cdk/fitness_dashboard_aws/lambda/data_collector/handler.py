@@ -972,6 +972,65 @@ def sync_streams_14d(api_key: str, access_token: str) -> dict:
 
 # ── Handler ───────────────────────────────────────────────────────────────────
 
+
+
+def sync_upcoming_events(api_key: str) -> dict:
+    """
+    Fetch upcoming calendar events from Intervals.icu and write to S3.
+    Fetches events from today to 14 days ahead.
+    Includes workouts, races, notes — anything on the athlete's calendar.
+    
+    Returns: {"count": N, "date_range": "YYYY-MM-DD to YYYY-MM-DD"}
+    """
+    logger.info("=== Syncing Upcoming Calendar Events ===")
+    
+    # Date range: today to 14 days ahead
+    today = datetime.now(timezone.utc)
+    oldest = today.strftime('%Y-%m-%d')
+    newest = (today + timedelta(days=14)).strftime('%Y-%m-%d')
+    
+    logger.info(f"Fetching events from {oldest} to {newest}")
+    
+    # Call Intervals.icu events API
+    url = f"{INTERVALS_BASE_URL}/athlete/i{ATHLETE_ID}/events?oldest={oldest}&newest={newest}"
+    req = urllib.request.Request(url)
+    auth_str = f"API_KEY:{api_key}"
+    b64 = base64.b64encode(auth_str.encode()).decode()
+    req.add_header("Authorization", f"Basic {b64}")
+    
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            events = json.loads(resp.read().decode())
+            logger.info(f"Got {len(events)} calendar events")
+            
+            # Write to S3
+            if not FRONTEND_BUCKET:
+                logger.warning("FRONTEND_BUCKET not set, skipping S3 write")
+                return {"count": len(events), "date_range": f"{oldest} to {newest}", "s3_write": False}
+            
+            s3_client.put_object(
+                Bucket=FRONTEND_BUCKET,
+                Key="data/upcoming_events.json",
+                Body=json.dumps(events, indent=2),
+                ContentType="application/json"
+            )
+            logger.info(f"Wrote {len(events)} events to S3: data/upcoming_events.json")
+            
+            return {
+                "count": len(events),
+                "date_range": f"{oldest} to {newest}",
+                "s3_write": True
+            }
+    
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode() if e.fp else ""
+        logger.error(f"HTTP {e.code} fetching events: {error_body}")
+        raise
+    except Exception as e:
+        logger.error(f"Failed to fetch upcoming events: {e}")
+        raise
+
+
 def handler(event, context):
     """
     Main Lambda handler.
@@ -1086,6 +1145,14 @@ def handler(event, context):
     except Exception as e:
         logger.error(f"Streams sync failed: {e}")
         results["streams_error"] = str(e)
+
+    # ── Upcoming Events Sync (today + 14 days) ───────────────────────────────
+    try:
+        events_result = sync_upcoming_events(api_key)
+        results["upcoming_events"] = events_result
+    except Exception as e:
+        logger.error(f"Upcoming events sync failed: {e}")
+        results["upcoming_events_error"] = str(e)
 
     logger.info(f"Sync complete: {json.dumps(results)}")
     return {"statusCode": 200, "body": json.dumps(results)}

@@ -1,11 +1,15 @@
 #!/bin/bash
 # Deploy frontend to S3 and invalidate CloudFront cache.
 #
-# IMPORTANT: data/segments.json, data/power_curves_90d.json,
-# data/pace_curves_90d.json and data/hr_curves_90d.json are written
-# by the Lambda collector on every run. They must NEVER be overwritten
-# by this sync or segments and curves will revert to the empty/stale
-# repo versions.
+# IMPORTANT: The following files are written by the Lambda collector
+# on every run. They must NEVER be overwritten by this sync or they
+# will revert to the empty/stale repo versions:
+#   - data/segments.json
+#   - data/power_curves_90d.json
+#   - data/pace_curves_90d.json
+#   - data/hr_curves_90d.json
+#   - data/upcoming_events.json
+#   - data/streams/*
 
 set -e
 
@@ -23,6 +27,7 @@ aws s3 sync "$DOCS_DIR/" "s3://$BUCKET/" \
   --exclude "data/power_curves_90d.json" \
   --exclude "data/pace_curves_90d.json" \
   --exclude "data/hr_curves_90d.json" \
+  --exclude "data/upcoming_events.json" \
   --exclude "data/streams/*"
 
 echo "Invalidating CloudFront cache ..."

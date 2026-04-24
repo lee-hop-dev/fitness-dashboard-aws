@@ -264,3 +264,76 @@ cdk deploy FitnessDashboardCollector --require-approval never --exclusively
 ```
 
 ---
+
+## Session: 2026-04-24 — GitHub Issue #5 Resolution Complete
+
+### Issue #5: Upcoming Events Not Displaying (RESOLVED)
+
+**Final Status:** ✅ FULLY RESOLVED
+
+**Problem Summary:**
+Frontend displayed "0 events" despite having upcoming events scheduled in Intervals.icu. Root cause was three-fold:
+1. V2 Lambda never had upcoming events sync (not ported from V1)
+2. Wrong API endpoint URL (double 'i' prefix causing 403)
+3. Browser caching preventing fresh data display
+
+**Resolution Timeline:**
+
+**Commit c131e4c** - Initial implementation
+- Added `sync_upcoming_events()` function to Lambda handler
+- Fetches events from Intervals.icu for today + 14 days
+- Writes to S3 `data/upcoming_events.json`
+- Added to deploy script exclusions
+- **Bug:** Used `/athlete/i5718022/events` instead of `/athlete/5718022/events`
+
+**Commit a35a67a** - Documentation
+- Added comprehensive CHANGELOG entry with root cause analysis
+
+**Commit 5b58a93** - API endpoint fix
+- Fixed double 'i' prefix bug in events API URL
+- Changed from `/athlete/i{ATHLETE_ID}/events` to `/athlete/{ATHLETE_ID}/events`
+- ATHLETE_ID constant is already `"5718022"` (numeric only, no prefix)
+- Resolved 403 Forbidden error
+
+**Commit 217b15a** - Browser cache fix
+- Added `{ cache: 'no-cache' }` to both `fetch('data/upcoming_events.json')` calls
+- Frontend was caching old March/April stale data
+- CloudFront served fresh data but browser wouldn't fetch it
+
+**Verification Steps Completed:**
+1. ✅ Lambda deployed with corrected endpoint
+2. ✅ Manual invocation successful: `{"count": 8, "date_range": "2026-04-24 to 2026-05-08", "s3_write": true}`
+3. ✅ S3 file updated with fresh events (April 25 - May 8, 2026)
+4. ✅ CloudFront invalidation completed
+5. ✅ Frontend displays 4 events within 7-day window:
+   - April 25: Z2 Easy Ride — 45min pre-Liege
+   - April 26: ECRO: Liege Monument
+   - April 28: ZRL R4-4: Double Span Points
+   - April 30: Group Run — steady Z2/Z3, optional quality
+6. ✅ Calendar view shows upcoming events on correct dates
+7. ✅ Auto-sync scheduled for daily 06:00 UTC via EventBridge
+
+**Technical Details:**
+- Intervals.icu API endpoint: `GET /athlete/5718022/events?oldest=YYYY-MM-DD&newest=YYYY-MM-DD`
+- Authentication: HTTP Basic Auth with `API_KEY:{secret}` from Secrets Manager
+- Data format: JSON array of event objects from Intervals.icu calendar
+- Frontend filter: Shows events within next 7 days only (configurable in code)
+- S3 file: `data/upcoming_events.json` (Lambda-managed, excluded from deploys)
+- Cache strategy: `no-cache` on frontend, CloudFront caches with invalidation on sync
+
+**Lessons Learned:**
+1. Always verify API endpoints match V1 working implementation
+2. ATHLETE_ID constant usage: numeric `"5718022"` for most endpoints, `"i5718022"` only for activity-specific calls
+3. Browser caching requires explicit `cache: 'no-cache'` for frequently-updated JSON files
+4. CloudFront invalidation alone insufficient if browser has cached response
+5. Testing sequence: Lambda → S3 → CloudFront → Browser (each layer can cache)
+
+**Files Modified:**
+- `cdk/fitness_dashboard_aws/lambda/data_collector/handler.py` - Added sync function
+- `scripts/deploy_frontend.sh` - Added exclusion for upcoming_events.json
+- `docs/index.html` - Added cache-busting to fetch calls
+- `CHANGELOG.md` - Documentation
+
+**Issue Status:** CLOSED ✅
+
+---

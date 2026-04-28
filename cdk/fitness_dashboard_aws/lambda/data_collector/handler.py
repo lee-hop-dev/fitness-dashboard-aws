@@ -150,6 +150,7 @@ def intervals_get(path: str, api_key: str, params: dict = None) -> dict | list:
         headers={
             "Authorization": f"Basic {credentials}",
             "Accept": "application/json",
+            "User-Agent": "FitnessDashboard/2.0 (AWS Lambda Data Collector)",
         },
     )
     with urllib.request.urlopen(req) as response:
@@ -418,7 +419,10 @@ def strava_get_access_token(creds: dict) -> str:
         "https://www.strava.com/oauth/token",
         data=data,
         method="POST",
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        headers={
+            "Content-Type": "application/x-www-form-urlencoded",
+            "User-Agent": "FitnessDashboard/2.0 (AWS Lambda Data Collector)",
+        },
     )
     with urllib.request.urlopen(req) as resp:
         return json.loads(resp.read().decode())["access_token"]
@@ -434,7 +438,10 @@ def strava_get(endpoint: str, access_token: str, params: dict = None) -> dict | 
             time.sleep(0.3)  # respect Strava rate limits
             req = urllib.request.Request(
                 url,
-                headers={"Authorization": f"Bearer {access_token}"},
+                headers={
+                    "Authorization": f"Bearer {access_token}",
+                    "User-Agent": "FitnessDashboard/2.0 (AWS Lambda Data Collector)",
+                },
             )
             with urllib.request.urlopen(req) as resp:
                 return json.loads(resp.read().decode())
@@ -997,6 +1004,7 @@ def sync_upcoming_events(api_key: str) -> dict:
     auth_str = f"API_KEY:{api_key}"
     b64 = base64.b64encode(auth_str.encode()).decode()
     req.add_header("Authorization", f"Basic {b64}")
+    req.add_header("User-Agent", "FitnessDashboard/2.0 (AWS Lambda Data Collector)")
     
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:

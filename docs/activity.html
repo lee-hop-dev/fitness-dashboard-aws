@@ -1264,6 +1264,19 @@ function initMap(latlng, powerArr, hrArr, sport, ftp, hrmax) {
   }
 }
 
+/* ── SPARKLINE TOOLTIP HELPER ──────────────────────────────── */
+function getSparklineTooltip(sparkKey) {
+  const tooltips = {
+    'velocity_smooth': 'Speed over time during activity',
+    'distance': 'Cumulative distance progression',
+    'altitude': 'Elevation profile throughout activity',
+    'watts': 'Power output over time',
+    'heartrate': 'Heart rate over time',
+    'cadence': 'Cadence (RPM/SPM) over time'
+  };
+  return tooltips[sparkKey] || 'Activity data over time';
+}
+
 /* ═══════════════════════════════════════════════════════════
    HERO STRIP BUILDER — 6-cell Cockpit telemetry row
    Reads Intervals pre-calculated values. Sport-dispatched.
@@ -1457,7 +1470,7 @@ function buildHero(data) {
           ${c.unit ? `<span class="ah-unit">${c.unit}</span>` : ''}
         </div>
         <div class="ah-sub">${c.sub || ''}</div>
-        ${c.sparkKey && s[c.sparkKey]?.length ? `<canvas class="ah-spark" id="ah-spark-${idx}"></canvas>` : '<div class="ah-spark"></div>'}
+        ${c.sparkKey && s[c.sparkKey]?.length ? `<canvas class="ah-spark" id="ah-spark-${idx}" title="${getSparklineTooltip(c.sparkKey)}"></canvas>` : '<div class="ah-spark"></div>'}
       </div>`;
   }).join('');
 
@@ -1559,6 +1572,12 @@ function buildWorkoutStats(data, _ftp) {
     if (data.icu_joules != null) {
       push(Math.round(data.icu_joules / 1000) + ' kJ', 'Total Work', 'orange');
     }
+    if (data.average_heartrate != null) {
+      push(Math.round(data.average_heartrate) + ' bpm', 'Avg Heart Rate', 'red');
+    }
+    if (data.max_heartrate != null) {
+      push(Math.round(data.max_heartrate) + ' bpm', 'Max Heart Rate', 'red');
+    }
     if (data.decoupling != null) {
       const d = +data.decoupling;
       push((d >= 0 ? '+' : '') + d.toFixed(1) + '%', 'Pwr:HR Decoup.',
@@ -1570,15 +1589,18 @@ function buildWorkoutStats(data, _ftp) {
     if (data.icu_w_prime != null) {
       push((data.icu_w_prime / 1000).toFixed(1) + ' kJ', "W' Balance", 'accent');
     }
-    if (data.average_heartrate != null) {
-      push(Math.round(data.average_heartrate) + ' bpm', 'Avg Heart Rate', 'red');
-    }
   } else if (isRunning(sport)) {
     if (data.icu_intensity != null) {
       push((data.icu_intensity / 100).toFixed(2), 'Intensity Factor', 'yellow');
     }
     if (data.icu_training_load != null && data.icu_training_load > 0) {
       push(Math.round(data.icu_training_load), 'TSS', 'orange');
+    }
+    if (data.average_heartrate != null) {
+      push(Math.round(data.average_heartrate) + ' bpm', 'Avg Heart Rate', 'red');
+    }
+    if (data.max_heartrate != null) {
+      push(Math.round(data.max_heartrate) + ' bpm', 'Max Heart Rate', 'red');
     }
     if (data.total_elevation_gain != null && data.total_elevation_gain > 0) {
       push(Math.round(data.total_elevation_gain) + ' m', 'Elev Gain', 'green');
@@ -1599,9 +1621,6 @@ function buildWorkoutStats(data, _ftp) {
     }
     if (data.polarization_index != null && +data.polarization_index > 0) {
       push((+data.polarization_index).toFixed(1), 'Polarization Idx');
-    }
-    if (data.average_heartrate != null) {
-      push(Math.round(data.average_heartrate) + ' bpm', 'Avg Heart Rate', 'red');
     }
   } else if (isRowing(sport)) {
     if (data.icu_average_watts != null) {
@@ -1732,12 +1751,12 @@ function buildElevationChart(data, ftp, hrmax) {
 
   function buildScales() {
     const sc = {
-      x:{type:'linear',ticks:{maxTicksLimit:8,callback:v=>fmtDuration(v),maxRotation:0,color:'rgba(60,70,80,0.7)'},
-        grid:{color:'rgba(20,20,20,0.07)'},border:{color:'rgba(20,20,20,0.1)'},
+      x:{type:'linear',ticks:{maxTicksLimit:8,callback:v=>fmtDuration(v),maxRotation:0,color:'rgba(200,210,220,0.9)'},
+        grid:{color:'rgba(255,255,255,0.06)'},border:{color:'rgba(255,255,255,0.12)'},
         afterFit: axis => { axis.paddingRight = 0; }},
-      yElev:{position:'left',min:elevYMin,grid:{color:'rgba(20,20,20,0.07)'},
-        border:{color:'rgba(20,20,20,0.1)'},
-        ticks:{maxTicksLimit:4,callback:v=>Math.round(v)+'m',color:'rgba(80,95,110,0.8)'},
+      yElev:{position:'left',min:elevYMin,grid:{color:'rgba(255,255,255,0.06)'},
+        border:{color:'rgba(255,255,255,0.12)'},
+        ticks:{maxTicksLimit:4,callback:v=>Math.round(v)+'m',color:'rgba(200,210,220,0.9)'},
         afterFit: axis => { axis.width = 56; }}
     };
     if(active['power']) sc.yR1={position:'right',grid:{display:false},border:{display:false},
@@ -2037,10 +2056,10 @@ async function buildDurationCurve(canvasId, type, rawStream, ref, unit, tickFmt,
     datasets.push({
       label: '90d Best',
       data: buckets.map((d, i) => ({ x: d, y: best90[i] ?? null })),
-      borderColor: 'rgba(255,255,255,0.28)',
-      backgroundColor: 'rgba(255,255,255,0.04)',
-      fill: true, borderWidth: 1.5, pointRadius: 0, tension: 0.3,
-      borderDash: [4, 3], order: 10
+      borderColor: 'rgba(255,255,255,0.55)',
+      backgroundColor: 'rgba(255,255,255,0.08)',
+      fill: true, borderWidth: 2, pointRadius: 0, tension: 0.3,
+      borderDash: [5, 3], order: 10
     });
   }
   datasets.push({

@@ -873,16 +873,16 @@ body {
 
 .cal-mini-name.planned {
   font-style: italic;
-  color: var(--accent);
-  font-weight: 600;  /* Slightly bolder for better visibility */
-  opacity: 1;  /* Full opacity for readability */
+  color: var(--text-primary);  /* High contrast for readability */
+  font-weight: 700;  /* Bold for better visibility */
+  opacity: 1;
 }
 
 .cal-mini-stats.planned {
   font-style: italic;
-  color: var(--text-secondary);  /* Use secondary text color instead of muted */
-  opacity: 1;  /* Full opacity for readability */
-  font-weight: 500;  /* Slightly bolder */
+  color: var(--text-primary);  /* High contrast - same as name */
+  opacity: 0.85;  /* Slightly reduced to differentiate from name */
+  font-weight: 500;
 }
 
 .cal-week-total {

@@ -1226,24 +1226,28 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('ytd-week').textContent = weekOfYear;
       document.getElementById('ytd-day').textContent = dayOfYear;
       
-      // Today's planned workout - check upcoming_events.json
-      fetch('data/upcoming_events.json')
-        .then(r => r.json())
+      // Today's planned workout - load from upcoming_events.json
+      fetch('data/upcoming_events.json', { cache: 'no-cache' })
+        .then(r => { if (!r.ok) throw new Error('no events'); return r.json(); })
         .then(events => {
+          if (!events || events.length === 0) {
+            return;
+          }
+          
           const today = now.toISOString().split('T')[0];
-          const todayEvent = events.find(e => e.date === today);
+          const todayEvent = events.find(e => e.date && e.date.startsWith(today));
           
           if (todayEvent) {
             document.getElementById('today-workout-name').textContent = todayEvent.name || 'Workout';
             const meta = [];
             if (todayEvent.duration) meta.push(`~ ${todayEvent.duration}`);
-            if (todayEvent.tss) meta.push(`${todayEvent.tss} TSS`);
+            if (todayEvent.load) meta.push(`${todayEvent.load} TSS`);
             document.getElementById('today-workout-meta').textContent = meta.join(' · ');
             document.getElementById('today-why').textContent = todayEvent.description || 'Planned workout';
           }
         })
         .catch(() => {
-          // If no events file or error, leave defaults
+          // No events file, leave defaults
         });
       
       // Current metrics (right column)
@@ -1256,8 +1260,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('current-atl').textContent = atl.toFixed(1);
       document.getElementById('current-tsb').textContent = (tsb > 0 ? '+' : '') + tsb.toFixed(1);
       
-      const ctl28d = data.wellness.recent[0]?.ctl - data.wellness.recent[28]?.ctl || 0;
-      const atl7d = data.wellness.recent[0]?.atl - data.wellness.recent[7]?.atl || 0;
+      const ctl28d = (data.wellness.recent[0]?.ctl || 0) - (data.wellness.recent[28]?.ctl || 0);
+      const atl7d = (data.wellness.recent[0]?.atl || 0) - (data.wellness.recent[7]?.atl || 0);
       document.getElementById('current-ctl-delta').textContent = (ctl28d > 0 ? '+' : '') + ctl28d.toFixed(1) + ' · 28d';
       document.getElementById('current-atl-delta').textContent = (atl7d > 0 ? '+' : '') + atl7d.toFixed(1) + ' · 7d';
     }
@@ -1409,12 +1413,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
       
       // Resting HR
-      const rhr = latest.restingHR || 0;
-      const rhr7d = recent.slice(0, 7).reduce((sum, d) => sum + (d.restingHR || 0), 0) / 7;
-      document.getElementById('hero-rhr-value').textContent = rhr.toFixed(0);
-      document.getElementById('hero-rhr-delta').textContent = rhr7d.toFixed(0) + ' · 7d avg';
+      const rhr = latest.resting_hr || 0;
+      const rhr7d = recent.slice(0, 7).reduce((sum, d) => sum + (d.resting_hr || 0), 0) / 7;
+      document.getElementById('hero-rhr-value').textContent = rhr > 0 ? rhr.toFixed(0) : '—';
+      document.getElementById('hero-rhr-delta').textContent = rhr7d > 0 ? (rhr7d.toFixed(0) + ' · 7d avg') : '—';
       
-      const rhrData = recent.map(d => d.restingHR || 0).reverse();
+      const rhrData = recent.map(d => d.resting_hr || 0).reverse();
       renderSparkline(document.getElementById('hero-rhr-spark'), {
         data: rhrData,
         color: 'var(--accent-2)',

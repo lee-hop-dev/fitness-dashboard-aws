@@ -715,37 +715,49 @@
   </main>
 </div>
 
+<script src="assets/js/data-loader.js"></script>
 <script type="module">
 import { renderRing, renderLineChart, renderSparkline } from '/assets/js/charts-new.js';
 import { calculateReadiness, getReadinessMessage, getReadinessColor } from '/assets/js/readiness.js';
 import { getSportGlyph, getSportColor, formatDuration, formatDistance, formatPower, formatHeartRate, formatRelativeTime } from '/assets/js/sport-helpers.js';
 
-// Load data using existing data-loader
-import '/assets/js/data-loader.js';
-
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     console.log('🎨 New design system loading...');
     
-    // Wait for data to load (data-loader.js sets window.dashboardData)
-    await new Promise((resolve) => {
-      const checkData = setInterval(() => {
-        if (window.dashboardData) {
-          clearInterval(checkData);
-          resolve();
-        }
-      }, 100);
-      
-      // Timeout after 10s
-      setTimeout(() => {
-        clearInterval(checkData);
-        if (!window.dashboardData) {
-          throw new Error('Data load timeout');
-        }
-      }, 10000);
+    // Load data using DATA object from data-loader.js
+    const [wellness, activities] = await Promise.all([
+      DATA.wellness(),
+      DATA.activities()
+    ]);
+    
+    const data = {
+      wellness: {
+        latest: wellness[0] || {},
+        recent: wellness.slice(0, 90)
+      },
+      activities: activities,
+      recentActivities: activities.slice(0, 20)
+    };
+    
+    // Calculate YTD stats
+    const ytdStats = {};
+    const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0];
+    const ytdActivities = activities.filter(a => (a.start_date || a.date) >= yearStart);
+    
+    ['Ride', 'VirtualRide', 'Run', 'VirtualRun', 'Rowing'].forEach(type => {
+      const typeActivities = ytdActivities.filter(a => a.type === type);
+      const sportKey = type.includes('Ride') ? 'cycling' : type.includes('Run') ? 'running' : 'rowing';
+      if (!ytdStats[sportKey]) ytdStats[sportKey] = { distance: 0, duration: 0, tss: 0 };
+      typeActivities.forEach(a => {
+        ytdStats[sportKey].distance += a.distance || 0;
+        ytdStats[sportKey].duration += a.moving_time || a.duration || 0;
+        ytdStats[sportKey].tss += a.icu_training_load || a.tss || 0;
+      });
     });
     
-    const data = window.dashboardData;
+    data.ytdStats = ytdStats;
+    
     console.log('✅ Data loaded:', data);
     
     // Hide loading, show content

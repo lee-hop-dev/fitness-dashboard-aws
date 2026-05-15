@@ -1076,11 +1076,14 @@ def handler(event, context):
 
     results = {}
 
-    # Default 400 days keeps the 1-year heatmap and all-time rowing/running PBs populated.
-    # Pass {"backfill_days": 1095} for a 3-year backfill.
-    backfill_days = int(event.get("backfill_days", 400))
-    if backfill_days != 400:
-        logger.info(f"Backfill mode: fetching {backfill_days} days of activities")
+    # Phase 2: Incremental daily sync (2 days) with manual backfill option
+    # Normal daily sync: 2 days (catches new activities + timezone edge cases)
+    # Manual backfill: {"backfill_days": 400} for full history refresh
+    backfill_days = int(event.get("backfill_days", 2))  # Changed from 400 to 2
+    if backfill_days != 2:
+        logger.info(f"Manual backfill: fetching {backfill_days} days of activities")
+    else:
+        logger.info(f"Daily incremental sync: fetching last {backfill_days} days")
 
     try:
         results["activities"] = sync_activities(api_key, days=backfill_days)

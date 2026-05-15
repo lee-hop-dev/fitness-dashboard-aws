@@ -823,26 +823,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 4. Render Fitness Trend Chart
     if (data.wellness?.recent) {
       const chartData = data.wellness.recent.slice(0, 90).reverse();
+      
+      // Calculate TSB from CTL and ATL (TSB = CTL - ATL)
+      const series = [
+        {
+          key: 'ctl',
+          data: chartData.map(d => d.ctl || 0),
+          color: 'var(--accent)',
+          fill: true
+        },
+        {
+          key: 'atl',
+          data: chartData.map(d => d.atl || 0),
+          color: 'var(--accent-2)'
+        },
+        {
+          key: 'tsb',
+          data: chartData.map(d => (d.ctl || 0) - (d.atl || 0)),
+          color: 'var(--accent-3)',
+          dashed: true
+        }
+      ];
+      
       renderLineChart(document.getElementById('fitness-chart'), {
-        series: [
-          {
-            key: 'ctl',
-            data: chartData.map(d => ({ x: d.date, y: d.ctl })),
-            color: 'var(--accent)',
-            fill: true
-          },
-          {
-            key: 'atl',
-            data: chartData.map(d => ({ x: d.date, y: d.atl })),
-            color: 'var(--accent-2)'
-          },
-          {
-            key: 'tsb',
-            data: chartData.map(d => ({ x: d.date, y: d.tsb })),
-            color: 'var(--accent-3)',
-            dashed: true
-          }
-        ],
+        series,
         zeroLine: true
       });
     }

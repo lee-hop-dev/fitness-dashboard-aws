@@ -1009,15 +1009,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       // Totals column
       document.getElementById('ytd-total-dist').textContent = totalDist.toLocaleString();
-      document.getElementById('ytd-total-hrs').textContent = totalHrs.toFixed(0) + 'h';
-      document.getElementById('ytd-total-tss').textContent = (totalTss/1000).toFixed(1) + 'k';
+      document.getElementById('ytd-total-hrs').textContent = (totalHrs || 0).toFixed(0) + 'h';
+      document.getElementById('ytd-total-tss').textContent = (totalTss/1000 || 0).toFixed(1) + 'k';
       
       // Color bar
       const colorBar = document.getElementById('ytd-color-bar');
-      const cyFlex = cy.distance || cy.hours * 10 || 1;
-      const ruFlex = ru.distance || ru.hours * 10 || 1;
-      const rowFlex = row.distance || row.hours * 10 || 1;
-      const crdFlex = crd.distance || crd.hours * 10 || 1;
+      const cyFlex = cy.distance || (cy.hours || 0) * 10 || 1;
+      const ruFlex = ru.distance || (ru.hours || 0) * 10 || 1;
+      const rowFlex = row.distance || (row.hours || 0) * 10 || 1;
+      const crdFlex = crd.distance || (crd.hours || 0) * 10 || 1;
       colorBar.innerHTML = `
         <div style="flex: ${cyFlex}; background: var(--accent)"></div>
         <div style="flex: ${ruFlex}; background: var(--accent-2)"></div>
@@ -1026,41 +1026,41 @@ document.addEventListener('DOMContentLoaded', async () => {
       `;
       
       // Cycling
-      const cyPrimary = cy.distance > 0 ? cy.distance.toLocaleString() + ' km' : cy.hours.toFixed(0) + ' h';
+      const cyPrimary = cy.distance > 0 ? cy.distance.toLocaleString() + ' km' : ((cy.hours || 0).toFixed(0) + ' h');
       document.getElementById('ytd-cy-primary').textContent = cyPrimary;
-      document.getElementById('ytd-cy-hrs').textContent = cy.hours.toFixed(0) + 'h';
+      document.getElementById('ytd-cy-hrs').textContent = (cy.hours || 0).toFixed(0) + 'h';
       document.getElementById('ytd-cy-tss').textContent = (cy.tss || 0).toLocaleString() + ' TSS';
-      const cyPct = ((cy.distance || cy.hours * 10) / (totalDist || 1) * 100).toFixed(0);
+      const cyPct = (((cy.distance || (cy.hours || 0) * 10) / (totalDist || 1)) * 100).toFixed(0);
       document.getElementById('ytd-cy-pct').textContent = cyPct + '% of yearly km';
       document.getElementById('ytd-cy-progress').style.width = cyPct + '%';
       document.getElementById('ytd-cy-progress').style.background = 'linear-gradient(90deg, var(--accent), color-mix(in oklch, var(--accent) 30%, transparent))';
       
       // Running
-      const ruPrimary = ru.distance > 0 ? ru.distance.toLocaleString() + ' km' : ru.hours.toFixed(0) + ' h';
+      const ruPrimary = ru.distance > 0 ? ru.distance.toLocaleString() + ' km' : ((ru.hours || 0).toFixed(0) + ' h');
       document.getElementById('ytd-ru-primary').textContent = ruPrimary;
-      document.getElementById('ytd-ru-hrs').textContent = ru.hours.toFixed(0) + 'h';
+      document.getElementById('ytd-ru-hrs').textContent = (ru.hours || 0).toFixed(0) + 'h';
       document.getElementById('ytd-ru-tss').textContent = (ru.tss || 0).toLocaleString() + ' TSS';
-      const ruPct = ((ru.distance || ru.hours * 10) / (totalDist || 1) * 100).toFixed(0);
+      const ruPct = (((ru.distance || (ru.hours || 0) * 10) / (totalDist || 1)) * 100).toFixed(0);
       document.getElementById('ytd-ru-pct').textContent = ruPct + '% of yearly km';
       document.getElementById('ytd-ru-progress').style.width = ruPct + '%';
       document.getElementById('ytd-ru-progress').style.background = 'linear-gradient(90deg, var(--accent-2), color-mix(in oklch, var(--accent-2) 30%, transparent))';
       
       // Rowing
-      const rowPrimary = row.distance > 0 ? row.distance.toLocaleString() + ' km' : row.hours.toFixed(0) + ' h';
+      const rowPrimary = row.distance > 0 ? row.distance.toLocaleString() + ' km' : ((row.hours || 0).toFixed(0) + ' h');
       document.getElementById('ytd-row-primary').textContent = rowPrimary;
-      document.getElementById('ytd-row-hrs').textContent = row.hours.toFixed(0) + 'h';
+      document.getElementById('ytd-row-hrs').textContent = (row.hours || 0).toFixed(0) + 'h';
       document.getElementById('ytd-row-tss').textContent = (row.tss || 0).toLocaleString() + ' TSS';
-      const rowPct = ((row.distance || row.hours * 10) / (totalDist || 1) * 100).toFixed(0);
+      const rowPct = (((row.distance || (row.hours || 0) * 10) / (totalDist || 1)) * 100).toFixed(0);
       document.getElementById('ytd-row-pct').textContent = rowPct + '% of yearly km';
       document.getElementById('ytd-row-progress').style.width = rowPct + '%';
       document.getElementById('ytd-row-progress').style.background = 'linear-gradient(90deg, var(--accent-3), color-mix(in oklch, var(--accent-3) 30%, transparent))';
       
       // Cardio
-      const crdPrimary = crd.distance > 0 ? crd.distance.toLocaleString() + ' km' : crd.hours.toFixed(0) + ' h';
+      const crdPrimary = crd.distance > 0 ? crd.distance.toLocaleString() + ' km' : ((crd.hours || 0).toFixed(0) + ' h');
       document.getElementById('ytd-crd-primary').textContent = crdPrimary;
-      document.getElementById('ytd-crd-hrs').textContent = crd.hours.toFixed(0) + 'h';
+      document.getElementById('ytd-crd-hrs').textContent = (crd.hours || 0).toFixed(0) + 'h';
       document.getElementById('ytd-crd-tss').textContent = (crd.tss || 0).toLocaleString() + ' TSS';
-      const crdPct = ((crd.distance || crd.hours * 10) / (totalDist || 1) * 100).toFixed(0);
+      const crdPct = (((crd.distance || (crd.hours || 0) * 10) / (totalDist || 1)) * 100).toFixed(0);
       document.getElementById('ytd-crd-pct').textContent = crdPct + '% of yearly km';
       document.getElementById('ytd-crd-progress').style.width = crdPct + '%';
       document.getElementById('ytd-crd-progress').style.background = 'linear-gradient(90deg, var(--accent-4), color-mix(in oklch, var(--accent-4) 30%, transparent))';

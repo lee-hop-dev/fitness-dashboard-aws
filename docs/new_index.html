@@ -751,6 +751,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // 1. Render Training Readiness Hero
     if (data.wellness) {
+      // Calculate TSB for latest (CTL - ATL)
+      if (data.wellness.latest) {
+        data.wellness.latest.tsb = (data.wellness.latest.ctl || 0) - (data.wellness.latest.atl || 0);
+      }
+      
       const score = calculateReadiness(data.wellness);
       const message = getReadinessMessage(score);
       const color = getReadinessColor(score);
@@ -857,19 +862,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       container.innerHTML = data.recentActivities.slice(0, 10).map(activity => {
         const glyph = getSportGlyph(activity.type);
         const color = getSportColor(activity.type);
+        const activityDate = activity.start_date || activity.start_date_local || activity.date;
         
         return `
           <div class="activity-card-new" onclick="window.location.href='activity.html?id=${activity.id}'">
             <div class="activity-card-header">
               <div class="activity-card-name">${glyph} ${activity.name}</div>
-              <div class="activity-card-time">${formatRelativeTime(activity.start_time)}</div>
+              <div class="activity-card-time">${activityDate ? formatRelativeTime(activityDate) : '—'}</div>
             </div>
             <div class="activity-card-stats">
               ${activity.distance ? `<span class="activity-stat">${formatDistance(activity.distance)}</span>` : ''}
-              ${activity.duration ? `<span class="activity-stat">${formatDuration(activity.duration)}</span>` : ''}
-              ${activity.avg_power ? `<span class="activity-stat">${formatPower(activity.avg_power)}</span>` : ''}
-              ${activity.avg_hr ? `<span class="activity-stat">${formatHeartRate(activity.avg_hr)}</span>` : ''}
-              ${activity.tss ? `<span class="activity-stat">${activity.tss.toFixed(0)} TSS</span>` : ''}
+              ${activity.duration || activity.moving_time ? `<span class="activity-stat">${formatDuration(activity.duration || activity.moving_time)}</span>` : ''}
+              ${activity.avg_power || activity.average_watts ? `<span class="activity-stat">${formatPower(activity.avg_power || activity.average_watts)}</span>` : ''}
+              ${activity.avg_hr || activity.average_heartrate ? `<span class="activity-stat">${formatHeartRate(activity.avg_hr || activity.average_heartrate)}</span>` : ''}
+              ${activity.tss || activity.icu_training_load ? `<span class="activity-stat">${(activity.tss || activity.icu_training_load).toFixed(0)} TSS</span>` : ''}
             </div>
           </div>
         `;

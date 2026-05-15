@@ -715,7 +715,6 @@
   </main>
 </div>
 
-<script src="assets/js/data-loader.js"></script>
 <script type="module">
 import { renderRing, renderLineChart, renderSparkline } from '/assets/js/charts-new.js';
 import { calculateReadiness, getReadinessMessage, getReadinessColor } from '/assets/js/readiness.js';
@@ -725,19 +724,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     console.log('🎨 New design system loading...');
     
-    // Load data using DATA.loadAll() from data-loader.js
-    const rawData = await DATA.loadAll({ activityDays: 90 });
+    // Load data from static JSON files (same as original pages)
+    const [activitiesResp, wellnessResp, ytdResp, weeklyTssResp] = await Promise.all([
+      fetch('data/activities.json').then(r => r.json()),
+      fetch('data/wellness.json').then(r => r.json()),
+      fetch('data/ytd.json').then(r => r.json()),
+      fetch('data/weekly_tss.json').then(r => r.json())
+    ]);
     
     const data = {
       wellness: {
-        latest: rawData.wellness[0] || {},
-        recent: rawData.wellness
+        latest: wellnessResp[0] || {},
+        recent: wellnessResp
       },
-      activities: rawData.activities,
-      recentActivities: rawData.activities.slice(0, 20),
-      ytdStats: rawData.ytd,
-      weeklyTSS: rawData.weeklyTSS,
-      athlete: rawData.athlete
+      activities: activitiesResp,
+      recentActivities: activitiesResp.slice(0, 20),
+      ytdStats: ytdResp,
+      weeklyTSS: weeklyTssResp
     };
     
     console.log('✅ Data loaded:', data);

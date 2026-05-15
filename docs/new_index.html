@@ -725,38 +725,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     console.log('🎨 New design system loading...');
     
-    // Load data using DATA object from data-loader.js
-    const [wellness, activities] = await Promise.all([
-      DATA.wellness(),
-      DATA.activities()
-    ]);
+    // Load data using DATA.loadAll() from data-loader.js
+    const rawData = await DATA.loadAll({ activityDays: 90 });
     
     const data = {
       wellness: {
-        latest: wellness[0] || {},
-        recent: wellness.slice(0, 90)
+        latest: rawData.wellness[0] || {},
+        recent: rawData.wellness
       },
-      activities: activities,
-      recentActivities: activities.slice(0, 20)
+      activities: rawData.activities,
+      recentActivities: rawData.activities.slice(0, 20),
+      ytdStats: rawData.ytd,
+      weeklyTSS: rawData.weeklyTSS,
+      athlete: rawData.athlete
     };
-    
-    // Calculate YTD stats
-    const ytdStats = {};
-    const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0];
-    const ytdActivities = activities.filter(a => (a.start_date || a.date) >= yearStart);
-    
-    ['Ride', 'VirtualRide', 'Run', 'VirtualRun', 'Rowing'].forEach(type => {
-      const typeActivities = ytdActivities.filter(a => a.type === type);
-      const sportKey = type.includes('Ride') ? 'cycling' : type.includes('Run') ? 'running' : 'rowing';
-      if (!ytdStats[sportKey]) ytdStats[sportKey] = { distance: 0, duration: 0, tss: 0 };
-      typeActivities.forEach(a => {
-        ytdStats[sportKey].distance += a.distance || 0;
-        ytdStats[sportKey].duration += a.moving_time || a.duration || 0;
-        ytdStats[sportKey].tss += a.icu_training_load || a.tss || 0;
-      });
-    });
-    
-    data.ytdStats = ytdStats;
     
     console.log('✅ Data loaded:', data);
     
@@ -792,19 +774,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 2. Populate YTD Stats
     if (data.ytdStats) {
       // Cycling
-      document.getElementById('ytd-cy-dist').textContent = (data.ytdStats.cycling?.distance / 1000).toFixed(0) || '0';
-      document.getElementById('ytd-cy-hrs').textContent = (data.ytdStats.cycling?.duration / 3600).toFixed(0) || '0';
-      document.getElementById('ytd-cy-tss').textContent = data.ytdStats.cycling?.tss?.toFixed(0) || '0';
+      document.getElementById('ytd-cy-dist').textContent = data.ytdStats.cycling?.distance || '0';
+      document.getElementById('ytd-cy-hrs').textContent = data.ytdStats.cycling?.hours?.toFixed(0) || '0';
+      document.getElementById('ytd-cy-tss').textContent = data.ytdStats.cycling?.tss || '0';
       
       // Running
-      document.getElementById('ytd-ru-dist').textContent = (data.ytdStats.running?.distance / 1000).toFixed(0) || '0';
-      document.getElementById('ytd-ru-hrs').textContent = (data.ytdStats.running?.duration / 3600).toFixed(0) || '0';
-      document.getElementById('ytd-ru-tss').textContent = data.ytdStats.running?.tss?.toFixed(0) || '0';
+      document.getElementById('ytd-ru-dist').textContent = data.ytdStats.running?.distance || '0';
+      document.getElementById('ytd-ru-hrs').textContent = data.ytdStats.running?.hours?.toFixed(0) || '0';
+      document.getElementById('ytd-ru-tss').textContent = data.ytdStats.running?.tss || '0';
       
       // Rowing
-      document.getElementById('ytd-row-dist').textContent = (data.ytdStats.rowing?.distance / 1000).toFixed(0) || '0';
-      document.getElementById('ytd-row-hrs').textContent = (data.ytdStats.rowing?.duration / 3600).toFixed(0) || '0';
-      document.getElementById('ytd-row-tss').textContent = data.ytdStats.rowing?.tss?.toFixed(0) || '0';
+      document.getElementById('ytd-row-dist').textContent = data.ytdStats.rowing?.distance || '0';
+      document.getElementById('ytd-row-hrs').textContent = data.ytdStats.rowing?.hours?.toFixed(0) || '0';
+      document.getElementById('ytd-row-tss').textContent = data.ytdStats.rowing?.tss || '0';
     }
     
     // 3. Populate Fitness Metrics

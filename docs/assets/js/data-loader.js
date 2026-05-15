@@ -23,12 +23,12 @@ function localDateOffset(days) {
 const DATA = {
   _cache: {},
 
-  async _fetch(endpoint, params = {}) {
+  async _fetch(endpoint, params = {}, { headers: { 'x-api-key': 'GCJhJuPjOs8o7pigoB75N8cfvZx78mXL6gj6qQzd' } }) {
     const cacheKey = endpoint + JSON.stringify(params);
     if (this._cache[cacheKey]) return this._cache[cacheKey];
     const url = new URL(`${API_BASE}${endpoint}`);
     Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-    const res = await fetch(url.toString());
+    const res = await fetch(url.toString(, { headers: { 'x-api-key': 'GCJhJuPjOs8o7pigoB75N8cfvZx78mXL6gj6qQzd' } }));
     if (!res.ok) throw new Error(`API ${endpoint} returned ${res.status}`);
     const data = await res.json();
     this._cache[cacheKey] = data;
@@ -174,14 +174,14 @@ const DATA = {
       paceCurveResp,
       hrCurveResp,
     ] = await Promise.all([
-      this._fetch('/activities',  { days: activityDays, limit: 1000 }),
-      this._fetch('/wellness',    { days: 180 }),
-      this._fetch('/weekly-tss',  { weeks: 52  }),
-      this._fetch('/ytd'),
-      this._fetch('/athlete'),
-      this._fetch('/power-curve'),
-      this._fetch('/pace-curve'),
-      this._fetch('/hr-curve'),
+      this._fetch('/activities',  { days: activityDays, limit: 1000 }, { headers: { 'x-api-key': 'GCJhJuPjOs8o7pigoB75N8cfvZx78mXL6gj6qQzd' } }),
+      this._fetch('/wellness',    { days: 180 }, { headers: { 'x-api-key': 'GCJhJuPjOs8o7pigoB75N8cfvZx78mXL6gj6qQzd' } }),
+      this._fetch('/weekly-tss',  { weeks: 52  }, { headers: { 'x-api-key': 'GCJhJuPjOs8o7pigoB75N8cfvZx78mXL6gj6qQzd' } }),
+      this._fetch('/ytd', { headers: { 'x-api-key': 'GCJhJuPjOs8o7pigoB75N8cfvZx78mXL6gj6qQzd' } }),
+      this._fetch('/athlete', { headers: { 'x-api-key': 'GCJhJuPjOs8o7pigoB75N8cfvZx78mXL6gj6qQzd' } }),
+      this._fetch('/power-curve', { headers: { 'x-api-key': 'GCJhJuPjOs8o7pigoB75N8cfvZx78mXL6gj6qQzd' } }),
+      this._fetch('/pace-curve', { headers: { 'x-api-key': 'GCJhJuPjOs8o7pigoB75N8cfvZx78mXL6gj6qQzd' } }),
+      this._fetch('/hr-curve', { headers: { 'x-api-key': 'GCJhJuPjOs8o7pigoB75N8cfvZx78mXL6gj6qQzd' } }),
     ]);
 
     const activities = (activitiesResp.activities || []).map(a => this._normaliseActivity(a));
@@ -226,7 +226,7 @@ const DATA = {
   },
 
   async loadHeatmap1y() {
-    const resp = await this._fetch('/activities', { days: 365, limit: 1000 });
+    const resp = await this._fetch('/activities', { days: 365, limit: 1000 }, { headers: { 'x-api-key': 'GCJhJuPjOs8o7pigoB75N8cfvZx78mXL6gj6qQzd' } });
     return this._buildHeatmapCells(resp.activities || [], 365);
   },
 

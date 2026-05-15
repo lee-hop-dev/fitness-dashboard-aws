@@ -2015,7 +2015,7 @@ async function buildDurationCurve(canvasId, type, rawStream, ref, unit, tickFmt,
   let best90 = null;
   try {
     const filename = isPace ? 'pace_curves_90d.json' : 'power_curves_90d.json';
-    const r = await fetch(`${CF_BASE}data/${filename}`);
+    const r = await fetch(`${CF_BASE}data/${filename}`, { headers: { 'x-api-key': 'GCJhJuPjOs8o7pigoB75N8cfvZx78mXL6gj6qQzd' } });
     if (r.ok) {
       const cd = await r.json();
       const curve = cd?.list?.[0];
@@ -2729,7 +2729,7 @@ async function init() {
 
   let data;
   try {
-    const r=await fetch(`${CF_BASE}data/streams/${actId}.json`);
+    const r=await fetch(`${CF_BASE}data/streams/${actId}.json`, { headers: { 'x-api-key': 'GCJhJuPjOs8o7pigoB75N8cfvZx78mXL6gj6qQzd' } });
     if(!r.ok) { showError('Activity not available.','Stream data is only kept for 14 days.'); return; }
     data=await r.json();
   } catch(e) { showError('Failed to load.', e.message); return; }
@@ -2888,7 +2888,7 @@ function rlPatch(data) {
       if (uniC) uniC.textContent = 'W peak';
       // KVs from 90d curves if available
       try {
-        const r = await fetch('data/power_curves_90d.json');
+        const r = await fetch('data/power_curves_90d.json', { headers: { 'x-api-key': 'GCJhJuPjOs8o7pigoB75N8cfvZx78mXL6gj6qQzd' } });
         if (r.ok) {
           const c = await r.json();
           const secs  = c?.list?.[0]?.secs  || [];

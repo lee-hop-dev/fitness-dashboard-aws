@@ -5,6 +5,7 @@
    ============================================ */
 
 const API_BASE = 'https://j2zxz92vd4.execute-api.eu-west-2.amazonaws.com/prod';
+const API_KEY = 'GCJhJuPjOs8o7pigoB75N8cfvZx78mXL6gj6qQzd';
 
 // Return a date string as YYYY-MM-DD using local calendar date.
 // NEVER use toISOString() for date cutoffs — it returns UTC and in BST
@@ -28,7 +29,9 @@ const DATA = {
     if (this._cache[cacheKey]) return this._cache[cacheKey];
     const url = new URL(`${API_BASE}${endpoint}`);
     Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-    const res = await fetch(url.toString());
+    const res = await fetch(url.toString(), {
+      headers: { 'x-api-key': API_KEY }
+    });
     if (!res.ok) throw new Error(`API ${endpoint} returned ${res.status}`);
     const data = await res.json();
     this._cache[cacheKey] = data;

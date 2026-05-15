@@ -210,15 +210,15 @@
   
   /* Hero readiness section */
   .hero-section {
-    margin-bottom: 48px;
+    margin-bottom: 24px;
   }
   
   .readiness-hero {
     display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 40px;
+    grid-template-columns: auto 1fr auto;
+    gap: 32px;
     align-items: center;
-    padding: 32px;
+    padding: 28px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
     position: relative;
     overflow: hidden;
@@ -236,64 +236,169 @@
   }
   
   .readiness-ring-container,
-  .readiness-details {
+  .today-planned,
+  .current-metrics {
     position: relative;
     z-index: 1;
   }
   
   .readiness-ring-container {
-    width: 200px;
-    height: 200px;
+    width: 180px;
+    height: 180px;
   }
   
-  .readiness-details {
+  /* Center: Today's Planned Activity */
+  .today-planned {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
+    min-width: 0;
   }
   
-  .readiness-score {
+  .today-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .live-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     font-family: var(--font-mono);
-    font-size: 72px;
-    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.06em;
     color: var(--accent);
+  }
+  
+  .live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+  }
+  
+  .ytd-badge {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 3px 7px;
+    border-radius: 5px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    color: var(--fg-3);
+  }
+  
+  .today-label {
+    font-size: 12px;
+    color: var(--fg-3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  
+  .today-workout {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  
+  .today-workout-name {
+    font-size: 32px;
+    font-weight: 500;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+    color: var(--fg);
+  }
+  
+  .today-workout-meta {
+    font-family: var(--font-mono);
+    font-size: 15px;
+    color: var(--fg-3);
+  }
+  
+  .today-why {
+    font-size: 12.5px;
+    color: var(--fg-3);
+  }
+  
+  .readiness-status-inline {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-top: 8px;
+  }
+  
+  .readiness-score-inline {
+    font-family: var(--font-mono);
+    font-size: 48px;
+    font-weight: 600;
     line-height: 1;
     letter-spacing: -0.03em;
-    text-shadow: 0 0 20px rgba(186, 230, 126, 0.3);
+    color: var(--accent);
   }
   
-  .readiness-message {
-    font-size: 24px;
-    color: var(--fg);
-    font-weight: 500;
-    margin-bottom: 8px;
+  .readiness-message-inline {
+    font-size: 16px;
+    color: var(--fg-2);
   }
   
-  .readiness-factors {
-    display: flex;
-    gap: 40px;
-    margin-top: 12px;
-  }
-  
-  .readiness-factor {
+  /* Right: Current Metrics */
+  .current-metrics {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 10px;
+    min-width: 200px;
   }
   
-  .readiness-factor-value {
-    font-family: var(--font-mono);
-    font-size: 22px;
-    font-weight: 600;
-    color: var(--fg);
+  .current-metric {
+    padding: 9px 11px;
+    border-radius: 9px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
   
-  .readiness-factor-label {
+  .current-metric-label {
     font-size: 10px;
+    color: var(--fg-4);
     text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--fg-3);
+    letter-spacing: 0.08em;
+  }
+  
+  .current-metric-value {
+    font-family: var(--font-mono);
+    font-size: 20px;
     font-weight: 500;
+    line-height: 1;
+    margin-top: 2px;
+  }
+  
+  .current-metric-delta {
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    border: 1px solid;
+  }
+  
+  .current-metric-delta.lime {
+    background: color-mix(in oklch, var(--accent) 14%, transparent);
+    border-color: color-mix(in oklch, var(--accent) 30%, transparent);
+    color: color-mix(in oklch, var(--accent) 90%, var(--fg));
+  }
+  
+  .current-metric-delta.coral {
+    background: color-mix(in oklch, var(--accent-2) 14%, transparent);
+    border-color: color-mix(in oklch, var(--accent-2) 30%, transparent);
+    color: color-mix(in oklch, var(--accent-2) 90%, var(--fg));
+  }
+  
+  .current-metric-delta.ice {
+    background: color-mix(in oklch, var(--accent-3) 14%, transparent);
+    border-color: color-mix(in oklch, var(--accent-3) 30%, transparent);
+    color: color-mix(in oklch, var(--accent-3) 90%, var(--fg));
   }
   
   /* YTD Stats Strip */
@@ -812,23 +917,50 @@
       <!-- Hero: Training Readiness -->
       <section class="hero-section">
         <div class="ds-card readiness-hero">
+          <!-- Left: Ring -->
           <div class="readiness-ring-container" id="readiness-ring"></div>
-          <div class="readiness-details">
-            <div class="readiness-score" id="readiness-score">—</div>
-            <div class="readiness-message" id="readiness-message">Calculating readiness...</div>
-            <div class="readiness-factors">
-              <div class="readiness-factor">
-                <div class="readiness-factor-value" id="tsb-factor">—</div>
-                <div class="readiness-factor-label">Form (TSB)</div>
-              </div>
-              <div class="readiness-factor">
-                <div class="readiness-factor-value" id="sleep-factor">—</div>
-                <div class="readiness-factor-label">Sleep (7d)</div>
-              </div>
-              <div class="readiness-factor">
-                <div class="readiness-factor-value" id="hrv-factor">—</div>
-                <div class="readiness-factor-label">HRV Trend</div>
-              </div>
+          
+          <!-- Center: Today's Planned Activity -->
+          <div class="today-planned">
+            <div class="today-header">
+              <span class="live-badge">
+                <span class="live-dot"></span>
+                LIVE · <span id="live-time">--:--</span>
+              </span>
+              <span class="ytd-badge">YTD WEEK <span id="ytd-week">--</span> · DAY <span id="ytd-day">--</span></span>
+            </div>
+            
+            <div class="today-label">Today's planned activity</div>
+            
+            <div class="today-workout">
+              <div class="today-workout-name" id="today-workout-name">Rest day</div>
+              <span class="today-workout-meta" id="today-workout-meta">—</span>
+            </div>
+            
+            <div class="today-why" id="today-why">No workout planned</div>
+            
+            <div class="readiness-status-inline">
+              <div class="readiness-score-inline" id="readiness-score-inline">—</div>
+              <div class="readiness-message-inline" id="readiness-message-inline">Calculating...</div>
+            </div>
+          </div>
+          
+          <!-- Right: Current Metrics -->
+          <div class="current-metrics">
+            <div class="current-metric">
+              <div class="current-metric-label">CTL · Fitness</div>
+              <div class="current-metric-value" id="current-ctl">—</div>
+              <div class="current-metric-delta lime" id="current-ctl-delta">—</div>
+            </div>
+            <div class="current-metric">
+              <div class="current-metric-label">ATL · Fatigue</div>
+              <div class="current-metric-value" id="current-atl">—</div>
+              <div class="current-metric-delta coral" id="current-atl-delta">—</div>
+            </div>
+            <div class="current-metric">
+              <div class="current-metric-label">TSB · Form</div>
+              <div class="current-metric-value" id="current-tsb">—</div>
+              <div class="current-metric-delta ice">optimal range</div>
             </div>
           </div>
         </div>
@@ -982,45 +1114,6 @@
         </div>
       </section>
 
-      <!-- Fitness Metrics Grid -->
-      <section class="fitness-metrics">
-        <div class="fitness-metric-card">
-          <div class="fitness-metric-value" id="ctl-value">—</div>
-          <div class="fitness-metric-label">Fitness (CTL)</div>
-          <div class="fitness-metric-delta" id="ctl-delta">—</div>
-        </div>
-        
-        <div class="fitness-metric-card">
-          <div class="fitness-metric-value" id="atl-value">—</div>
-          <div class="fitness-metric-label">Fatigue (ATL)</div>
-          <div class="fitness-metric-delta" id="atl-delta">—</div>
-        </div>
-        
-        <div class="fitness-metric-card">
-          <div class="fitness-metric-value" id="tsb-value">—</div>
-          <div class="fitness-metric-label">Form (TSB)</div>
-          <div class="fitness-metric-delta" id="tsb-delta">—</div>
-        </div>
-        
-        <div class="fitness-metric-card">
-          <div class="fitness-metric-value" id="hrv-value">—</div>
-          <div class="fitness-metric-label">HRV</div>
-          <div class="fitness-metric-delta" id="hrv-delta">ms</div>
-        </div>
-        
-        <div class="fitness-metric-card">
-          <div class="fitness-metric-value" id="sleep-value">—</div>
-          <div class="fitness-metric-label">Sleep</div>
-          <div class="fitness-metric-delta" id="sleep-delta">hrs last night</div>
-        </div>
-        
-        <div class="fitness-metric-card">
-          <div class="fitness-metric-value" id="rhr-value">—</div>
-          <div class="fitness-metric-label">Resting HR</div>
-          <div class="fitness-metric-delta" id="rhr-delta">bpm</div>
-        </div>
-      </section>
-
       <!-- Fitness Trend Chart -->
       <section>
         <div class="chart-card-new">
@@ -1091,7 +1184,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('loading-state').classList.add('hidden');
     document.getElementById('dashboard-content').classList.remove('hidden');
     
-    // 1. Render Training Readiness Hero
+    // 1. Render Training Readiness Hero with Today's Planned Workout
     if (data.wellness) {
       // Calculate TSB for latest (CTL - ATL)
       if (data.wellness.latest) {
@@ -1102,9 +1195,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       const message = getReadinessMessage(score);
       const color = getReadinessColor(score);
       
-      document.getElementById('readiness-score').textContent = score;
-      document.getElementById('readiness-message').textContent = message;
-      
       // Render ring
       renderRing(document.getElementById('readiness-ring'), {
         value: score,
@@ -1114,11 +1204,62 @@ document.addEventListener('DOMContentLoaded', async () => {
         sub: 'Readiness'
       });
       
-      // Show factors
-      document.getElementById('tsb-factor').textContent = data.wellness.latest?.tsb?.toFixed(1) || '—';
-      document.getElementById('sleep-factor').textContent = 
-        (data.wellness.recent?.slice(0, 7).reduce((sum, d) => sum + (d.sleep || 0), 0) / 7).toFixed(1) + 'h';
-      document.getElementById('hrv-factor').textContent = data.wellness.latest?.hrv?.toFixed(0) || '—';
+      // Update inline readiness status
+      document.getElementById('readiness-score-inline').textContent = score;
+      document.getElementById('readiness-message-inline').textContent = message;
+      
+      // Update live time
+      const updateTime = () => {
+        const now = new Date();
+        document.getElementById('live-time').textContent = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+      };
+      updateTime();
+      setInterval(updateTime, 1000);
+      
+      // Update YTD week/day
+      const now = new Date();
+      const start = new Date(now.getFullYear(), 0, 0);
+      const diff = now - start;
+      const oneDay = 1000 * 60 * 60 * 24;
+      const dayOfYear = Math.floor(diff / oneDay);
+      const weekOfYear = Math.ceil(dayOfYear / 7);
+      document.getElementById('ytd-week').textContent = weekOfYear;
+      document.getElementById('ytd-day').textContent = dayOfYear;
+      
+      // Today's planned workout - check upcoming_events.json
+      fetch('data/upcoming_events.json')
+        .then(r => r.json())
+        .then(events => {
+          const today = now.toISOString().split('T')[0];
+          const todayEvent = events.find(e => e.date === today);
+          
+          if (todayEvent) {
+            document.getElementById('today-workout-name').textContent = todayEvent.name || 'Workout';
+            const meta = [];
+            if (todayEvent.duration) meta.push(`~ ${todayEvent.duration}`);
+            if (todayEvent.tss) meta.push(`${todayEvent.tss} TSS`);
+            document.getElementById('today-workout-meta').textContent = meta.join(' · ');
+            document.getElementById('today-why').textContent = todayEvent.description || 'Planned workout';
+          }
+        })
+        .catch(() => {
+          // If no events file or error, leave defaults
+        });
+      
+      // Current metrics (right column)
+      const latest = data.wellness.latest || {};
+      const ctl = latest.ctl || 0;
+      const atl = latest.atl || 0;
+      const tsb = latest.tsb || 0;
+      
+      document.getElementById('current-ctl').textContent = ctl.toFixed(1);
+      document.getElementById('current-atl').textContent = atl.toFixed(1);
+      document.getElementById('current-tsb').textContent = (tsb > 0 ? '+' : '') + tsb.toFixed(1);
+      
+      const ctl28d = data.wellness.recent[0]?.ctl - data.wellness.recent[28]?.ctl || 0;
+      const atl7d = data.wellness.recent[0]?.atl - data.wellness.recent[7]?.atl || 0;
+      document.getElementById('current-ctl-delta').textContent = (ctl28d > 0 ? '+' : '') + ctl28d.toFixed(1) + ' · 28d';
+      document.getElementById('current-atl-delta').textContent = (atl7d > 0 ? '+' : '') + atl7d.toFixed(1) + ' · 7d';
     }
     
     // 2. Populate YTD Stats - NEW 5-column design

@@ -168,6 +168,35 @@ class ApiStack(Stack):
             ),
         )
 
+        # ── API Key for Bot Protection (Phase 1: Cost Optimization) ──────
+        api_key = apigw.ApiKey(
+            self,
+            "DashboardApiKey",
+            api_key_name="fitness-dashboard-frontend-key",
+            description="API key for CloudFront dashboard (bot protection)",
+            enabled=True,
+        )
+
+        usage_plan = apigw.UsagePlan(
+            self,
+            "DashboardUsagePlan",
+            name="fitness-dashboard-usage-plan",
+            description="Rate-limited plan for legitimate dashboard traffic",
+            throttle=apigw.ThrottleSettings(
+                rate_limit=10,
+                burst_limit=20,
+            ),
+            quota=apigw.QuotaSettings(
+                limit=10000,
+                period=apigw.Period.MONTH,
+            ),
+        )
+
+        usage_plan.add_api_key(api_key)
+        usage_plan.add_api_stage(
+            stage=self.api.deployment_stage,
+        )
+
         # Lambda integrations
         query_integration = apigw.LambdaIntegration(
             self.query_fn,
@@ -183,30 +212,30 @@ class ApiStack(Stack):
 
         # ── Phase 3 routes ────────────────────────────────────────────────────
         activities = self.api.root.add_resource("activities")
-        activities.add_method("GET", query_integration)
+        activities.add_method("GET", query_integration, api_key_required=True)
         activity_id = activities.add_resource("{id}")
-        activity_id.add_method("GET", query_integration)
+        activity_id.add_method("GET", query_integration, api_key_required=True)
 
         wellness = self.api.root.add_resource("wellness")
-        wellness.add_method("GET", query_integration)
+        wellness.add_method("GET", query_integration, api_key_required=True)
 
         athlete = self.api.root.add_resource("athlete")
-        athlete.add_method("GET", query_integration)
+        athlete.add_method("GET", query_integration, api_key_required=True)
 
         power_curve = self.api.root.add_resource("power-curve")
-        power_curve.add_method("GET", query_integration)
+        power_curve.add_method("GET", query_integration, api_key_required=True)
 
         pace_curve = self.api.root.add_resource("pace-curve")
-        pace_curve.add_method("GET", query_integration)
+        pace_curve.add_method("GET", query_integration, api_key_required=True)
 
         hr_curve = self.api.root.add_resource("hr-curve")
-        hr_curve.add_method("GET", query_integration)
+        hr_curve.add_method("GET", query_integration, api_key_required=True)
 
         weekly_tss = self.api.root.add_resource("weekly-tss")
-        weekly_tss.add_method("GET", query_integration)
+        weekly_tss.add_method("GET", query_integration, api_key_required=True)
 
         ytd = self.api.root.add_resource("ytd")
-        ytd.add_method("GET", query_integration)
+        ytd.add_method("GET", query_integration, api_key_required=True)
 
         # ── Phase 7 routes ────────────────────────────────────────────────────
         strava = self.api.root.add_resource("strava")
@@ -367,4 +396,12 @@ class ApiStack(Stack):
             "StravaOAuthFunctionArn",
             value=self.strava_oauth_fn.function_arn,
             description="ARN of the Strava OAuth Lambda function",
+        )
+
+        CfnOutput(
+            self,
+            "ApiKeyId",
+            value=api_key.key_id,
+            description="API Key ID (retrieve value from AWS Console)",
+            export_name="FitnessDashboardApiKeyId",
         )

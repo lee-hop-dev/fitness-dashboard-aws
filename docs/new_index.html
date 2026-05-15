@@ -516,6 +516,75 @@
     color: var(--fg);
   }
   
+  /* Hero Cards Row */
+  .hero-cards-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  
+  .hero-card {
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: 18px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .hero-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .hero-card-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--fg-4);
+    font-weight: 500;
+  }
+  
+  .hero-card-delta {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    color: var(--fg-3);
+  }
+  
+  .hero-card-delta.positive {
+    background: color-mix(in oklch, var(--accent) 14%, transparent);
+    border-color: color-mix(in oklch, var(--accent) 30%, transparent);
+    color: color-mix(in oklch, var(--accent) 90%, var(--fg));
+  }
+  
+  .hero-card-delta.negative {
+    background: color-mix(in oklch, var(--accent-2) 14%, transparent);
+    border-color: color-mix(in oklch, var(--accent-2) 30%, transparent);
+    color: color-mix(in oklch, var(--accent-2) 90%, var(--fg));
+  }
+  
+  .hero-card-value {
+    font-family: var(--font-mono);
+    font-size: 32px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--fg);
+  }
+  
+  .hero-card-sparkline {
+    height: 36px;
+    margin-top: 4px;
+  }
+  
   /* Fitness metrics grid */
   .fitness-metrics {
     display: grid;
@@ -856,6 +925,63 @@
         </div>
       </section>
 
+      <!-- Hero Cards Row - Fitness Metrics with Sparklines -->
+      <section class="hero-cards-row">
+        <div class="hero-card">
+          <div class="hero-card-header">
+            <span class="hero-card-label">FITNESS · CTL</span>
+            <span class="hero-card-delta" id="hero-ctl-delta">—</span>
+          </div>
+          <div class="hero-card-value" id="hero-ctl-value">—</div>
+          <div class="hero-card-sparkline" id="hero-ctl-spark"></div>
+        </div>
+
+        <div class="hero-card">
+          <div class="hero-card-header">
+            <span class="hero-card-label">FATIGUE · ATL</span>
+            <span class="hero-card-delta" id="hero-atl-delta">—</span>
+          </div>
+          <div class="hero-card-value" id="hero-atl-value">—</div>
+          <div class="hero-card-sparkline" id="hero-atl-spark"></div>
+        </div>
+
+        <div class="hero-card">
+          <div class="hero-card-header">
+            <span class="hero-card-label">FORM · TSB</span>
+            <span class="hero-card-delta" id="hero-tsb-delta">—</span>
+          </div>
+          <div class="hero-card-value" id="hero-tsb-value">—</div>
+          <div class="hero-card-sparkline" id="hero-tsb-spark"></div>
+        </div>
+
+        <div class="hero-card">
+          <div class="hero-card-header">
+            <span class="hero-card-label">HRV</span>
+            <span class="hero-card-delta" id="hero-hrv-delta">—</span>
+          </div>
+          <div class="hero-card-value" id="hero-hrv-value">—</div>
+          <div class="hero-card-sparkline" id="hero-hrv-spark"></div>
+        </div>
+
+        <div class="hero-card">
+          <div class="hero-card-header">
+            <span class="hero-card-label">SLEEP</span>
+            <span class="hero-card-delta" id="hero-sleep-delta">—</span>
+          </div>
+          <div class="hero-card-value" id="hero-sleep-value">—</div>
+          <div class="hero-card-sparkline" id="hero-sleep-spark"></div>
+        </div>
+
+        <div class="hero-card">
+          <div class="hero-card-header">
+            <span class="hero-card-label">RESTING HR</span>
+            <span class="hero-card-delta" id="hero-rhr-delta">—</span>
+          </div>
+          <div class="hero-card-value" id="hero-rhr-value">—</div>
+          <div class="hero-card-sparkline" id="hero-rhr-spark"></div>
+        </div>
+      </section>
+
       <!-- Fitness Metrics Grid -->
       <section class="fitness-metrics">
         <div class="fitness-metric-card">
@@ -1064,6 +1190,95 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('ytd-crd-pct').textContent = crdPct + '% of yearly km';
       document.getElementById('ytd-crd-progress').style.width = crdPct + '%';
       document.getElementById('ytd-crd-progress').style.background = 'linear-gradient(90deg, var(--accent-4), color-mix(in oklch, var(--accent-4) 30%, transparent))';
+    }
+    
+    // 2b. Populate Hero Cards Row with Sparklines
+    if (data.wellness?.recent && data.wellness.recent.length > 0) {
+      const latest = data.wellness.recent[0] || {};
+      const recent = data.wellness.recent.slice(0, 28); // 28 days for sparklines
+      
+      // CTL
+      const ctl = latest.ctl || 0;
+      const ctlWeekAgo = data.wellness.recent[7]?.ctl || 0;
+      const ctlDelta = ctl - ctlWeekAgo;
+      document.getElementById('hero-ctl-value').textContent = ctl.toFixed(1);
+      document.getElementById('hero-ctl-delta').textContent = (ctlDelta > 0 ? '+' : '') + ctlDelta.toFixed(1) + ' · 7d';
+      document.getElementById('hero-ctl-delta').className = 'hero-card-delta ' + (ctlDelta > 0 ? 'positive' : 'negative');
+      
+      const ctlData = recent.map(d => d.ctl || 0).reverse();
+      renderSparkline(document.getElementById('hero-ctl-spark'), {
+        data: ctlData,
+        color: 'var(--accent)',
+        fill: true
+      });
+      
+      // ATL
+      const atl = latest.atl || 0;
+      const atlWeekAgo = data.wellness.recent[7]?.atl || 0;
+      const atlDelta = atl - atlWeekAgo;
+      document.getElementById('hero-atl-value').textContent = atl.toFixed(1);
+      document.getElementById('hero-atl-delta').textContent = (atlDelta > 0 ? '+' : '') + atlDelta.toFixed(1) + ' · 7d';
+      document.getElementById('hero-atl-delta').className = 'hero-card-delta ' + (atlDelta > 0 ? 'positive' : 'negative');
+      
+      const atlData = recent.map(d => d.atl || 0).reverse();
+      renderSparkline(document.getElementById('hero-atl-spark'), {
+        data: atlData,
+        color: 'var(--accent-2)',
+        fill: true
+      });
+      
+      // TSB
+      const tsb = latest.tsb || (ctl - atl);
+      const tsbWeekAgo = data.wellness.recent[7]?.tsb || 0;
+      const tsbDelta = tsb - tsbWeekAgo;
+      document.getElementById('hero-tsb-value').textContent = (tsb > 0 ? '+' : '') + tsb.toFixed(1);
+      document.getElementById('hero-tsb-delta').textContent = 'optimal range';
+      
+      const tsbData = recent.map(d => d.tsb || ((d.ctl || 0) - (d.atl || 0))).reverse();
+      renderSparkline(document.getElementById('hero-tsb-spark'), {
+        data: tsbData,
+        color: 'var(--accent-3)',
+        fill: false
+      });
+      
+      // HRV
+      const hrv = latest.hrv || 0;
+      const hrv7d = recent.slice(0, 7).reduce((sum, d) => sum + (d.hrv || 0), 0) / 7;
+      document.getElementById('hero-hrv-value').textContent = hrv.toFixed(0);
+      document.getElementById('hero-hrv-delta').textContent = hrv7d.toFixed(0) + ' · 7d avg';
+      
+      const hrvData = recent.map(d => d.hrv || 0).reverse();
+      renderSparkline(document.getElementById('hero-hrv-spark'), {
+        data: hrvData,
+        color: 'var(--accent)',
+        fill: true
+      });
+      
+      // Sleep
+      const sleep = latest.sleep || 0;
+      const sleep7d = recent.slice(0, 7).reduce((sum, d) => sum + (d.sleep || 0), 0) / 7;
+      document.getElementById('hero-sleep-value').textContent = sleep.toFixed(1) + 'h';
+      document.getElementById('hero-sleep-delta').textContent = sleep7d.toFixed(1) + 'h · 7d avg';
+      
+      const sleepData = recent.map(d => d.sleep || 0).reverse();
+      renderSparkline(document.getElementById('hero-sleep-spark'), {
+        data: sleepData,
+        color: 'var(--accent-3)',
+        fill: true
+      });
+      
+      // Resting HR
+      const rhr = latest.restingHR || 0;
+      const rhr7d = recent.slice(0, 7).reduce((sum, d) => sum + (d.restingHR || 0), 0) / 7;
+      document.getElementById('hero-rhr-value').textContent = rhr.toFixed(0);
+      document.getElementById('hero-rhr-delta').textContent = rhr7d.toFixed(0) + ' · 7d avg';
+      
+      const rhrData = recent.map(d => d.restingHR || 0).reverse();
+      renderSparkline(document.getElementById('hero-rhr-spark'), {
+        data: rhrData,
+        color: 'var(--accent-2)',
+        fill: false
+      });
     }
     
     // 3. Populate Fitness Metrics

@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lee Hopkins — Training OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist+Sans:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/design-tokens.css">
+<link rel="stylesheet" href="assets/css/design-system.css">
+<link rel="stylesheet" href="assets/css/token-bridge.css">
+<link rel="stylesheet" href="assets/css/main.css">
+<script src="assets/js/theme-toggle.js"></script>
+<style>
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--fg);
+    margin: 0;
+    padding: 0;
+  }
+  
+  .app {
+    display: flex;
+    min-height: 100vh;
+  }
+  
+  /* Hero readiness section */
+  .hero-section {
+    margin-bottom: 32px;
+  }
+  
+  .readiness-hero {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 32px;
+    align-items: center;
+  }
+  
+  .readiness-ring-container {
+    width: 180px;
+    height: 180px;
+  }
+  
+  .readiness-details {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .readiness-score {
+    font-family: var(--font-mono);
+    font-size: 48px;
+    font-weight: 500;
+    color: var(--accent);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  
+  .readiness-message {
+    font-size: 18px;
+    color: var(--fg);
+    font-weight: 500;
+  }
+  
+  .readiness-factors {
+    display: flex;
+    gap: 24px;
+    margin-top: 8px;
+  }
+  
+  .readiness-factor {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .readiness-factor-value {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--fg);
+  }
+  
+  .readiness-factor-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--fg-3);
+  }
+  
+  /* YTD Stats Strip */
+  .ytd-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  
+  .ytd-sport-card {
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    padding: 16px;
+  }
+  
+  .ytd-sport-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  
+  .ytd-sport-glyph {
+    font-size: 18px;
+  }
+  
+  .ytd-sport-name {
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--fg-2);
+  }
+  
+  .ytd-stats-row {
+    display: flex;
+    gap: 20px;
+  }
+  
+  .ytd-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  
+  .ytd-stat-value {
+    font-family: var(--font-mono);
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--fg);
+  }
+  
+  .ytd-stat-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--fg-3);
+  }
+  
+  /* Fitness metrics grid */
+  .fitness-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  
+  .fitness-metric-card {
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .fitness-metric-value {
+    font-family: var(--font-mono);
+    font-size: 28px;
+    font-weight: 500;
+    line-height: 1;
+    color: var(--fg);
+  }
+  
+  .fitness-metric-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--fg-3);
+  }
+  
+  .fitness-metric-delta {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--fg-3);
+  }
+  
+  .fitness-metric-delta.positive {
+    color: var(--accent);
+  }
+  
+  .fitness-metric-delta.negative {
+    color: var(--accent-4);
+  }
+  
+  /* Chart cards */
+  .chart-card-new {
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  
+  .chart-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  
+  .chart-card-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--fg);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  
+  .chart-container {
+    width: 100%;
+    height: 300px;
+  }
+  
+  /* Activity feed */
+  .activity-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .activity-card-new {
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: border-color 180ms var(--ease-out);
+  }
+  
+  .activity-card-new:hover {
+    border-color: var(--accent);
+  }
+  
+  .activity-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 8px;
+  }
+  
+  .activity-card-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--fg);
+  }
+  
+  .activity-card-time {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--fg-3);
+  }
+  
+  .activity-card-stats {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  
+  .activity-stat {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--fg-2);
+  }
+  
+  /* Calendar heatmap */
+  .calendar-heatmap {
+    display: grid;
+    grid-template-columns: repeat(53, 1fr);
+    gap: 3px;
+    margin-top: 16px;
+  }
+  
+  .calendar-cell {
+    aspect-ratio: 1;
+    background: var(--bg-2);
+    border-radius: 2px;
+  }
+  
+  .calendar-cell[data-intensity="0"] { background: var(--bg-2); }
+  .calendar-cell[data-intensity="1"] { background: color-mix(in oklch, var(--accent) 20%, var(--bg-2)); }
+  .calendar-cell[data-intensity="2"] { background: color-mix(in oklch, var(--accent) 40%, var(--bg-2)); }
+  .calendar-cell[data-intensity="3"] { background: color-mix(in oklch, var(--accent) 60%, var(--bg-2)); }
+  .calendar-cell[data-intensity="4"] { background: color-mix(in oklch, var(--accent) 80%, var(--bg-2)); }
+  .calendar-cell[data-intensity="5"] { background: var(--accent); }
+  
+  @media (max-width: 768px) {
+    .readiness-hero {
+      grid-template-columns: 1fr;
+      text-align: center;
+    }
+    
+    .readiness-ring-container {
+      margin: 0 auto;
+    }
+    
+    .fitness-metrics {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Sidebar (keep existing structure for now) -->
+  <nav class="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-initials">LH</span>
+      <span class="brand-text">Training<br>OS</span>
+    </div>
+    <ul class="nav-links">
+      <li class="nav-item active"><a href="index.html"><span class="nav-icon">◈</span><span>Overview</span></a></li>
+      <li class="nav-item"><a href="cycling.html"><span class="nav-icon">⬡</span><span>Cycling</span></a></li>
+      <li class="nav-item"><a href="running.html"><span class="nav-icon">▷</span><span>Running</span></a></li>
+      <li class="nav-item"><a href="rowing.html"><span class="nav-icon">⊕</span><span>Rowing</span></a></li>
+      <li class="nav-item"><a href="cardio.html"><span class="nav-icon">◎</span><span>Cardio</span></a></li>
+      <li class="nav-item"><a href="other.html"><span class="nav-icon">○</span><span>Other</span></a></li>
+      <li class="nav-item"><a href="race-stream.html"><span class="nav-icon">📺</span><span>Race Stream</span></a></li>
+      <li class="nav-item"><a href="about.html"><span class="nav-icon">⚙</span><span>Architecture</span></a></li>
+    </ul>
+    <div class="sidebar-footer">
+      <div class="theme-toggle-nav" onclick="toggleTheme()" title="Toggle dark/light mode">
+        <span class="nav-icon theme-icon">☀️</span>
+        <span>Theme</span>
+      </div>
+      <div class="sync-status">
+        <span class="sync-dot"></span>
+        <span class="sync-text" id="last-sync">Loading...</span>
+      </div>
+    </div>
+  </nav>
+
+  <main class="main-content">
+
+    <!-- Page Header -->
+    <header class="page-header">
+      <div class="header-left">
+        <h1 class="page-title">Overview</h1>
+        <span class="page-subtitle" id="page-subtitle">—</span>
+      </div>
+    </header>
+
+    <!-- Loading/Error States -->
+    <div id="loading-state" class="loading-overlay">
+      <div class="loading-spinner"></div>
+      <span id="loading-msg">Loading dashboard data...</span>
+    </div>
+
+    <div id="error-state" class="error-state hidden">
+      <strong>No data found.</strong> <span id="error-msg"></span>
+    </div>
+
+    <!-- Dashboard Content -->
+    <div id="dashboard-content" class="hidden">
+
+      <!-- Hero: Training Readiness -->
+      <section class="hero-section">
+        <div class="ds-card readiness-hero">
+          <div class="readiness-ring-container" id="readiness-ring"></div>
+          <div class="readiness-details">
+            <div class="readiness-score" id="readiness-score">—</div>
+            <div class="readiness-message" id="readiness-message">Calculating readiness...</div>
+            <div class="readiness-factors">
+              <div class="readiness-factor">
+                <div class="readiness-factor-value" id="tsb-factor">—</div>
+                <div class="readiness-factor-label">Form (TSB)</div>
+              </div>
+              <div class="readiness-factor">
+                <div class="readiness-factor-value" id="sleep-factor">—</div>
+                <div class="readiness-factor-label">Sleep (7d)</div>
+              </div>
+              <div class="readiness-factor">
+                <div class="readiness-factor-value" id="hrv-factor">—</div>
+                <div class="readiness-factor-label">HRV Trend</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- YTD Stats Strip -->
+      <section class="ytd-strip">
+        <div class="ytd-sport-card">
+          <div class="ytd-sport-header">
+            <span class="ytd-sport-glyph">⬡</span>
+            <span class="ytd-sport-name">Cycling</span>
+          </div>
+          <div class="ytd-stats-row">
+            <div class="ytd-stat">
+              <div class="ytd-stat-value" id="ytd-cy-dist">—</div>
+              <div class="ytd-stat-label">KM</div>
+            </div>
+            <div class="ytd-stat">
+              <div class="ytd-stat-value" id="ytd-cy-hrs">—</div>
+              <div class="ytd-stat-label">HRS</div>
+            </div>
+            <div class="ytd-stat">
+              <div class="ytd-stat-value" id="ytd-cy-tss">—</div>
+              <div class="ytd-stat-label">TSS</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="ytd-sport-card">
+          <div class="ytd-sport-header">
+            <span class="ytd-sport-glyph">▷</span>
+            <span class="ytd-sport-name">Running</span>
+          </div>
+          <div class="ytd-stats-row">
+            <div class="ytd-stat">
+              <div class="ytd-stat-value" id="ytd-ru-dist">—</div>
+              <div class="ytd-stat-label">KM</div>
+            </div>
+            <div class="ytd-stat">
+              <div class="ytd-stat-value" id="ytd-ru-hrs">—</div>
+              <div class="ytd-stat-label">HRS</div>
+            </div>
+            <div class="ytd-stat">
+              <div class="ytd-stat-value" id="ytd-ru-tss">—</div>
+              <div class="ytd-stat-label">TSS</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="ytd-sport-card">
+          <div class="ytd-sport-header">
+            <span class="ytd-sport-glyph">⊕</span>
+            <span class="ytd-sport-name">Rowing</span>
+          </div>
+          <div class="ytd-stats-row">
+            <div class="ytd-stat">
+              <div class="ytd-stat-value" id="ytd-row-dist">—</div>
+              <div class="ytd-stat-label">KM</div>
+            </div>
+            <div class="ytd-stat">
+              <div class="ytd-stat-value" id="ytd-row-hrs">—</div>
+              <div class="ytd-stat-label">HRS</div>
+            </div>
+            <div class="ytd-stat">
+              <div class="ytd-stat-value" id="ytd-row-tss">—</div>
+              <div class="ytd-stat-label">TSS</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Fitness Metrics Grid -->
+      <section class="fitness-metrics">
+        <div class="fitness-metric-card">
+          <div class="fitness-metric-value" id="ctl-value">—</div>
+          <div class="fitness-metric-label">Fitness (CTL)</div>
+          <div class="fitness-metric-delta" id="ctl-delta">—</div>
+        </div>
+        
+        <div class="fitness-metric-card">
+          <div class="fitness-metric-value" id="atl-value">—</div>
+          <div class="fitness-metric-label">Fatigue (ATL)</div>
+          <div class="fitness-metric-delta" id="atl-delta">—</div>
+        </div>
+        
+        <div class="fitness-metric-card">
+          <div class="fitness-metric-value" id="tsb-value">—</div>
+          <div class="fitness-metric-label">Form (TSB)</div>
+          <div class="fitness-metric-delta" id="tsb-delta">—</div>
+        </div>
+        
+        <div class="fitness-metric-card">
+          <div class="fitness-metric-value" id="hrv-value">—</div>
+          <div class="fitness-metric-label">HRV</div>
+          <div class="fitness-metric-delta" id="hrv-delta">ms</div>
+        </div>
+        
+        <div class="fitness-metric-card">
+          <div class="fitness-metric-value" id="sleep-value">—</div>
+          <div class="fitness-metric-label">Sleep</div>
+          <div class="fitness-metric-delta" id="sleep-delta">hrs last night</div>
+        </div>
+        
+        <div class="fitness-metric-card">
+          <div class="fitness-metric-value" id="rhr-value">—</div>
+          <div class="fitness-metric-label">Resting HR</div>
+          <div class="fitness-metric-delta" id="rhr-delta">bpm</div>
+        </div>
+      </section>
+
+      <!-- Fitness Trend Chart -->
+      <section>
+        <div class="chart-card-new">
+          <div class="chart-card-header">
+            <h3 class="chart-card-title">Fitness Trend — 90 Days</h3>
+          </div>
+          <div class="chart-container" id="fitness-chart"></div>
+        </div>
+      </section>
+
+      <!-- Recent Activities -->
+      <section>
+        <div class="chart-card-new">
+          <div class="chart-card-header">
+            <h3 class="chart-card-title">Recent Activities</h3>
+          </div>
+          <div class="activity-feed" id="recent-activities">
+            <div style="color:var(--fg-3);font-family:var(--font-mono);font-size:12px;padding:20px">Loading activities...</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Training Heatmap -->
+      <section>
+        <div class="chart-card-new">
+          <div class="chart-card-header">
+            <h3 class="chart-card-title">Training Calendar — Last 365 Days</h3>
+          </div>
+          <div class="calendar-heatmap" id="calendar-heatmap"></div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script type="module">
+import { renderRing, renderLineChart, renderSparkline } from '/assets/js/charts-new.js';
+import { calculateReadiness, getReadinessMessage, getReadinessColor } from '/assets/js/readiness.js';
+import { getSportGlyph, getSportColor, formatDuration, formatDistance, formatPower, formatHeartRate, formatRelativeTime } from '/assets/js/sport-helpers.js';
+
+// Load data using existing data-loader
+import '/assets/js/data-loader.js';
+
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    console.log('🎨 New design system loading...');
+    
+    // Wait for data to load (data-loader.js sets window.dashboardData)
+    await new Promise((resolve) => {
+      const checkData = setInterval(() => {
+        if (window.dashboardData) {
+          clearInterval(checkData);
+          resolve();
+        }
+      }, 100);
+      
+      // Timeout after 10s
+      setTimeout(() => {
+        clearInterval(checkData);
+        if (!window.dashboardData) {
+          throw new Error('Data load timeout');
+        }
+      }, 10000);
+    });
+    
+    const data = window.dashboardData;
+    console.log('✅ Data loaded:', data);
+    
+    // Hide loading, show content
+    document.getElementById('loading-state').classList.add('hidden');
+    document.getElementById('dashboard-content').classList.remove('hidden');
+    
+    // 1. Render Training Readiness Hero
+    if (data.wellness) {
+      const score = calculateReadiness(data.wellness);
+      const message = getReadinessMessage(score);
+      const color = getReadinessColor(score);
+      
+      document.getElementById('readiness-score').textContent = score;
+      document.getElementById('readiness-message').textContent = message;
+      
+      // Render ring
+      renderRing(document.getElementById('readiness-ring'), {
+        value: score,
+        max: 100,
+        color: color,
+        label: score,
+        sub: 'Readiness'
+      });
+      
+      // Show factors
+      document.getElementById('tsb-factor').textContent = data.wellness.latest?.tsb?.toFixed(1) || '—';
+      document.getElementById('sleep-factor').textContent = 
+        (data.wellness.recent?.slice(0, 7).reduce((sum, d) => sum + (d.sleep || 0), 0) / 7).toFixed(1) + 'h';
+      document.getElementById('hrv-factor').textContent = data.wellness.latest?.hrv?.toFixed(0) || '—';
+    }
+    
+    // 2. Populate YTD Stats
+    if (data.ytdStats) {
+      // Cycling
+      document.getElementById('ytd-cy-dist').textContent = (data.ytdStats.cycling?.distance / 1000).toFixed(0) || '0';
+      document.getElementById('ytd-cy-hrs').textContent = (data.ytdStats.cycling?.duration / 3600).toFixed(0) || '0';
+      document.getElementById('ytd-cy-tss').textContent = data.ytdStats.cycling?.tss?.toFixed(0) || '0';
+      
+      // Running
+      document.getElementById('ytd-ru-dist').textContent = (data.ytdStats.running?.distance / 1000).toFixed(0) || '0';
+      document.getElementById('ytd-ru-hrs').textContent = (data.ytdStats.running?.duration / 3600).toFixed(0) || '0';
+      document.getElementById('ytd-ru-tss').textContent = data.ytdStats.running?.tss?.toFixed(0) || '0';
+      
+      // Rowing
+      document.getElementById('ytd-row-dist').textContent = (data.ytdStats.rowing?.distance / 1000).toFixed(0) || '0';
+      document.getElementById('ytd-row-hrs').textContent = (data.ytdStats.rowing?.duration / 3600).toFixed(0) || '0';
+      document.getElementById('ytd-row-tss').textContent = data.ytdStats.rowing?.tss?.toFixed(0) || '0';
+    }
+    
+    // 3. Populate Fitness Metrics
+    if (data.wellness?.latest) {
+      const latest = data.wellness.latest;
+      document.getElementById('ctl-value').textContent = latest.ctl?.toFixed(1) || '—';
+      document.getElementById('atl-value').textContent = latest.atl?.toFixed(1) || '—';
+      document.getElementById('tsb-value').textContent = latest.tsb?.toFixed(1) || '—';
+      document.getElementById('hrv-value').textContent = latest.hrv?.toFixed(0) || '—';
+      document.getElementById('sleep-value').textContent = latest.sleep?.toFixed(1) || '—';
+      document.getElementById('rhr-value').textContent = latest.restingHR?.toFixed(0) || '—';
+      
+      // Deltas (7-day comparison)
+      if (data.wellness.recent?.length >= 7) {
+        const weekAgo = data.wellness.recent[6];
+        const ctlDelta = latest.ctl - (weekAgo.ctl || 0);
+        const atlDelta = latest.atl - (weekAgo.atl || 0);
+        const tsbDelta = latest.tsb - (weekAgo.tsb || 0);
+        
+        document.getElementById('ctl-delta').textContent = (ctlDelta > 0 ? '+' : '') + ctlDelta.toFixed(1);
+        document.getElementById('ctl-delta').className = 'fitness-metric-delta ' + (ctlDelta > 0 ? 'positive' : 'negative');
+        
+        document.getElementById('atl-delta').textContent = (atlDelta > 0 ? '+' : '') + atlDelta.toFixed(1);
+        document.getElementById('atl-delta').className = 'fitness-metric-delta ' + (atlDelta > 0 ? 'positive' : 'negative');
+        
+        document.getElementById('tsb-delta').textContent = (tsbDelta > 0 ? '+' : '') + tsbDelta.toFixed(1);
+        document.getElementById('tsb-delta').className = 'fitness-metric-delta ' + (tsbDelta > 0 ? 'positive' : 'negative');
+      }
+    }
+    
+    // 4. Render Fitness Trend Chart
+    if (data.wellness?.recent) {
+      const chartData = data.wellness.recent.slice(0, 90).reverse();
+      renderLineChart(document.getElementById('fitness-chart'), {
+        series: [
+          {
+            key: 'ctl',
+            data: chartData.map(d => ({ x: d.date, y: d.ctl })),
+            color: 'var(--accent)',
+            fill: true
+          },
+          {
+            key: 'atl',
+            data: chartData.map(d => ({ x: d.date, y: d.atl })),
+            color: 'var(--accent-2)'
+          },
+          {
+            key: 'tsb',
+            data: chartData.map(d => ({ x: d.date, y: d.tsb })),
+            color: 'var(--accent-3)',
+            dashed: true
+          }
+        ],
+        zeroLine: true
+      });
+    }
+    
+    // 5. Populate Recent Activities
+    if (data.recentActivities) {
+      const container = document.getElementById('recent-activities');
+      container.innerHTML = data.recentActivities.slice(0, 10).map(activity => {
+        const glyph = getSportGlyph(activity.type);
+        const color = getSportColor(activity.type);
+        
+        return `
+          <div class="activity-card-new" onclick="window.location.href='activity.html?id=${activity.id}'">
+            <div class="activity-card-header">
+              <div class="activity-card-name">${glyph} ${activity.name}</div>
+              <div class="activity-card-time">${formatRelativeTime(activity.start_time)}</div>
+            </div>
+            <div class="activity-card-stats">
+              ${activity.distance ? `<span class="activity-stat">${formatDistance(activity.distance)}</span>` : ''}
+              ${activity.duration ? `<span class="activity-stat">${formatDuration(activity.duration)}</span>` : ''}
+              ${activity.avg_power ? `<span class="activity-stat">${formatPower(activity.avg_power)}</span>` : ''}
+              ${activity.avg_hr ? `<span class="activity-stat">${formatHeartRate(activity.avg_hr)}</span>` : ''}
+              ${activity.tss ? `<span class="activity-stat">${activity.tss.toFixed(0)} TSS</span>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    // 6. Render Training Heatmap (simplified - 53 weeks × 7 days)
+    if (data.activities) {
+      const container = document.getElementById('calendar-heatmap');
+      const today = new Date();
+      const oneYearAgo = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
+      
+      // Create 365 cells
+      for (let i = 0; i < 365; i++) {
+        const date = new Date(oneYearAgo);
+        date.setDate(date.getDate() + i);
+        
+        // Find activities on this date
+        const dateStr = date.toISOString().split('T')[0];
+        const dayActivities = data.activities.filter(a => 
+          a.start_time?.startsWith(dateStr)
+        );
+        
+        const totalTSS = dayActivities.reduce((sum, a) => sum + (a.tss || 0), 0);
+        
+        // Intensity mapping: 0-25 TSS = 1, 25-50 = 2, etc.
+        const intensity = totalTSS === 0 ? 0 : Math.min(5, Math.ceil(totalTSS / 25));
+        
+        const cell = document.createElement('div');
+        cell.className = 'calendar-cell';
+        cell.setAttribute('data-intensity', intensity);
+        cell.title = `${dateStr}: ${totalTSS.toFixed(0)} TSS`;
+        container.appendChild(cell);
+      }
+    }
+    
+    console.log('✅ Design system page loaded successfully');
+    
+  } catch (err) {
+    console.error('❌ Error loading dashboard:', err);
+    document.getElementById('loading-state').classList.add('hidden');
+    document.getElementById('error-state').classList.remove('hidden');
+    document.getElementById('error-msg').textContent = err.message;
+  }
+});
+</script>
+
+</body>
+</html>

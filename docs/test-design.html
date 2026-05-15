@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design System Test</title>
+<link rel="stylesheet" href="assets/css/design-tokens.css">
+<style>
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--fg);
+    padding: 40px;
+  }
+  
+  .test-card {
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    padding: var(--pad);
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  
+  .test-title {
+    font-size: 32px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+  
+  .test-stat {
+    font-family: var(--font-mono);
+    font-size: 48px;
+    font-weight: 500;
+    color: var(--accent);
+  }
+  
+  .test-info {
+    font-size: 14px;
+    color: var(--fg-3);
+    margin-top: 16px;
+    font-family: var(--font-mono);
+  }
+</style>
+</head>
+<body>
+  <div class="test-card">
+    <div class="test-title">Design System Test</div>
+    <div class="test-stat">42</div>
+    <div class="test-info">
+      If you see LIME GREEN text above (not cyan), the design tokens are loading correctly.
+      <br><br>
+      Font family should be Geist Sans (this text) and Geist Mono (this line).
+    </div>
+  </div>
+</body>
+</html>

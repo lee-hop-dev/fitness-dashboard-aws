@@ -210,7 +210,7 @@
   
   /* Hero readiness section */
   .hero-section {
-    margin-bottom: 32px;
+    margin-bottom: 40px;
   }
   
   .readiness-hero {
@@ -218,6 +218,7 @@
     grid-template-columns: auto 1fr;
     gap: 32px;
     align-items: center;
+    padding: 24px;
   }
   
   .readiness-ring-container {
@@ -233,7 +234,7 @@
   
   .readiness-score {
     font-family: var(--font-mono);
-    font-size: 48px;
+    font-size: 56px;
     font-weight: 500;
     color: var(--accent);
     line-height: 1;
@@ -241,14 +242,15 @@
   }
   
   .readiness-message {
-    font-size: 18px;
+    font-size: 20px;
     color: var(--fg);
     font-weight: 500;
+    margin-bottom: 4px;
   }
   
   .readiness-factors {
     display: flex;
-    gap: 24px;
+    gap: 32px;
     margin-top: 8px;
   }
   
@@ -260,7 +262,7 @@
   
   .readiness-factor-value {
     font-family: var(--font-mono);
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 500;
     color: var(--fg);
   }
@@ -277,7 +279,7 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 12px;
-    margin-bottom: 24px;
+    margin-bottom: 32px;
   }
   
   .ytd-sport-card {
@@ -460,16 +462,20 @@
   
   /* Calendar heatmap */
   .calendar-heatmap {
-    display: grid;
-    grid-template-columns: repeat(53, 1fr);
+    display: flex;
     gap: 3px;
     margin-top: 16px;
+    overflow-x: auto;
+    padding: 8px 0;
   }
   
   .calendar-cell {
-    aspect-ratio: 1;
-    background: var(--bg-2);
     border-radius: 2px;
+    transition: transform 0.1s ease;
+  }
+  
+  .calendar-cell:hover {
+    transform: scale(1.2);
   }
   
   .calendar-cell[data-intensity="0"] { background: var(--bg-2); }
@@ -825,8 +831,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
     
-    // 4. Render Fitness Trend Chart
+    // 4. Render Fitness Trend Chart with Legend
     if (data.wellness?.recent) {
+      const chartContainer = document.getElementById('fitness-chart');
       const chartData = data.wellness.recent.slice(0, 90).reverse();
       
       // Calculate TSB from CTL and ATL (TSB = CTL - ATL)
@@ -850,10 +857,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       ];
       
-      renderLineChart(document.getElementById('fitness-chart'), {
+      renderLineChart(chartContainer, {
         series,
         zeroLine: true
       });
+      
+      // Add legend after chart renders
+      setTimeout(() => {
+        const legendHTML = `
+          <div style="display: flex; gap: 24px; justify-content: center; margin-top: 16px; font-family: var(--font-mono); font-size: 11px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="width: 20px; height: 3px; background: var(--accent);"></div>
+              <span style="color: var(--fg-2);">CTL (Fitness)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="width: 20px; height: 3px; background: var(--accent-2);"></div>
+              <span style="color: var(--fg-2);">ATL (Fatigue)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="width: 20px; height: 2px; background: var(--accent-3); border-top: 2px dashed var(--accent-3);"></div>
+              <span style="color: var(--fg-2);">TSB (Form)</span>
+            </div>
+          </div>
+        `;
+        chartContainer.insertAdjacentHTML('afterend', legendHTML);
+      }, 100);
     }
     
     // 5. Populate Recent Activities
@@ -882,34 +910,65 @@ document.addEventListener('DOMContentLoaded', async () => {
       }).join('');
     }
     
-    // 6. Render Training Heatmap (simplified - 53 weeks × 7 days)
+    // 6. Render Training Heatmap (improved with proper week layout)
     if (data.activities) {
       const container = document.getElementById('calendar-heatmap');
-      const today = new Date();
-      const oneYearAgo = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
+      container.innerHTML = ''; // Clear existing
       
-      // Create 365 cells
-      for (let i = 0; i < 365; i++) {
-        const date = new Date(oneYearAgo);
-        date.setDate(date.getDate() + i);
-        
-        // Find activities on this date
-        const dateStr = date.toISOString().split('T')[0];
-        const dayActivities = data.activities.filter(a => 
-          a.start_time?.startsWith(dateStr)
-        );
-        
-        const totalTSS = dayActivities.reduce((sum, a) => sum + (a.tss || 0), 0);
-        
-        // Intensity mapping: 0-25 TSS = 1, 25-50 = 2, etc.
-        const intensity = totalTSS === 0 ? 0 : Math.min(5, Math.ceil(totalTSS / 25));
-        
-        const cell = document.createElement('div');
-        cell.className = 'calendar-cell';
-        cell.setAttribute('data-intensity', intensity);
-        cell.title = `${dateStr}: ${totalTSS.toFixed(0)} TSS`;
-        container.appendChild(cell);
+      const today = new Date();
+      const oneYearAgo = new Date(today);
+      oneYearAgo.setFullYear(today.getFullYear() - 1);
+      
+      // Build TSS by date map
+      const tssByDate = {};
+      data.activities.forEach(a => {
+        const dateStr = (a.start_date || a.date || '').split('T')[0];
+        if (dateStr) {
+          tssByDate[dateStr] = (tssByDate[dateStr] || 0) + (a.tss || a.icu_training_load || 0);
+        }
+      });
+      
+      // Create 53 weeks of cells (7 days each)
+      const weeks = [];
+      let currentDate = new Date(oneYearAgo);
+      
+      // Start from Sunday
+      while (currentDate.getDay() !== 0) {
+        currentDate.setDate(currentDate.getDate() - 1);
       }
+      
+      for (let week = 0; week < 53; week++) {
+        const weekCells = [];
+        for (let day = 0; day < 7; day++) {
+          const dateStr = currentDate.toISOString().split('T')[0];
+          const tss = tssByDate[dateStr] || 0;
+          const intensity = tss === 0 ? 0 : Math.min(5, Math.ceil(tss / 30));
+          
+          weekCells.push({ date: dateStr, tss, intensity });
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+        weeks.push(weekCells);
+      }
+      
+      // Render as vertical columns (weeks) with horizontal days
+      weeks.forEach(week => {
+        const weekCol = document.createElement('div');
+        weekCol.style.display = 'flex';
+        weekCol.style.flexDirection = 'column';
+        weekCol.style.gap = '3px';
+        
+        week.forEach(cell => {
+          const cellEl = document.createElement('div');
+          cellEl.className = 'calendar-cell';
+          cellEl.setAttribute('data-intensity', cell.intensity);
+          cellEl.title = `${cell.date}: ${cell.tss.toFixed(0)} TSS`;
+          cellEl.style.width = '12px';
+          cellEl.style.height = '12px';
+          weekCol.appendChild(cellEl);
+        });
+        
+        container.appendChild(weekCol);
+      });
     }
     
     console.log('✅ Design system page loaded successfully');

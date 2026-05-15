@@ -210,68 +210,71 @@
   
   /* Hero readiness section */
   .hero-section {
-    margin-bottom: 40px;
+    margin-bottom: 48px;
   }
   
   .readiness-hero {
     display: grid;
     grid-template-columns: auto 1fr;
-    gap: 32px;
+    gap: 40px;
     align-items: center;
-    padding: 24px;
+    padding: 32px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   }
   
   .readiness-ring-container {
-    width: 180px;
-    height: 180px;
+    width: 200px;
+    height: 200px;
   }
   
   .readiness-details {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
   }
   
   .readiness-score {
     font-family: var(--font-mono);
-    font-size: 56px;
-    font-weight: 500;
+    font-size: 72px;
+    font-weight: 600;
     color: var(--accent);
     line-height: 1;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
+    text-shadow: 0 0 20px rgba(186, 230, 126, 0.3);
   }
   
   .readiness-message {
-    font-size: 20px;
+    font-size: 24px;
     color: var(--fg);
     font-weight: 500;
-    margin-bottom: 4px;
+    margin-bottom: 8px;
   }
   
   .readiness-factors {
     display: flex;
-    gap: 32px;
-    margin-top: 8px;
+    gap: 40px;
+    margin-top: 12px;
   }
   
   .readiness-factor {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
   }
   
   .readiness-factor-value {
     font-family: var(--font-mono);
-    font-size: 18px;
-    font-weight: 500;
+    font-size: 22px;
+    font-weight: 600;
     color: var(--fg);
   }
   
   .readiness-factor-label {
     font-size: 10px;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.1em;
     color: var(--fg-3);
+    font-weight: 500;
   }
   
   /* YTD Stats Strip */
@@ -286,7 +289,8 @@
     background: var(--bg-1);
     border: 1px solid var(--line);
     border-radius: var(--r);
-    padding: 16px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   }
   
   .ytd-sport-header {
@@ -321,8 +325,8 @@
   
   .ytd-stat-value {
     font-family: var(--font-mono);
-    font-size: 20px;
-    font-weight: 500;
+    font-size: 28px;
+    font-weight: 600;
     color: var(--fg);
   }
   
@@ -345,16 +349,17 @@
     background: var(--bg-1);
     border: 1px solid var(--line);
     border-radius: var(--r);
-    padding: 16px;
+    padding: 20px;
     display: flex;
     flex-direction: column;
     gap: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   }
   
   .fitness-metric-value {
     font-family: var(--font-mono);
-    font-size: 28px;
-    font-weight: 500;
+    font-size: 36px;
+    font-weight: 600;
     line-height: 1;
     color: var(--fg);
   }
@@ -385,8 +390,9 @@
     background: var(--bg-1);
     border: 1px solid var(--line);
     border-radius: var(--r);
-    padding: 20px;
-    margin-bottom: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   }
   
   .chart-card-header {
@@ -841,8 +847,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         {
           key: 'ctl',
           data: chartData.map(d => d.ctl || 0),
-          color: 'var(--accent)',
-          fill: true
+          color: 'var(--accent)'
         },
         {
           key: 'atl',

@@ -1,0 +1,113 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Training OS — Design Tokens
+   Single source of truth for color, type, spacing, radii.
+   Drop this file into the app's global styles and import it before
+   any component CSS.
+   ───────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ─── Color: surfaces ─── */
+  --bg:    #0a0b0c;   /* page */
+  --bg-1:  #101113;   /* card */
+  --bg-2:  #15171a;   /* card alt / chip */
+  --bg-3:  #1c1f24;   /* deeper inset / hover */
+
+  /* ─── Color: lines ─── */
+  --line:   rgba(255, 255, 255, 0.06);
+  --line-2: rgba(255, 255, 255, 0.10);
+  --line-3: rgba(255, 255, 255, 0.16);
+
+  /* ─── Color: foreground ─── */
+  --fg:    #ecedef;   /* primary text */
+  --fg-2:  #b5b8bd;   /* secondary text */
+  --fg-3:  #797d84;   /* tertiary, helper, captions */
+  --fg-4:  #4e525a;   /* axes, hint */
+
+  /* ─── Color: accents (use --accent for sport-/state-aware UI) ─── */
+  --accent:   oklch(0.86 0.20 130);   /* default: lime */
+  --accent-2: oklch(0.74 0.18 30);    /* coral — fatigue / warnings / Run */
+  --accent-3: oklch(0.78 0.16 240);   /* ice — TSB / cool actions / Row */
+  --accent-4: oklch(0.78 0.16 320);   /* magenta — Cardio / Other */
+
+  /* ─── Color: semantic ─── */
+  --good: oklch(0.82 0.18 150);
+  --warn: oklch(0.82 0.18 75);
+  --bad:  oklch(0.72 0.20 25);
+
+  /* ─── Typography ─── */
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* ─── Radius ─── */
+  --r-sm: 6px;
+  --r:    10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+
+  /* ─── Spacing (card padding scales with density) ─── */
+  --pad: 16px;
+}
+
+/* ─── Theme: light ─── */
+[data-theme="light"] {
+  --bg:    #f6f6f4;
+  --bg-1:  #ffffff;
+  --bg-2:  #f0f0ec;
+  --bg-3:  #e6e6e1;
+  --line:   rgba(0, 0, 0, 0.07);
+  --line-2: rgba(0, 0, 0, 0.12);
+  --line-3: rgba(0, 0, 0, 0.18);
+  --fg:    #15171a;
+  --fg-2:  #43474c;
+  --fg-3:  #74787e;
+  --fg-4:  #a7abb0;
+}
+
+/* ─── Accent variants (set data-accent on <html>) ─── */
+[data-accent="lime"]    { --accent: oklch(0.86 0.20 130); }   /* DEFAULT */
+[data-accent="coral"]   { --accent: oklch(0.76 0.19 30);  }
+[data-accent="ice"]     { --accent: oklch(0.80 0.16 230); }
+[data-accent="magenta"] { --accent: oklch(0.74 0.22 330); }
+[data-accent="amber"]   { --accent: oklch(0.84 0.18 80);  }
+
+/* ─── Density (set data-density on <html>) ─── */
+[data-density="compact"] { --pad: 12px; }
+[data-density="regular"] { --pad: 16px; }
+[data-density="cozy"]    { --pad: 20px; }
+
+/* ─── Heart-rate / power zone palette ─── */
+/* Used by zone bars, zone distribution, lap-type indicators */
+:root {
+  --z1: oklch(0.55 0.05 250);   /* recovery       — slate */
+  --z2: oklch(0.68 0.10 200);   /* endurance      — teal */
+  --z3: oklch(0.78 0.16 130);   /* tempo          — green */
+  --z4: oklch(0.80 0.18 75);    /* threshold      — amber */
+  --z5: oklch(0.72 0.22 25);    /* VO2max         — coral */
+  --z6: oklch(0.60 0.25 0);     /* anaerobic      — red */
+}
+
+/* ─── Type scale (utility classes — use these or copy the values) ─── */
+.t-hero    { font-family: var(--font-mono); font-size: 92px; line-height: 0.9;  letter-spacing: -0.04em; font-weight: 500; }
+.t-display { font-family: var(--font-mono); font-size: 38px; line-height: 1;    letter-spacing: -0.03em; font-weight: 500; }
+.t-h1      { font-family: var(--font-sans); font-size: 32px; line-height: 1.05; letter-spacing: -0.025em; font-weight: 500; }
+.t-h2      { font-family: var(--font-sans); font-size: 22px; line-height: 1.15; letter-spacing: -0.02em;  font-weight: 500; }
+.t-stat    { font-family: var(--font-mono); font-size: 28px; line-height: 1;    letter-spacing: -0.02em;  font-weight: 500; }
+.t-stat-sm { font-family: var(--font-mono); font-size: 20px; line-height: 1;    letter-spacing: -0.02em;  font-weight: 500; }
+.t-body    { font-family: var(--font-sans); font-size: 13px; line-height: 1.4; }
+.t-meta    { font-family: var(--font-mono); font-size: 11px; line-height: 1.3; }
+.t-label   { font-family: var(--font-sans); font-size: 10.5px; line-height: 1.2; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; }
+
+/* numeric tabular (everywhere numbers are shown) */
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* ─── Motion ─── */
+:root {
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
+  --d-fast:   180ms;
+  --d-base:   320ms;
+  --d-slow:   1400ms;
+}

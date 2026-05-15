@@ -220,6 +220,25 @@
     align-items: center;
     padding: 32px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .readiness-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.5;
+    pointer-events: none;
+    background: 
+      radial-gradient(900px 320px at 75% -10%, color-mix(in oklch, var(--accent) 22%, transparent), transparent 60%),
+      radial-gradient(600px 240px at 0% 110%, color-mix(in oklch, var(--accent-3) 14%, transparent), transparent 60%);
+  }
+  
+  .readiness-ring-container,
+  .readiness-details {
+    position: relative;
+    z-index: 1;
   }
   
   .readiness-ring-container {
@@ -335,6 +354,166 @@
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--fg-3);
+  }
+  
+  /* YTD Stats Strip - NEW 5-column design */
+  .ytd-strip-new {
+    margin-bottom: 20px;
+  }
+  
+  .ytd-card {
+    padding: 0;
+    overflow: hidden;
+  }
+  
+  .ytd-grid {
+    display: grid;
+    grid-template-columns: 1.2fr repeat(4, 1fr);
+  }
+  
+  .ytd-col {
+    padding: 22px;
+    border-right: 1px solid var(--line);
+  }
+  
+  .ytd-col:last-child {
+    border-right: none;
+  }
+  
+  /* Column 1: Totals */
+  .ytd-totals {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .ytd-label {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--fg-3);
+  }
+  
+  .ytd-totals-stats {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+  
+  .ytd-total-value {
+    font-family: var(--font-mono);
+    font-size: 38px;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: var(--fg);
+  }
+  
+  .ytd-total-value::after {
+    content: ' km';
+    font-size: 13px;
+    color: var(--fg-3);
+    margin-left: 4px;
+  }
+  
+  .ytd-total-label {
+    font-size: 11px;
+    color: var(--fg-3);
+    margin-top: 4px;
+  }
+  
+  .ytd-total-sub {
+    font-family: var(--font-mono);
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: var(--fg);
+  }
+  
+  .ytd-total-sublabel {
+    font-size: 11px;
+    color: var(--fg-3);
+    margin-top: 2px;
+  }
+  
+  .ytd-color-bar {
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+    display: flex;
+    margin-top: 12px;
+  }
+  
+  .ytd-color-bar > div {
+    height: 100%;
+  }
+  
+  /* Columns 2-5: Sports */
+  .ytd-sport {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .ytd-sport-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .ytd-glyph {
+    font-size: 16px;
+  }
+  
+  .ytd-sport-name {
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--fg-2);
+  }
+  
+  .ytd-sport-value {
+    font-family: var(--font-mono);
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    color: var(--fg);
+    margin-top: 12px;
+  }
+  
+  .ytd-sport-meta {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--fg-4);
+    margin-top: 8px;
+  }
+  
+  .ytd-progress-container {
+    margin-top: 12px;
+    height: 28px;
+    border-radius: 4px;
+    background: var(--bg-2);
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .ytd-progress-bar {
+    position: absolute;
+    inset: 0;
+    width: 0%;
+    opacity: 0.7;
+    transition: width 0.5s ease;
+  }
+  
+  .ytd-progress-label {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--fg);
   }
   
   /* Fitness metrics grid */
@@ -587,66 +766,91 @@
       </section>
 
       <!-- YTD Stats Strip -->
-      <section class="ytd-strip">
-        <div class="ytd-sport-card">
-          <div class="ytd-sport-header">
-            <span class="ytd-sport-glyph">⬡</span>
-            <span class="ytd-sport-name">Cycling</span>
-          </div>
-          <div class="ytd-stats-row">
-            <div class="ytd-stat">
-              <div class="ytd-stat-value" id="ytd-cy-dist">—</div>
-              <div class="ytd-stat-label">KM</div>
+      <section class="ytd-strip-new">
+        <div class="ds-card ytd-card">
+          <div class="ytd-grid">
+            <!-- Column 1: Totals -->
+            <div class="ytd-col ytd-totals">
+              <div class="ytd-label">2026 YEAR-TO-DATE</div>
+              <div class="ytd-totals-stats">
+                <div>
+                  <div class="ytd-total-value" id="ytd-total-dist">—</div>
+                  <div class="ytd-total-label">Distance · all sports</div>
+                </div>
+                <div>
+                  <div class="ytd-total-sub" id="ytd-total-hrs">—</div>
+                  <div class="ytd-total-sublabel">Time</div>
+                </div>
+                <div>
+                  <div class="ytd-total-sub" id="ytd-total-tss">—</div>
+                  <div class="ytd-total-sublabel">TSS</div>
+                </div>
+              </div>
+              <div class="ytd-color-bar" id="ytd-color-bar"></div>
             </div>
-            <div class="ytd-stat">
-              <div class="ytd-stat-value" id="ytd-cy-hrs">—</div>
-              <div class="ytd-stat-label">HRS</div>
+
+            <!-- Column 2: Cycling -->
+            <div class="ytd-col ytd-sport">
+              <div class="ytd-sport-header">
+                <span class="ytd-glyph" style="color: var(--accent)">⬡</span>
+                <span class="ytd-sport-name">CYCLING</span>
+              </div>
+              <div class="ytd-sport-value" id="ytd-cy-primary">—</div>
+              <div class="ytd-sport-meta">
+                <span id="ytd-cy-hrs">—</span> · <span id="ytd-cy-tss">—</span>
+              </div>
+              <div class="ytd-progress-container">
+                <div class="ytd-progress-bar" id="ytd-cy-progress"></div>
+                <div class="ytd-progress-label" id="ytd-cy-pct">—</div>
+              </div>
             </div>
-            <div class="ytd-stat">
-              <div class="ytd-stat-value" id="ytd-cy-tss">—</div>
-              <div class="ytd-stat-label">TSS</div>
+
+            <!-- Column 3: Running -->
+            <div class="ytd-col ytd-sport">
+              <div class="ytd-sport-header">
+                <span class="ytd-glyph" style="color: var(--accent-2)">▷</span>
+                <span class="ytd-sport-name">RUNNING</span>
+              </div>
+              <div class="ytd-sport-value" id="ytd-ru-primary">—</div>
+              <div class="ytd-sport-meta">
+                <span id="ytd-ru-hrs">—</span> · <span id="ytd-ru-tss">—</span>
+              </div>
+              <div class="ytd-progress-container">
+                <div class="ytd-progress-bar" id="ytd-ru-progress"></div>
+                <div class="ytd-progress-label" id="ytd-ru-pct">—</div>
+              </div>
             </div>
-          </div>
-        </div>
-        
-        <div class="ytd-sport-card">
-          <div class="ytd-sport-header">
-            <span class="ytd-sport-glyph">▷</span>
-            <span class="ytd-sport-name">Running</span>
-          </div>
-          <div class="ytd-stats-row">
-            <div class="ytd-stat">
-              <div class="ytd-stat-value" id="ytd-ru-dist">—</div>
-              <div class="ytd-stat-label">KM</div>
+
+            <!-- Column 4: Rowing -->
+            <div class="ytd-col ytd-sport">
+              <div class="ytd-sport-header">
+                <span class="ytd-glyph" style="color: var(--accent-3)">⊕</span>
+                <span class="ytd-sport-name">ROWING</span>
+              </div>
+              <div class="ytd-sport-value" id="ytd-row-primary">—</div>
+              <div class="ytd-sport-meta">
+                <span id="ytd-row-hrs">—</span> · <span id="ytd-row-tss">—</span>
+              </div>
+              <div class="ytd-progress-container">
+                <div class="ytd-progress-bar" id="ytd-row-progress"></div>
+                <div class="ytd-progress-label" id="ytd-row-pct">—</div>
+              </div>
             </div>
-            <div class="ytd-stat">
-              <div class="ytd-stat-value" id="ytd-ru-hrs">—</div>
-              <div class="ytd-stat-label">HRS</div>
-            </div>
-            <div class="ytd-stat">
-              <div class="ytd-stat-value" id="ytd-ru-tss">—</div>
-              <div class="ytd-stat-label">TSS</div>
-            </div>
-          </div>
-        </div>
-        
-        <div class="ytd-sport-card">
-          <div class="ytd-sport-header">
-            <span class="ytd-sport-glyph">⊕</span>
-            <span class="ytd-sport-name">Rowing</span>
-          </div>
-          <div class="ytd-stats-row">
-            <div class="ytd-stat">
-              <div class="ytd-stat-value" id="ytd-row-dist">—</div>
-              <div class="ytd-stat-label">KM</div>
-            </div>
-            <div class="ytd-stat">
-              <div class="ytd-stat-value" id="ytd-row-hrs">—</div>
-              <div class="ytd-stat-label">HRS</div>
-            </div>
-            <div class="ytd-stat">
-              <div class="ytd-stat-value" id="ytd-row-tss">—</div>
-              <div class="ytd-stat-label">TSS</div>
+
+            <!-- Column 5: Cardio -->
+            <div class="ytd-col ytd-sport">
+              <div class="ytd-sport-header">
+                <span class="ytd-glyph" style="color: var(--accent-4)">◎</span>
+                <span class="ytd-sport-name">CARDIO</span>
+              </div>
+              <div class="ytd-sport-value" id="ytd-crd-primary">—</div>
+              <div class="ytd-sport-meta">
+                <span id="ytd-crd-hrs">—</span> · <span id="ytd-crd-tss">—</span>
+              </div>
+              <div class="ytd-progress-container">
+                <div class="ytd-progress-bar" id="ytd-crd-progress"></div>
+                <div class="ytd-progress-label" id="ytd-crd-pct">—</div>
+              </div>
             </div>
           </div>
         </div>
@@ -791,22 +995,75 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('hrv-factor').textContent = data.wellness.latest?.hrv?.toFixed(0) || '—';
     }
     
-    // 2. Populate YTD Stats
+    // 2. Populate YTD Stats - NEW 5-column design
     if (data.ytdStats) {
+      const cy = data.ytdStats.cycling || {};
+      const ru = data.ytdStats.running || {};
+      const row = data.ytdStats.rowing || {};
+      const crd = data.ytdStats.cardio || {};
+      
+      // Calculate totals
+      const totalDist = (cy.distance || 0) + (ru.distance || 0) + (row.distance || 0) + (crd.distance || 0);
+      const totalHrs = (cy.hours || 0) + (ru.hours || 0) + (row.hours || 0) + (crd.hours || 0);
+      const totalTss = (cy.tss || 0) + (ru.tss || 0) + (row.tss || 0) + (crd.tss || 0);
+      
+      // Totals column
+      document.getElementById('ytd-total-dist').textContent = totalDist.toLocaleString();
+      document.getElementById('ytd-total-hrs').textContent = totalHrs.toFixed(0) + 'h';
+      document.getElementById('ytd-total-tss').textContent = (totalTss/1000).toFixed(1) + 'k';
+      
+      // Color bar
+      const colorBar = document.getElementById('ytd-color-bar');
+      const cyFlex = cy.distance || cy.hours * 10 || 1;
+      const ruFlex = ru.distance || ru.hours * 10 || 1;
+      const rowFlex = row.distance || row.hours * 10 || 1;
+      const crdFlex = crd.distance || crd.hours * 10 || 1;
+      colorBar.innerHTML = `
+        <div style="flex: ${cyFlex}; background: var(--accent)"></div>
+        <div style="flex: ${ruFlex}; background: var(--accent-2)"></div>
+        <div style="flex: ${rowFlex}; background: var(--accent-3)"></div>
+        <div style="flex: ${crdFlex}; background: var(--accent-4)"></div>
+      `;
+      
       // Cycling
-      document.getElementById('ytd-cy-dist').textContent = data.ytdStats.cycling?.distance || '0';
-      document.getElementById('ytd-cy-hrs').textContent = data.ytdStats.cycling?.hours?.toFixed(0) || '0';
-      document.getElementById('ytd-cy-tss').textContent = data.ytdStats.cycling?.tss || '0';
+      const cyPrimary = cy.distance > 0 ? cy.distance.toLocaleString() + ' km' : cy.hours.toFixed(0) + ' h';
+      document.getElementById('ytd-cy-primary').textContent = cyPrimary;
+      document.getElementById('ytd-cy-hrs').textContent = cy.hours.toFixed(0) + 'h';
+      document.getElementById('ytd-cy-tss').textContent = (cy.tss || 0).toLocaleString() + ' TSS';
+      const cyPct = ((cy.distance || cy.hours * 10) / (totalDist || 1) * 100).toFixed(0);
+      document.getElementById('ytd-cy-pct').textContent = cyPct + '% of yearly km';
+      document.getElementById('ytd-cy-progress').style.width = cyPct + '%';
+      document.getElementById('ytd-cy-progress').style.background = 'linear-gradient(90deg, var(--accent), color-mix(in oklch, var(--accent) 30%, transparent))';
       
       // Running
-      document.getElementById('ytd-ru-dist').textContent = data.ytdStats.running?.distance || '0';
-      document.getElementById('ytd-ru-hrs').textContent = data.ytdStats.running?.hours?.toFixed(0) || '0';
-      document.getElementById('ytd-ru-tss').textContent = data.ytdStats.running?.tss || '0';
+      const ruPrimary = ru.distance > 0 ? ru.distance.toLocaleString() + ' km' : ru.hours.toFixed(0) + ' h';
+      document.getElementById('ytd-ru-primary').textContent = ruPrimary;
+      document.getElementById('ytd-ru-hrs').textContent = ru.hours.toFixed(0) + 'h';
+      document.getElementById('ytd-ru-tss').textContent = (ru.tss || 0).toLocaleString() + ' TSS';
+      const ruPct = ((ru.distance || ru.hours * 10) / (totalDist || 1) * 100).toFixed(0);
+      document.getElementById('ytd-ru-pct').textContent = ruPct + '% of yearly km';
+      document.getElementById('ytd-ru-progress').style.width = ruPct + '%';
+      document.getElementById('ytd-ru-progress').style.background = 'linear-gradient(90deg, var(--accent-2), color-mix(in oklch, var(--accent-2) 30%, transparent))';
       
       // Rowing
-      document.getElementById('ytd-row-dist').textContent = data.ytdStats.rowing?.distance || '0';
-      document.getElementById('ytd-row-hrs').textContent = data.ytdStats.rowing?.hours?.toFixed(0) || '0';
-      document.getElementById('ytd-row-tss').textContent = data.ytdStats.rowing?.tss || '0';
+      const rowPrimary = row.distance > 0 ? row.distance.toLocaleString() + ' km' : row.hours.toFixed(0) + ' h';
+      document.getElementById('ytd-row-primary').textContent = rowPrimary;
+      document.getElementById('ytd-row-hrs').textContent = row.hours.toFixed(0) + 'h';
+      document.getElementById('ytd-row-tss').textContent = (row.tss || 0).toLocaleString() + ' TSS';
+      const rowPct = ((row.distance || row.hours * 10) / (totalDist || 1) * 100).toFixed(0);
+      document.getElementById('ytd-row-pct').textContent = rowPct + '% of yearly km';
+      document.getElementById('ytd-row-progress').style.width = rowPct + '%';
+      document.getElementById('ytd-row-progress').style.background = 'linear-gradient(90deg, var(--accent-3), color-mix(in oklch, var(--accent-3) 30%, transparent))';
+      
+      // Cardio
+      const crdPrimary = crd.distance > 0 ? crd.distance.toLocaleString() + ' km' : crd.hours.toFixed(0) + ' h';
+      document.getElementById('ytd-crd-primary').textContent = crdPrimary;
+      document.getElementById('ytd-crd-hrs').textContent = crd.hours.toFixed(0) + 'h';
+      document.getElementById('ytd-crd-tss').textContent = (crd.tss || 0).toLocaleString() + ' TSS';
+      const crdPct = ((crd.distance || crd.hours * 10) / (totalDist || 1) * 100).toFixed(0);
+      document.getElementById('ytd-crd-pct').textContent = crdPct + '% of yearly km';
+      document.getElementById('ytd-crd-progress').style.width = crdPct + '%';
+      document.getElementById('ytd-crd-progress').style.background = 'linear-gradient(90deg, var(--accent-4), color-mix(in oklch, var(--accent-4) 30%, transparent))';
     }
     
     // 3. Populate Fitness Metrics

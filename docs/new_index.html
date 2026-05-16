@@ -871,6 +871,118 @@
     gap: var(--space-3);
   }
 
+  /* Hero Card Layout for Recent Activities (from original page) */
+  .activity-card-hero {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    margin-bottom: 12px;
+  }
+
+  .activity-card-hero:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  .activity-card-wedge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 40px;
+    height: 40px;
+    background: var(--bg-2);
+    border-bottom-left-radius: 100%;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    z-index: 1;
+  }
+
+  .activity-card-wedge:hover {
+    background: var(--accent);
+  }
+
+  .activity-card-type {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+  }
+
+  .type-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  .type-ride, .type-ride .type-dot { background: var(--accent); color: var(--bg-1); }
+  .type-run, .type-run .type-dot { background: var(--accent-2); color: var(--bg-1); }
+  .type-row, .type-row .type-dot { background: var(--accent-3); color: var(--bg-1); }
+  .type-cardio, .type-cardio .type-dot { background: var(--accent-4); color: var(--bg-1); }
+  .type-other { background: var(--bg-3); color: var(--text-2); }
+
+  .activity-card-name-hero {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-1);
+    margin-bottom: 12px;
+    line-height: 1.3;
+  }
+
+  .activity-card-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    padding: 12px 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .activity-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .activity-stat-value {
+    font-size: 16px;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--text-1);
+  }
+
+  .activity-stat-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-3);
+  }
+
+  .activity-card-footer-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--text-3);
+  }
+
+  .tss-val-hero {
+    font-weight: 600;
+    color: var(--text-2);
+  }
+
   .week-plan-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
@@ -1742,7 +1854,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const CYCLING = ['Ride','VirtualRide','EBikeRide','EMountainBikeRide','GravelRide','MountainBikeRide','TrackRide','Velomobile'];
       const RUNNING = ['Run','VirtualRun','TrailRun'];
       const ROWING  = ['Rowing','VirtualRow'];
-      const CARDIO  = ['Workout'];
+      const CARDIO  = ['Workout','WeightTraining','HighIntensityIntervalTraining','HIIT','CrossTraining','Yoga','Pilates','Calisthenics'];
 
       const sum = (keys) => keys.reduce((acc, k) => {
         const s = sports[k];
@@ -2150,8 +2262,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       console.warn('⚠️ No wellness data available for fitness chart');
     }
     
-    // 5. Populate Recent Activities
-    console.log('📋 Populating recent activities...');
+    // 5. Populate Recent Activities - Hero Card Layout (from original page)
+    console.log('📋 Populating recent activities with hero card layout...');
     if (data.recentActivities && data.recentActivities.length > 0) {
       const container = document.getElementById('recent-activities');
       if (!container) {
@@ -2160,28 +2272,89 @@ document.addEventListener('DOMContentLoaded', async () => {
         const activitiesToShow = data.recentActivities.slice(0, 10);
         console.log('  Activities to render:', activitiesToShow.length);
         
-        container.innerHTML = activitiesToShow.map(activity => {
-          const glyph = getSportGlyph(activity.type);
-          const color = getSportColor(activity.type);
-          const activityDate = activity.start_date || activity.start_date_local || activity.date;
+        // Helper functions for activity card rendering (from original page)
+        const normalizeActivityType = (type) => {
+          if (!type) return 'Other';
+          if (type.includes('Ride') || type.includes('Cycle')) return 'Cycling';
+          if (type.includes('Run')) return 'Running';
+          if (type.includes('Row')) return 'Rowing';
+          if (type === 'Workout' || type === 'WeightTraining' || type === 'HIIT') return 'Cardio';
+          return 'Other';
+        };
+        
+        const getTypeInfo = (normalizedType) => {
+          const types = {
+            'Cycling': { label: 'Cycling', colorClass: 'type-ride', dotClass: 'dot-ride' },
+            'Running': { label: 'Running', colorClass: 'type-run', dotClass: 'dot-run' },
+            'Rowing': { label: 'Rowing', colorClass: 'type-row', dotClass: 'dot-row' },
+            'Cardio': { label: 'Cardio', colorClass: 'type-cardio', dotClass: 'dot-cardio' },
+            'Other': { label: 'Other', colorClass: 'type-other', dotClass: 'dot-other' }
+          };
+          return types[normalizedType] || types['Other'];
+        };
+        
+        const formatPace = (secPerKm) => {
+          if (!secPerKm) return '—';
+          const min = Math.floor(secPerKm / 60);
+          const sec = Math.floor(secPerKm % 60);
+          return `${min}:${sec.toString().padStart(2, '0')}`;
+        };
+        
+        const getTSS = (a) => a.tss || a.icu_training_load || 0;
+        
+        const getIntervalsActivityUrl = (id) => {
+          const idStr = String(id);
+          const activityId = idStr.startsWith('i') ? idStr : `i${idStr}`;
+          return `https://intervals.icu/activities/${activityId}`;
+        };
+        
+        // Render hero cards matching original page layout
+        container.innerHTML = activitiesToShow.map(a => {
+          const normalizedType = normalizeActivityType(a.type);
+          const info = getTypeInfo(normalizedType);
+          
+          // Determine whether to show pace or power based on activity type
+          const isRunning = info.label === 'Running';
+          const paceSecKm = a.avg_speed ? Math.round(1000/a.avg_speed) : null;
+          
+          let stat1val, stat1lbl;
+          if (isRunning && a.avg_speed) {
+            stat1val = formatPace(paceSecKm);
+            stat1lbl = 'Pace/km';
+          } else if (a.avg_power) {
+            stat1val = `${a.avg_power}W`;
+            stat1lbl = 'Avg Power';
+          } else if (a.avg_speed) {
+            stat1val = formatPace(paceSecKm);
+            stat1lbl = 'Pace/km';
+          } else {
+            stat1val = '—';
+            stat1lbl = 'Effort';
+          }
+          
+          const activityDate = a.start_date || a.date;
           
           return `
-            <div class="activity-card-new" onclick="window.location.href='activity.html?id=${activity.id}'">
-              <div class="activity-card-header">
-                <div class="activity-card-name">${glyph} ${activity.name}</div>
-                <div class="activity-card-time">${activityDate ? formatRelativeTime(activityDate) : '—'}</div>
+            <div class="activity-card-hero" onclick="window.location='activity.html?id=${a.id}'" role="link" tabindex="0" aria-label="${a.name}">
+              <div class="activity-card-wedge" onclick="event.stopPropagation();window.open('${getIntervalsActivityUrl(a.id)}','_blank','noopener,noreferrer')" title="Open in Intervals.icu"></div>
+              <div class="activity-card-type ${info.colorClass}">
+                <span class="type-dot ${info.dotClass}"></span>${info.label}
               </div>
-              <div class="activity-card-stats">
-                ${activity.distance ? `<span class="activity-stat">${formatDistance(activity.distance)}</span>` : ''}
-                ${activity.duration || activity.moving_time ? `<span class="activity-stat">${formatDuration(activity.duration || activity.moving_time)}</span>` : ''}
-                ${activity.avg_power || activity.average_watts ? `<span class="activity-stat">${formatPower(activity.avg_power || activity.average_watts)}</span>` : ''}
-                ${activity.avg_hr || activity.average_heartrate ? `<span class="activity-stat">${formatHeartRate(activity.avg_hr || activity.average_heartrate)}</span>` : ''}
-                ${activity.tss || activity.icu_training_load ? `<span class="activity-stat">${(activity.tss || activity.icu_training_load).toFixed(0)} TSS</span>` : ''}
+              <div class="activity-card-name-hero">${a.name}</div>
+              <div class="activity-card-stats-grid">
+                <div class="activity-stat"><span class="activity-stat-value">${formatDuration(a.duration || a.moving_time)}</span><span class="activity-stat-label">Duration</span></div>
+                <div class="activity-stat"><span class="activity-stat-value">${a.distance?(a.distance/1000).toFixed(1):'—'}</span><span class="activity-stat-label">km</span></div>
+                <div class="activity-stat"><span class="activity-stat-value">${stat1val}</span><span class="activity-stat-label">${stat1lbl}</span></div>
+                <div class="activity-stat"><span class="activity-stat-value">${a.avg_hr||'—'}</span><span class="activity-stat-label">Avg HR</span></div>
               </div>
-            </div>
-          `;
+              <div class="activity-card-footer-hero">
+                <span>${activityDate ? activityDate.split('T')[0] : '—'}</span>
+                <span class="tss-val-hero">TSS ${Math.round(getTSS(a))}${a.if_val?' · IF '+a.if_val.toFixed(1):''}</span>
+              </div>
+            </div>`;
         }).join('');
-        console.log('✅ Recent activities rendered successfully');
+        
+        console.log('✅ Recent activities rendered with hero cards');
       }
     } else {
       console.warn('⚠️ No recent activities data available');
@@ -2278,14 +2451,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     } // End renderCalendar function
     
     // Render Section 6: Upcoming Activities/Events
-    console.log('📅 Rendering upcoming events...');
-    fetch('data/upcoming_events.json', { cache: 'no-cache' })
+    console.log('📅 Rendering upcoming events from Intervals.icu API...');
+    
+    // Fetch upcoming events from Intervals.icu API (next 30 days)
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const thirtyDaysLater = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
+    const thirtyDaysStr = thirtyDaysLater.toISOString().split('T')[0];
+    
+    fetch(`https://intervals.icu/api/v1/athlete/i5718022/events?oldest=${todayStr}&newest=${thirtyDaysStr}`, {
+      headers: {
+        'Authorization': 'Basic ' + btoa('API_KEY:fc35ccda-a59e-49b5-bcf7-56f72c93e10f')
+      }
+    })
       .then(r => r.json())
       .then(events => {
+        console.log('  Loaded events from Intervals.icu:', events.length);
         renderWeekPlan(events, data.activities);
         renderUpcomingRaces(events);
       })
-      .catch(() => console.warn('⚠️ Upcoming events not available'));
+      .catch(err => {
+        console.warn('⚠️ Failed to load events from Intervals.icu:', err);
+        // Fallback to static file
+        fetch('data/upcoming_events.json', { cache: 'no-cache' })
+          .then(r => r.json())
+          .then(events => {
+            renderWeekPlan(events, data.activities);
+            renderUpcomingRaces(events);
+          })
+          .catch(() => console.warn('⚠️ Upcoming events not available'));
+      });
     
     function renderWeekPlan(events, activities) {
       const container = document.getElementById('week-plan-grid');
@@ -2310,9 +2505,17 @@ document.addEventListener('DOMContentLoaded', async () => {
           dayCard.classList.add('today');
         }
         
-        // Find event for this day
-        const dayEvent = events.find(e => e.date && e.date.startsWith(dateStr));
+        // Find event for this day from Intervals.icu
+        const dayEvent = events.find(e => {
+          const eventDate = e.start_date_local ? e.start_date_local.split('T')[0] : e.date;
+          return eventDate === dateStr;
+        });
+        
         const completed = activities.some(a => (a.start_date || a.date || '').startsWith(dateStr));
+        
+        // Use Intervals.icu event data
+        const load = dayEvent ? (dayEvent.icu_training_load || dayEvent.load || 50) : 0;
+        const eventName = dayEvent ? (dayEvent.name || 'Workout') : null;
         
         dayCard.innerHTML = `
           <div class="day-card-header">
@@ -2320,12 +2523,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             ${dayCard.classList.contains('today') ? '<div class="day-indicator"></div>' : ''}
             ${completed ? '<span style="color: var(--accent)">✓</span>' : ''}
           </div>
-          ${dayEvent ? `
-            <div class="workout-name">${dayEvent.name || 'Workout'}</div>
+          ${eventName ? `
+            <div class="workout-name">${eventName}</div>
             <div class="workout-bar">
-              <div class="workout-bar-fill" style="height: ${Math.min(100, (dayEvent.load || 50) / 2)}%"></div>
+              <div class="workout-bar-fill" style="height: ${Math.min(100, load / 2)}%"></div>
             </div>
-            <div class="workout-tss">${dayEvent.load || 0} TSS</div>
+            <div class="workout-tss">${Math.round(load)} TSS</div>
           ` : '<div class="workout-name" style="color: var(--text-3); font-size: 11px;">Rest day</div>'}
         `;
         
@@ -2338,8 +2541,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!container) return;
       
       const now = new Date();
-      const races = events.filter(e => e.category === 'RACE' && new Date(e.date) > now)
-        .sort((a, b) => new Date(a.date) - new Date(b.date))
+      
+      // Filter for RACE category events in the future
+      const races = events
+        .filter(e => {
+          if (!e.start_date_local && !e.date) return false;
+          const eventDate = new Date(e.start_date_local || e.date);
+          return eventDate > now && e.category === 'RACE';
+        })
+        .sort((a, b) => {
+          const dateA = new Date(a.start_date_local || a.date);
+          const dateB = new Date(b.start_date_local || b.date);
+          return dateA - dateB;
+        })
         .slice(0, 5);
       
       if (races.length === 0) {
@@ -2348,8 +2562,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       
       races.forEach(race => {
-        const raceDate = new Date(race.date);
+        const raceDate = new Date(race.start_date_local || race.date);
         const daysUntil = Math.ceil((raceDate - now) / (1000 * 60 * 60 * 24));
+        const duration = race.moving_time ? formatDuration(race.moving_time) : null;
+        const load = race.icu_training_load || race.load;
         
         const raceItem = document.createElement('div');
         raceItem.className = 'race-item';
@@ -2357,13 +2573,22 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div class="race-name">${race.name}</div>
           <div class="race-date">${raceDate.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })}</div>
           <div class="race-meta">
-            ${race.duration ? race.duration + ' · ' : ''}
-            ${race.load ? race.load + ' TSS · ' : ''}
+            ${duration ? duration + ' · ' : ''}
+            ${load ? Math.round(load) + ' TSS · ' : ''}
             <span class="days-badge">${daysUntil}d</span>
           </div>
         `;
         container.appendChild(raceItem);
       });
+    }
+    
+    // Helper function for formatting duration
+    function formatDuration(secs) {
+      if (!secs) return '—';
+      const h = Math.floor(secs / 3600);
+      const m = Math.floor((secs % 3600) / 60);
+      if (h > 0) return `${h}h${m}m`;
+      return `${m}m`;
     }
     
     // Render Section 7: Health Metrics

@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist+Sans:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <link rel="stylesheet" href="assets/css/design-tokens.css">
 <link rel="stylesheet" href="assets/css/design-system.css">
 <script src="assets/js/theme-toggle.js"></script>
@@ -858,6 +859,405 @@
       grid-template-columns: repeat(2, 1fr);
     }
   }
+
+  /* Section 6: Upcoming Activities/Events */
+  .upcoming-section {
+    margin-bottom: var(--space-4);
+  }
+
+  .upcoming-grid {
+    display: grid;
+    grid-template-columns: 3fr 1fr;
+    gap: var(--space-3);
+  }
+
+  .week-plan-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: var(--space-2);
+    padding: var(--space-3);
+  }
+
+  .day-card {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: var(--space-2);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 120px;
+  }
+
+  .day-card.today {
+    border-color: var(--accent);
+    border-width: 2px;
+  }
+
+  .day-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .day-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-2);
+  }
+
+  .workout-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-1);
+    line-height: 1.3;
+  }
+
+  .workout-bar {
+    background: var(--bg-3);
+    height: 40px;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .workout-bar-fill {
+    background: var(--accent);
+    height: 100%;
+    transition: height 0.3s ease;
+  }
+
+  .workout-tss {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--text-2);
+    text-align: center;
+  }
+
+  .day-indicator {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .races-list {
+    padding: var(--space-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .race-item {
+    padding: var(--space-2);
+    background: var(--bg-2);
+    border-radius: 6px;
+    border-left: 3px solid var(--accent-2);
+  }
+
+  .race-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-1);
+    margin-bottom: 4px;
+  }
+
+  .race-date {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--text-2);
+  }
+
+  .race-meta {
+    font-size: 10px;
+    color: var(--text-3);
+    margin-top: 4px;
+  }
+
+  .days-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    background: var(--accent);
+    color: var(--bg-1);
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  /* Section 7: Health Metrics */
+  .health-metrics-section {
+    margin-bottom: var(--space-4);
+  }
+
+  .health-metrics-grid {
+    display: grid;
+    grid-template-columns: 70fr 30fr;
+    gap: var(--space-3);
+  }
+
+  .health-stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .health-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .health-stat-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-3);
+  }
+
+  .health-stat-value {
+    font-size: 22px;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--text-1);
+  }
+
+  .health-chart-wrapper {
+    padding: var(--space-3);
+    height: 240px;
+  }
+
+  .health-tables {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .health-table-card {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: var(--space-2);
+  }
+
+  .health-table-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-2);
+    margin-bottom: 8px;
+  }
+
+  .health-table {
+    font-size: 11px;
+    font-family: var(--font-mono);
+  }
+
+  .health-table-row {
+    display: grid;
+    grid-template-columns: 70px 1fr 1fr;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .health-table-row:last-child {
+    border-bottom: none;
+  }
+
+  .health-table-date {
+    color: var(--text-3);
+  }
+
+  .health-table-value {
+    color: var(--text-1);
+    text-align: right;
+  }
+
+  /* Section 8: Weekly Load */
+  .weekly-load-chart {
+    padding: var(--space-3);
+    height: 280px;
+  }
+
+  /* Section 9: Training Calendar */
+  .training-calendar {
+    padding: var(--space-3);
+  }
+
+  .calendar-week-row {
+    display: grid;
+    grid-template-columns: 40px repeat(7, 1fr) 100px;
+    gap: 4px;
+    margin-bottom: 4px;
+    align-items: center;
+  }
+
+  .week-number {
+    font-size: 10px;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--text-3);
+    text-align: center;
+  }
+
+  .calendar-day-cell {
+    aspect-ratio: 1;
+    border-radius: 4px;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-family: var(--font-mono);
+    color: var(--text-2);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .calendar-day-cell:hover {
+    border-color: var(--accent);
+    transform: scale(1.05);
+  }
+
+  .calendar-day-cell[data-intensity="1"] {
+    background: color-mix(in oklch, var(--accent) 20%, var(--bg-2));
+  }
+
+  .calendar-day-cell[data-intensity="2"] {
+    background: color-mix(in oklch, var(--accent) 40%, var(--bg-2));
+  }
+
+  .calendar-day-cell[data-intensity="3"] {
+    background: color-mix(in oklch, var(--accent) 60%, var(--bg-2));
+  }
+
+  .calendar-day-cell[data-intensity="4"] {
+    background: color-mix(in oklch, var(--accent) 80%, var(--bg-2));
+  }
+
+  .calendar-day-cell[data-intensity="5"] {
+    background: var(--accent);
+    color: var(--bg-1);
+  }
+
+  .week-summary {
+    font-size: 10px;
+    font-family: var(--font-mono);
+    color: var(--text-2);
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .week-summary-tss {
+    font-weight: 600;
+    color: var(--text-1);
+  }
+
+  /* Section 10: Heatmap Legend */
+  .heatmap-legend {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .heatmap-legend-label {
+    font-size: 10px;
+    color: var(--text-3);
+  }
+
+  .heatmap-legend-cells {
+    display: flex;
+    gap: 3px;
+  }
+
+  .heatmap-cell-sample {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+  }
+
+  .heatmap-cell-sample[data-level="0"] {
+    background: var(--bg-2);
+  }
+
+  .heatmap-cell-sample[data-level="1"] {
+    background: color-mix(in oklch, var(--accent) 20%, var(--bg-2));
+  }
+
+  .heatmap-cell-sample[data-level="2"] {
+    background: color-mix(in oklch, var(--accent) 40%, var(--bg-2));
+  }
+
+  .heatmap-cell-sample[data-level="3"] {
+    background: color-mix(in oklch, var(--accent) 60%, var(--bg-2));
+  }
+
+  .heatmap-cell-sample[data-level="4"] {
+    background: color-mix(in oklch, var(--accent) 80%, var(--bg-2));
+  }
+
+  .heatmap-cell-sample[data-level="5"] {
+    background: var(--accent);
+  }
+
+  /* Section 11: Power Stats Ribbon */
+  .power-curve-chart {
+    padding: var(--space-3);
+    height: 300px;
+  }
+
+  .power-stats-ribbon {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border-top: 1px solid var(--border);
+  }
+
+  .power-stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .power-stat-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-3);
+  }
+
+  .power-stat-value {
+    font-size: 20px;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--text-1);
+  }
+
+  .pr-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    background: var(--accent);
+    color: var(--bg-1);
+    border-radius: 4px;
+    font-size: 9px;
+    font-weight: 700;
+    margin-left: 4px;
+  }
 </style>
 </head>
 <body>
@@ -1136,13 +1536,163 @@
         </div>
       </section>
 
-      <!-- Training Heatmap -->
+      <!-- Section 6: Upcoming Activities / Events (75/25 split) -->
+      <section class="upcoming-section">
+        <div class="upcoming-grid">
+          <!-- Left: This Week Plan (75%) -->
+          <div class="upcoming-week-plan">
+            <div class="chart-card-new">
+              <div class="chart-card-header">
+                <h3 class="chart-card-title">This week · plan</h3>
+              </div>
+              <div class="week-plan-grid" id="week-plan-grid">
+                <!-- 7 columns for Mon-Sun -->
+              </div>
+            </div>
+          </div>
+          
+          <!-- Right: Upcoming Races (25%) -->
+          <div class="upcoming-races">
+            <div class="chart-card-new">
+              <div class="chart-card-header">
+                <h3 class="chart-card-title">Upcoming races</h3>
+              </div>
+              <div class="races-list" id="races-list">
+                <!-- Race items will be populated here -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 7: Health Metrics (70/30 split) -->
+      <section class="health-metrics-section">
+        <div class="health-metrics-grid">
+          <!-- Left: HRV/Sleep Chart (70%) -->
+          <div class="health-chart-container">
+            <div class="chart-card-new">
+              <div class="chart-card-header">
+                <h3 class="chart-card-title">Recovery · HRV · Sleep</h3>
+                <div class="chart-controls">
+                  <div class="toggle-group">
+                    <button class="toggle-btn active" data-health-range="42">42d</button>
+                    <button class="toggle-btn" data-health-range="365">365d</button>
+                  </div>
+                </div>
+              </div>
+              <div class="health-stats-row" id="health-stats-row">
+                <div class="health-stat">
+                  <span class="health-stat-label">HRV</span>
+                  <span class="health-stat-value" id="health-hrv-current">—</span>
+                </div>
+                <div class="health-stat">
+                  <span class="health-stat-label">HRV 7d avg</span>
+                  <span class="health-stat-value" id="health-hrv-avg">—</span>
+                </div>
+                <div class="health-stat">
+                  <span class="health-stat-label">Resting HR</span>
+                  <span class="health-stat-value" id="health-rhr">—</span>
+                </div>
+                <div class="health-stat">
+                  <span class="health-stat-label">Sleep</span>
+                  <span class="health-stat-value" id="health-sleep">—</span>
+                </div>
+              </div>
+              <div class="health-chart-wrapper">
+                <canvas id="health-chart"></canvas>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Right: Tables (30%) -->
+          <div class="health-tables">
+            <!-- HRV Table -->
+            <div class="health-table-card">
+              <h4 class="health-table-title">HRV</h4>
+              <div class="health-table" id="hrv-table"></div>
+            </div>
+            <!-- Sleep Table -->
+            <div class="health-table-card">
+              <h4 class="health-table-title">Sleep</h4>
+              <div class="health-table" id="sleep-table"></div>
+            </div>
+            <!-- Resting HR Table -->
+            <div class="health-table-card">
+              <h4 class="health-table-title">Resting HR</h4>
+              <div class="health-table" id="rhr-table"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 8: Weekly Load -->
       <section>
         <div class="chart-card-new">
           <div class="chart-card-header">
-            <h3 class="chart-card-title">Training Calendar — Last 365 Days</h3>
+            <h3 class="chart-card-title">Weekly load · 12w</h3>
+            <div class="chart-legend">
+              <span class="legend-item"><span class="legend-dot" style="background: var(--accent)"></span>Cycling</span>
+              <span class="legend-item"><span class="legend-dot" style="background: var(--accent-2)"></span>Running</span>
+              <span class="legend-item"><span class="legend-dot" style="background: var(--accent-3)"></span>Rowing</span>
+              <span class="legend-item"><span class="legend-dot" style="background: var(--accent-4)"></span>Cardio</span>
+            </div>
+          </div>
+          <div class="weekly-load-chart">
+            <canvas id="weekly-load-chart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 9: Training Calendar (with week summaries) -->
+      <section>
+        <div class="chart-card-new">
+          <div class="chart-card-header">
+            <h3 class="chart-card-title">Training Calendar</h3>
+          </div>
+          <div class="training-calendar" id="training-calendar">
+            <!-- Calendar with week summaries will be rendered here -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 10: Activity Heatmap -->
+      <section>
+        <div class="chart-card-new">
+          <div class="chart-card-header">
+            <h3 class="chart-card-title">Activity heatmap · 365 days</h3>
+          </div>
+          <div class="heatmap-legend">
+            <span class="heatmap-legend-label">Less</span>
+            <div class="heatmap-legend-cells">
+              <div class="heatmap-cell-sample" data-level="0"></div>
+              <div class="heatmap-cell-sample" data-level="1"></div>
+              <div class="heatmap-cell-sample" data-level="2"></div>
+              <div class="heatmap-cell-sample" data-level="3"></div>
+              <div class="heatmap-cell-sample" data-level="4"></div>
+              <div class="heatmap-cell-sample" data-level="5"></div>
+            </div>
+            <span class="heatmap-legend-label">More</span>
           </div>
           <div class="calendar-heatmap" id="calendar-heatmap"></div>
+        </div>
+      </section>
+
+      <!-- Section 11: 90 Day Best (Power Curve) -->
+      <section>
+        <div class="chart-card-new">
+          <div class="chart-card-header">
+            <h3 class="chart-card-title">Power curve · 90d best</h3>
+            <div class="chart-legend">
+              <span class="legend-item"><span class="legend-dot" style="background: var(--accent)"></span>90d</span>
+              <span class="legend-item"><span class="legend-dot" style="background: var(--text-3)"></span>prev 90d</span>
+            </div>
+          </div>
+          <div class="power-curve-chart">
+            <canvas id="power-curve-chart"></canvas>
+          </div>
+          <div class="power-stats-ribbon" id="power-stats-ribbon">
+            <!-- Power stats: 5s / 1m / 5m / 20m / FTP -->
+          </div>
         </div>
       </section>
 
@@ -1726,6 +2276,474 @@ document.addEventListener('DOMContentLoaded', async () => {
       console.warn('⚠️ No activities data available for calendar');
     }
     } // End renderCalendar function
+    
+    // Render Section 6: Upcoming Activities/Events
+    console.log('📅 Rendering upcoming events...');
+    fetch('data/upcoming_events.json', { cache: 'no-cache' })
+      .then(r => r.json())
+      .then(events => {
+        renderWeekPlan(events, data.activities);
+        renderUpcomingRaces(events);
+      })
+      .catch(() => console.warn('⚠️ Upcoming events not available'));
+    
+    function renderWeekPlan(events, activities) {
+      const container = document.getElementById('week-plan-grid');
+      if (!container) return;
+      
+      const now = new Date();
+      const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      const today = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+      
+      // Get Monday of this week
+      const monday = new Date(now);
+      monday.setDate(now.getDate() - (today === 0 ? 6 : today - 1));
+      
+      days.forEach((dayName, i) => {
+        const dayDate = new Date(monday);
+        dayDate.setDate(monday.getDate() + i);
+        const dateStr = dayDate.toISOString().split('T')[0];
+        
+        const dayCard = document.createElement('div');
+        dayCard.className = 'day-card';
+        if (dateStr === now.toISOString().split('T')[0]) {
+          dayCard.classList.add('today');
+        }
+        
+        // Find event for this day
+        const dayEvent = events.find(e => e.date && e.date.startsWith(dateStr));
+        const completed = activities.some(a => (a.start_date || a.date || '').startsWith(dateStr));
+        
+        dayCard.innerHTML = `
+          <div class="day-card-header">
+            <span class="day-label">${dayName}</span>
+            ${dayCard.classList.contains('today') ? '<div class="day-indicator"></div>' : ''}
+            ${completed ? '<span style="color: var(--accent)">✓</span>' : ''}
+          </div>
+          ${dayEvent ? `
+            <div class="workout-name">${dayEvent.name || 'Workout'}</div>
+            <div class="workout-bar">
+              <div class="workout-bar-fill" style="height: ${Math.min(100, (dayEvent.load || 50) / 2)}%"></div>
+            </div>
+            <div class="workout-tss">${dayEvent.load || 0} TSS</div>
+          ` : '<div class="workout-name" style="color: var(--text-3); font-size: 11px;">Rest day</div>'}
+        `;
+        
+        container.appendChild(dayCard);
+      });
+    }
+    
+    function renderUpcomingRaces(events) {
+      const container = document.getElementById('races-list');
+      if (!container) return;
+      
+      const now = new Date();
+      const races = events.filter(e => e.category === 'RACE' && new Date(e.date) > now)
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .slice(0, 5);
+      
+      if (races.length === 0) {
+        container.innerHTML = '<div style="padding: var(--space-2); color: var(--text-3); font-size: 12px;">No upcoming races</div>';
+        return;
+      }
+      
+      races.forEach(race => {
+        const raceDate = new Date(race.date);
+        const daysUntil = Math.ceil((raceDate - now) / (1000 * 60 * 60 * 24));
+        
+        const raceItem = document.createElement('div');
+        raceItem.className = 'race-item';
+        raceItem.innerHTML = `
+          <div class="race-name">${race.name}</div>
+          <div class="race-date">${raceDate.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })}</div>
+          <div class="race-meta">
+            ${race.duration ? race.duration + ' · ' : ''}
+            ${race.load ? race.load + ' TSS · ' : ''}
+            <span class="days-badge">${daysUntil}d</span>
+          </div>
+        `;
+        container.appendChild(raceItem);
+      });
+    }
+    
+    // Render Section 7: Health Metrics
+    console.log('💓 Rendering health metrics...');
+    renderHealthMetrics(data.wellness.recent);
+    
+    function renderHealthMetrics(wellness) {
+      const latest = wellness[wellness.length - 1] || {};
+      const recent7d = wellness.slice(-7);
+      
+      // Populate stats
+      document.getElementById('health-hrv-current').textContent = latest.hrv ? latest.hrv.toFixed(0) : '—';
+      const hrvAvg = recent7d.reduce((sum, w) => sum + (w.hrv || 0), 0) / recent7d.length;
+      document.getElementById('health-hrv-avg').textContent = hrvAvg > 0 ? hrvAvg.toFixed(0) : '—';
+      document.getElementById('health-rhr').textContent = latest.resting_hr ? latest.resting_hr.toFixed(0) + ' bpm' : '—';
+      document.getElementById('health-sleep').textContent = latest.sleep ? latest.sleep.toFixed(1) + 'h' : '—';
+      
+      // Populate tables (last 7 days)
+      const hrvTable = document.getElementById('hrv-table');
+      const sleepTable = document.getElementById('sleep-table');
+      const rhrTable = document.getElementById('rhr-table');
+      
+      recent7d.reverse().forEach(w => {
+        const date = w.date ? new Date(w.date).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' }) : '—';
+        
+        if (hrvTable) {
+          hrvTable.innerHTML += `
+            <div class="health-table-row">
+              <span class="health-table-date">${date}</span>
+              <span class="health-table-value">${w.hrv ? w.hrv.toFixed(0) : '—'}</span>
+            </div>
+          `;
+        }
+        
+        if (sleepTable) {
+          sleepTable.innerHTML += `
+            <div class="health-table-row">
+              <span class="health-table-date">${date}</span>
+              <span class="health-table-value">${w.sleep ? w.sleep.toFixed(1) + 'h' : '—'}</span>
+            </div>
+          `;
+        }
+        
+        if (rhrTable) {
+          rhrTable.innerHTML += `
+            <div class="health-table-row">
+              <span class="health-table-date">${date}</span>
+              <span class="health-table-value">${w.resting_hr ? w.resting_hr.toFixed(0) : '—'}</span>
+            </div>
+          `;
+        }
+      });
+      
+      // Render HRV chart (42d by default)
+      renderHealthChart(wellness.slice(-42));
+      
+      // Add toggle listeners
+      document.querySelectorAll('[data-health-range]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('[data-health-range]').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const days = parseInt(btn.dataset.healthRange);
+          renderHealthChart(wellness.slice(-days));
+        });
+      });
+    }
+    
+    function renderHealthChart(wellness) {
+      const canvas = document.getElementById('health-chart');
+      if (!canvas) return;
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      // Destroy existing chart if any
+      if (window.healthChartInstance) {
+        window.healthChartInstance.destroy();
+      }
+      
+      const hrvData = wellness.map(w => w.hrv || null);
+      const dates = wellness.map(w => {
+        if (!w.date) return '';
+        const d = new Date(w.date);
+        return d.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
+      });
+      
+      window.healthChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: dates,
+          datasets: [{
+            label: 'HRV',
+            data: hrvData,
+            borderColor: 'var(--accent)',
+            backgroundColor: 'rgba(168, 223, 125, 0.22)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.3,
+            pointRadius: 0,
+            pointHoverRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: 'var(--bg-1)',
+              borderColor: 'var(--border)',
+              borderWidth: 1,
+              titleColor: 'var(--text-1)',
+              bodyColor: 'var(--text-2)',
+              padding: 8
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: 'var(--text-3)', font: { size: 10 }, maxRotation: 0 }
+            },
+            y: {
+              grid: { color: 'var(--border)' },
+              ticks: { color: 'var(--text-3)', font: { size: 10 } }
+            }
+          }
+        }
+      });
+    }
+    
+    // Render Section 8: Weekly Load
+    console.log('📊 Rendering weekly load...');
+    renderWeeklyLoad(data.weeklyTSS);
+    
+    function renderWeeklyLoad(weeklyData) {
+      const canvas = document.getElementById('weekly-load-chart');
+      if (!canvas) return;
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      // Take last 12 weeks
+      const recent12 = (weeklyData || []).slice(-12);
+      
+      const labels = recent12.map(w => `W${w.week || ''}`);
+      const cycling = recent12.map(w => w.cycling || 0);
+      const running = recent12.map(w => w.running || 0);
+      const rowing = recent12.map(w => w.rowing || 0);
+      const cardio = recent12.map(w => w.cardio || 0);
+      
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Cycling', data: cycling, backgroundColor: 'var(--accent)' },
+            { label: 'Running', data: running, backgroundColor: 'var(--accent-2)' },
+            { label: 'Rowing', data: rowing, backgroundColor: 'var(--accent-3)' },
+            { label: 'Cardio', data: cardio, backgroundColor: 'var(--accent-4)' }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: 'var(--bg-1)',
+              borderColor: 'var(--border)',
+              borderWidth: 1,
+              callbacks: {
+                label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y} TSS`
+              }
+            }
+          },
+          scales: {
+            x: {
+              stacked: true,
+              grid: { display: false },
+              ticks: { color: 'var(--text-3)', font: { size: 10 } }
+            },
+            y: {
+              stacked: true,
+              grid: { color: 'var(--border)' },
+              ticks: { color: 'var(--text-3)', font: { size: 10 } },
+              title: { display: true, text: 'TSS', color: 'var(--text-2)' }
+            }
+          }
+        }
+      });
+    }
+    
+    // Render Section 9: Training Calendar (with week summaries)
+    console.log('📅 Rendering training calendar with week summaries...');
+    fetch(`${API_BASE}/activities?days=90&limit=1000`, { 
+      headers: { 'x-api-key': API_KEY } 
+    })
+      .then(r => r.json())
+      .then(resp => {
+        renderTrainingCalendar(resp.activities || []);
+      })
+      .catch(err => console.warn('⚠️ Training calendar failed:', err));
+    
+    function renderTrainingCalendar(activities) {
+      const container = document.getElementById('training-calendar');
+      if (!container) return;
+      
+      // Build TSS by date
+      const tssByDate = {};
+      activities.forEach(a => {
+        const dateStr = (a.start_date || a.date || '').split('T')[0];
+        if (dateStr) {
+          tssByDate[dateStr] = (tssByDate[dateStr] || 0) + (a.tss || a.icu_training_load || 0);
+        }
+      });
+      
+      // Generate last 12 weeks (reverse chronological - most recent first)
+      const today = new Date();
+      const weeks = [];
+      
+      for (let w = 0; w < 12; w++) {
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - (today.getDay() || 7) + 1 - (w * 7)); // Monday of week
+        
+        const days = [];
+        let weekTSS = 0;
+        let weekHours = 0;
+        
+        for (let d = 0; d < 7; d++) {
+          const dayDate = new Date(weekStart);
+          dayDate.setDate(weekStart.getDate() + d);
+          const dateStr = dayDate.toISOString().split('T')[0];
+          const tss = tssByDate[dateStr] || 0;
+          const intensity = tss === 0 ? 0 : Math.min(5, Math.ceil(tss / 30));
+          
+          // Calculate hours from activities
+          const dayActivities = activities.filter(a => (a.start_date || a.date || '').startsWith(dateStr));
+          const hours = dayActivities.reduce((sum, a) => sum + ((a.moving_time || 0) / 3600), 0);
+          
+          weekTSS += tss;
+          weekHours += hours;
+          
+          days.push({ date: dateStr, tss, intensity });
+        }
+        
+        const weekNum = getWeekNumber(weekStart);
+        weeks.push({ weekNum, days, weekTSS, weekHours });
+      }
+      
+      // Render weeks (most recent first)
+      weeks.forEach(week => {
+        const weekRow = document.createElement('div');
+        weekRow.className = 'calendar-week-row';
+        
+        weekRow.innerHTML = `
+          <div class="week-number">W${week.weekNum}</div>
+          ${week.days.map(day => `
+            <div class="calendar-day-cell" data-intensity="${day.intensity}" title="${day.date}: ${day.tss.toFixed(0)} TSS">
+              ${day.tss > 0 ? day.tss.toFixed(0) : ''}
+            </div>
+          `).join('')}
+          <div class="week-summary">
+            <div class="week-summary-tss">${week.weekTSS.toFixed(0)} TSS</div>
+            <div>${week.weekHours.toFixed(1)}h</div>
+          </div>
+        `;
+        
+        container.appendChild(weekRow);
+      });
+    }
+    
+    function getWeekNumber(date) {
+      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      const dayNum = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    }
+    
+    // Render Section 11: 90 Day Best (Power Curve)
+    console.log('⚡ Rendering power curve...');
+    fetch('data/power_curves_90d.json')
+      .then(r => r.json())
+      .then(powerData => renderPowerCurve(powerData))
+      .catch(() => console.warn('⚠️ Power curves not available'));
+    
+    function renderPowerCurve(powerData) {
+      const canvas = document.getElementById('power-curve-chart');
+      if (!canvas) return;
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      // Extract current 90d curve
+      const curve = powerData.list && powerData.list.length > 0 ? powerData.list[0] : null;
+      if (!curve || !curve.secs || !curve.values) {
+        console.warn('⚠️ No power curve data available');
+        return;
+      }
+      
+      // Convert seconds to labels
+      const labels = curve.secs.map(s => {
+        if (s < 60) return `${s}s`;
+        if (s < 3600) return `${Math.floor(s / 60)}m`;
+        return `${Math.floor(s / 3600)}h`;
+      });
+      
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: '90d Best',
+            data: curve.values,
+            borderColor: 'var(--accent)',
+            backgroundColor: 'rgba(168, 223, 125, 0.22)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.3,
+            pointRadius: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: 'var(--bg-1)',
+              borderColor: 'var(--border)',
+              borderWidth: 1,
+              callbacks: {
+                label: (ctx) => `${ctx.parsed.y}W`
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: 'var(--text-3)', font: { size: 10 }, maxRotation: 0 }
+            },
+            y: {
+              grid: { color: 'var(--border)' },
+              ticks: { color: 'var(--text-3)', font: { size: 10 } },
+              title: { display: true, text: 'Power (W)', color: 'var(--text-2)' }
+            }
+          }
+        }
+      });
+      
+      // Populate power stats ribbon
+      const statsRibbon = document.getElementById('power-stats-ribbon');
+      if (statsRibbon && curve.secs && curve.values) {
+        const durations = [5, 60, 300, 1200]; // 5s, 1m, 5m, 20m
+        const stats = [];
+        
+        durations.forEach(targetSec => {
+          const idx = curve.secs.findIndex(s => s >= targetSec);
+          if (idx >= 0) {
+            const label = targetSec < 60 ? `${targetSec}s` : `${targetSec / 60}m`;
+            const value = curve.values[idx];
+            stats.push({ label, value });
+          }
+        });
+        
+        // Add FTP (estimate from 20m)
+        const idx20m = curve.secs.findIndex(s => s >= 1200);
+        if (idx20m >= 0) {
+          const ftp = Math.round(curve.values[idx20m] * 0.95);
+          stats.push({ label: 'FTP', value: ftp });
+        }
+        
+        statsRibbon.innerHTML = stats.map(stat => `
+          <div class="power-stat-item">
+            <div class="power-stat-label">${stat.label}</div>
+            <div class="power-stat-value">${stat.value}<span style="font-size: 14px; color: var(--text-3)">W</span></div>
+          </div>
+        `).join('');
+      }
+    }
     
     console.log('✅ Design system page loaded successfully');
     

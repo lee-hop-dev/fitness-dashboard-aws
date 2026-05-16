@@ -2722,7 +2722,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           datasets: [{
             label: 'HRV',
             data: hrvData,
-            borderColor: 'var(--accent)',
+            borderColor: '#a8df7d',                      // Lime/accent
             backgroundColor: 'rgba(168, 223, 125, 0.22)',
             borderWidth: 2,
             fill: true,
@@ -2818,10 +2818,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         data: {
           labels,
           datasets: [
-            { label: 'Cycling', data: cycling, backgroundColor: 'var(--accent)' },
-            { label: 'Running', data: running, backgroundColor: 'var(--accent-2)' },
-            { label: 'Rowing', data: rowing, backgroundColor: 'var(--accent-3)' },
-            { label: 'Cardio', data: cardio, backgroundColor: 'var(--accent-4)' }
+            { label: 'Cycling', data: cycling, backgroundColor: '#a8df7d' },      // Lime/accent
+            { label: 'Running', data: running, backgroundColor: '#f4a261' },      // Coral/accent-2
+            { label: 'Rowing', data: rowing, backgroundColor: '#9d84b7' },        // Purple/accent-3
+            { label: 'Cardio', data: cardio, backgroundColor: '#7dd3fc' }         // Ice/accent-4
           ]
         },
         options: {

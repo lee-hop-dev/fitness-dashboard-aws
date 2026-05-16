@@ -1196,11 +1196,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       sleep: data.wellness.latest.sleepSecs,
       rhr: data.wellness.latest.resting_hr
     });
-    console.log('  YTD cardio:', {
-      hours: data.ytdStats.cardio?.hours,
-      tss: data.ytdStats.cardio?.tss,
-      distance: data.ytdStats.cardio?.distance
-    });
+    console.log('  YTD raw object:', data.ytdStats);
+    console.log('  YTD cardio object:', data.ytdStats.cardio);
+    if (data.ytdStats.cardio) {
+      console.log('  YTD cardio details:', {
+        hours: data.ytdStats.cardio.hours,
+        tss: data.ytdStats.cardio.tss,
+        distance: data.ytdStats.cardio.distance,
+        keys: Object.keys(data.ytdStats.cardio)
+      });
+    } else {
+      console.warn('⚠️ YTD cardio object is null/undefined');
+    }
     
     // Hide loading, show content
     document.getElementById('loading-state').classList.add('hidden');
@@ -1465,18 +1472,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         {
           key: 'ctl',
           data: chartData.map(d => d.ctl || 0),
-          color: 'var(--accent)'
+          color: 'var(--accent)',
+          strokeWidth: 2,
+          fill: true,
+          fillOpacity: 0.22
         },
         {
           key: 'atl',
           data: chartData.map(d => d.atl || 0),
-          color: 'var(--accent-2)'
+          color: 'var(--accent-2)',
+          strokeWidth: 1.4,
+          fill: false
         },
         {
           key: 'tsb',
           data: chartData.map(d => (d.ctl || 0) - (d.atl || 0)),
           color: 'var(--accent-3)',
-          dashed: true
+          strokeWidth: 1.4,
+          dashed: true,
+          fill: false
         }
       ];
       

@@ -1289,8 +1289,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('current-atl').textContent = atl.toFixed(1);
       document.getElementById('current-tsb').textContent = (tsb > 0 ? '+' : '') + tsb.toFixed(1);
       
-      const ctl28d = (data.wellness.recent[0]?.ctl || 0) - (data.wellness.recent[28]?.ctl || 0);
-      const atl7d = (data.wellness.recent[0]?.atl || 0) - (data.wellness.recent[7]?.atl || 0);
+      const ctl28d = (data.wellness.recent[data.wellness.recent.length - 1]?.ctl || 0) - (data.wellness.recent[data.wellness.recent.length - 29]?.ctl || 0); // Last vs 28 days ago
+      const atl7d = (data.wellness.recent[data.wellness.recent.length - 1]?.atl || 0) - (data.wellness.recent[data.wellness.recent.length - 8]?.atl || 0); // Last vs 7 days ago
       document.getElementById('current-ctl-delta').textContent = (ctl28d > 0 ? '+' : '') + ctl28d.toFixed(1) + ' · 28d';
       document.getElementById('current-atl-delta').textContent = (atl7d > 0 ? '+' : '') + atl7d.toFixed(1) + ' · 7d';
     }
@@ -1368,12 +1368,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // 2b. Populate Hero Cards Row with Sparklines
     if (data.wellness?.recent && data.wellness.recent.length > 0) {
-      const latest = data.wellness.recent[0] || {};
-      const recent = data.wellness.recent.slice(0, 28); // 28 days for sparklines
+      const latest = data.wellness.recent[data.wellness.recent.length - 1] || {}; // LAST record = latest date
+      const recent = data.wellness.recent.slice(-28); // Last 28 days for sparklines
       
       // CTL
       const ctl = latest.ctl || 0;
-      const ctlWeekAgo = data.wellness.recent[7]?.ctl || 0;
+      const ctlWeekAgo = data.wellness.recent[data.wellness.recent.length - 8]?.ctl || 0; // 7 days ago
       const ctlDelta = ctl - ctlWeekAgo;
       document.getElementById('hero-ctl-value').textContent = ctl.toFixed(1);
       document.getElementById('hero-ctl-delta').textContent = (ctlDelta > 0 ? '+' : '') + ctlDelta.toFixed(1) + ' · 7d';
@@ -1388,7 +1388,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       // ATL
       const atl = latest.atl || 0;
-      const atlWeekAgo = data.wellness.recent[7]?.atl || 0;
+      const atlWeekAgo = data.wellness.recent[data.wellness.recent.length - 8]?.atl || 0;
       const atlDelta = atl - atlWeekAgo;
       document.getElementById('hero-atl-value').textContent = atl.toFixed(1);
       document.getElementById('hero-atl-delta').textContent = (atlDelta > 0 ? '+' : '') + atlDelta.toFixed(1) + ' · 7d';
@@ -1403,7 +1403,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       // TSB
       const tsb = latest.tsb || (ctl - atl);
-      const tsbWeekAgo = data.wellness.recent[7]?.tsb || 0;
+      const tsbWeekAgo = data.wellness.recent[data.wellness.recent.length - 8]?.tsb || ((data.wellness.recent[data.wellness.recent.length - 8]?.ctl || 0) - (data.wellness.recent[data.wellness.recent.length - 8]?.atl || 0));
       const tsbDelta = tsb - tsbWeekAgo;
       document.getElementById('hero-tsb-value').textContent = (tsb > 0 ? '+' : '') + tsb.toFixed(1);
       document.getElementById('hero-tsb-delta').textContent = 'optimal range';
@@ -1417,7 +1417,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       // HRV
       const hrv = latest.hrv || 0;
-      const hrv7d = recent.slice(0, 7).reduce((sum, d) => sum + (d.hrv || 0), 0) / 7;
+      const hrv7d = recent.slice(-7).reduce((sum, d) => sum + (d.hrv || 0), 0) / 7; // Last 7 days
       document.getElementById('hero-hrv-value').textContent = hrv.toFixed(0);
       document.getElementById('hero-hrv-delta').textContent = hrv7d.toFixed(0) + ' · 7d avg';
       
@@ -1430,7 +1430,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       // Sleep
       const sleep = latest.sleep || 0;
-      const sleep7d = recent.slice(0, 7).reduce((sum, d) => sum + (d.sleep || 0), 0) / 7;
+      const sleep7d = recent.slice(-7).reduce((sum, d) => sum + (d.sleep || 0), 0) / 7; // Last 7 days
       document.getElementById('hero-sleep-value').textContent = sleep.toFixed(1) + 'h';
       document.getElementById('hero-sleep-delta').textContent = sleep7d.toFixed(1) + 'h · 7d avg';
       
@@ -1443,7 +1443,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       // Resting HR
       const rhr = latest.resting_hr || 0;
-      const rhr7d = recent.slice(0, 7).reduce((sum, d) => sum + (d.resting_hr || 0), 0) / 7;
+      const rhr7d = recent.slice(-7).reduce((sum, d) => sum + (d.resting_hr || 0), 0) / 7; // Last 7 days
       document.getElementById('hero-rhr-value').textContent = rhr > 0 ? rhr.toFixed(0) : '—';
       document.getElementById('hero-rhr-delta').textContent = rhr7d > 0 ? (rhr7d.toFixed(0) + ' · 7d avg') : '—';
       
@@ -1463,7 +1463,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('❌ Fitness chart container not found');
         throw new Error('Fitness chart container not found');
       }
-      const chartData = data.wellness.recent.slice(0, 90).reverse();
+      const chartData = data.wellness.recent.slice(-90); // Last 90 days (already in chronological order)
       
       console.log('  Chart data points:', chartData.length);
       

@@ -1201,6 +1201,26 @@
     padding: var(--space-3);
   }
 
+  .calendar-grid-header {
+    display: grid;
+    grid-template-columns: 40px repeat(7, 1fr) 100px;
+    gap: 4px;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .cal-week-label-header,
+  .cal-day-header-new,
+  .cal-summary-header {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-3);
+    text-align: center;
+  }
+
   .calendar-week-row {
     display: grid;
     grid-template-columns: 40px repeat(7, 1fr) 100px;
@@ -2532,8 +2552,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       const now = new Date();
       
-      // Filter for RACE category events in the future
-      const races = events
+      // Filter for RACE category events in the future, with fallback to any future events
+      let races = events
         .filter(e => {
           if (!e.start_date_local && !e.date) return false;
           const eventDate = new Date(e.start_date_local || e.date);
@@ -2545,6 +2565,25 @@ document.addEventListener('DOMContentLoaded', async () => {
           return dateA - dateB;
         })
         .slice(0, 5);
+      
+      // Fallback: if no RACE category events, show next 5 future events
+      if (races.length === 0) {
+        console.log('  No RACE category events found, showing next 5 future events');
+        races = events
+          .filter(e => {
+            if (!e.start_date_local && !e.date) return false;
+            const eventDate = new Date(e.start_date_local || e.date);
+            return eventDate > now;
+          })
+          .sort((a, b) => {
+            const dateA = new Date(a.start_date_local || a.date);
+            const dateB = new Date(b.start_date_local || b.date);
+            return dateA - dateB;
+          })
+          .slice(0, 5);
+      }
+      
+      console.log('  Displaying', races.length, 'upcoming events');
       
       if (races.length === 0) {
         container.innerHTML = '<div style="padding: var(--space-2); color: var(--text-3); font-size: 12px;">No upcoming races</div>';
@@ -2792,120 +2831,207 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
     
-    // Render Section 9: Training Calendar (with week summaries)
+    // Render Section 9: Training Calendar (with week summaries) - LIFTED FROM ORIGINAL
     console.log('📅 Rendering training calendar with week summaries...');
-    fetch(`${API_BASE}/activities?days=90&limit=1000`, { 
-      headers: { 'x-api-key': API_KEY } 
-    })
-      .then(r => r.json())
-      .then(resp => {
-        renderTrainingCalendar(resp.activities || []);
-      })
-      .catch(err => console.warn('⚠️ Training calendar failed:', err));
+    renderCalendar(data.activities);
     
-    function renderTrainingCalendar(activities) {
-      const container = document.getElementById('training-calendar');
-      if (!container) return;
-      
-      // Build TSS by date
-      const tssByDate = {};
-      activities.forEach(a => {
-        const dateStr = (a.start_date || a.date || '').split('T')[0];
-        if (dateStr) {
-          tssByDate[dateStr] = (tssByDate[dateStr] || 0) + (a.tss || a.icu_training_load || 0);
-        }
-      });
-      
-      // Generate last 12 weeks (reverse chronological - most recent first)
-      const today = new Date();
-      const weeks = [];
-      
-      for (let w = 0; w < 12; w++) {
-        const weekStart = new Date(today);
-        weekStart.setDate(today.getDate() - (today.getDay() || 7) + 1 - (w * 7)); // Monday of week
-        
-        const days = [];
-        let weekTSS = 0;
-        let weekHours = 0;
-        
-        for (let d = 0; d < 7; d++) {
-          const dayDate = new Date(weekStart);
-          dayDate.setDate(weekStart.getDate() + d);
-          const dateStr = dayDate.toISOString().split('T')[0];
-          const tss = tssByDate[dateStr] || 0;
-          const intensity = tss === 0 ? 0 : Math.min(5, Math.ceil(tss / 30));
-          
-          // Calculate hours from activities
-          const dayActivities = activities.filter(a => (a.start_date || a.date || '').startsWith(dateStr));
-          const hours = dayActivities.reduce((sum, a) => sum + ((a.moving_time || 0) / 3600), 0);
-          
-          weekTSS += tss;
-          weekHours += hours;
-          
-          days.push({ date: dateStr, tss, intensity });
-        }
-        
-        const weekNum = getWeekNumber(weekStart);
-        weeks.push({ weekNum, days, weekTSS, weekHours });
+    function renderCalendar(activities) {
+      const wrap = document.getElementById('training-calendar');
+      if (!wrap) {
+        console.error('❌ Training calendar container not found');
+        return;
       }
       
-      // Render weeks (most recent first)
-      weeks.forEach(week => {
-        const weekRow = document.createElement('div');
-        weekRow.className = 'calendar-week-row';
-        
-        weekRow.innerHTML = `
-          <div class="week-number">W${week.weekNum}</div>
-          ${week.days.map(day => `
-            <div class="calendar-day-cell" data-intensity="${day.intensity}" title="${day.date}: ${day.tss.toFixed(0)} TSS">
-              ${day.tss > 0 ? day.tss.toFixed(0) : ''}
-            </div>
-          `).join('')}
-          <div class="week-summary">
-            <div class="week-summary-tss">${week.weekTSS.toFixed(0)} TSS</div>
-            <div>${week.weekHours.toFixed(1)}h</div>
-          </div>
-        `;
-        
-        container.appendChild(weekRow);
+      const today = new Date();
+      const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+      const actByDate = {};
+      activities.forEach(a => { 
+        const dateStr = (a.start_date || a.date || '').split('T')[0];
+        if (!actByDate[dateStr]) actByDate[dateStr] = [];
+        actByDate[dateStr].push(a);
       });
+
+      // Load upcoming events from Intervals.icu
+      const eventsByDate = {};
+      fetch('data/upcoming_events.json', { cache: 'no-cache' })
+        .then(r => { if (!r.ok) throw new Error('no upcoming events'); return r.json(); })
+        .then(events => {
+          events.forEach(e => {
+            const date = e.start_date_local ? e.start_date_local.split('T')[0] : e.date;
+            if (date) {
+              if (!eventsByDate[date]) eventsByDate[date] = [];
+              eventsByDate[date].push(e);
+            }
+          });
+          renderCalendarWithEvents(actByDate, eventsByDate);
+        })
+        .catch(err => {
+          console.log('No upcoming events data, rendering calendar without planned activities');
+          renderCalendarWithEvents(actByDate, {});
+        });
+
+      function renderCalendarWithEvents(actByDate, eventsByDate) {
+        // Start from beginning of current week (Monday), show current week at top
+        const start = new Date(today);
+        const dow = start.getDay();
+        start.setDate(start.getDate() - (dow===0?6:dow-1)); // back to Monday of current week
+
+        let html = `<div class="calendar-grid-header">
+          <div class="cal-week-label-header">Week</div>
+          ${dayNames.map(d=>`<div class="cal-day-header-new">${d}</div>`).join('')}
+          <div class="cal-summary-header">Summary</div>
+        </div>`;
+
+        // Build 12 weeks: current week + 11 previous weeks
+        const weeksData = [];
+        const cursor = new Date(start);
+        cursor.setDate(cursor.getDate() - 77); // Go back 11 weeks (77 days)
+        
+        for (let w=0; w<12; w++) {
+          let weekTSS=0, weekHours=0;
+          const days=[];
+          for (let d=0; d<7; d++) {
+            const ds = cursor.toISOString().split('T')[0];
+            const acts = actByDate[ds]||[];
+            const events = eventsByDate[ds]||[];
+            weekTSS += acts.reduce((s,a)=>s+(a.tss||a.icu_training_load||0),0);
+            weekHours += acts.reduce((s,a)=>s+((a.moving_time||a.duration||0)/3600),0);
+            days.push({ 
+              ds, 
+              dayNum: cursor.getDate(), 
+              acts, 
+              events, 
+              isToday: ds === today.toISOString().split('T')[0], 
+              inRange: cursor <= today 
+            });
+            cursor.setDate(cursor.getDate()+1);
+          }
+          const wkNum = getWeekNumber(new Date(days[0].ds));
+          weeksData.push({ wkNum, days, weekTSS, weekHours });
+        }
+        
+        // Reverse the array so current week is first
+        weeksData.reverse();
+        
+        // Render weeks
+        weeksData.forEach(weekData => {
+          html += `<div class="calendar-week-row">
+            <div class="week-number">W${weekData.wkNum}</div>`;
+          
+          weekData.days.forEach(day => {
+            const tss = day.acts.reduce((s,a)=>s+(a.tss||a.icu_training_load||0),0);
+            const intensity = tss === 0 ? 0 : Math.min(5, Math.ceil(tss / 30));
+            const hasActivity = day.acts.length > 0;
+            const hasFutureEvent = day.events.length > 0 && day.ds >= today.toISOString().split('T')[0];
+            
+            html += `<div class="calendar-day-cell" 
+                         data-intensity="${intensity}" 
+                         ${hasActivity ? `onclick="window.location='activity.html?id=${day.acts[0].id}'"` : ''}
+                         title="${day.ds}: ${tss.toFixed(0)} TSS"
+                         style="cursor: ${hasActivity ? 'pointer' : 'default'}">
+              ${tss > 0 ? Math.round(tss) : ''}
+              ${hasFutureEvent ? '<div style="position:absolute;top:2px;right:2px;width:4px;height:4px;background:var(--accent);border-radius:50%"></div>' : ''}
+            </div>`;
+          });
+          
+          html += `<div class="week-summary">
+            <div class="week-summary-tss">${Math.round(weekData.weekTSS)} TSS</div>
+            <div>${weekData.weekHours.toFixed(1)}h</div>
+          </div></div>`;
+        });
+        
+        wrap.innerHTML = html;
+        console.log('✅ Calendar rendered with', weeksData.length, 'weeks');
+      }
     }
     
-    function getWeekNumber(date) {
-      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-      const dayNum = d.getUTCDay() || 7;
-      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-      return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-    }
+    // Render Section 11: 90 Day Best (Power Curve) - LIFTED FROM ORIGINAL
+    console.log('⚡ Rendering power curve from Intervals data...');
     
-    // Render Section 11: 90 Day Best (Power Curve)
-    console.log('⚡ Rendering power curve...');
+    // Load power curves from static file
     fetch('data/power_curves_90d.json')
       .then(r => r.json())
-      .then(powerData => renderPowerCurve(powerData))
-      .catch(() => console.warn('⚠️ Power curves not available'));
+      .then(powerCurves90d => {
+        console.log('  Power curves loaded:', powerCurves90d);
+        renderPowerCurve(powerCurves90d);
+      })
+      .catch(err => console.warn('⚠️ Power curves not available:', err));
     
-    function renderPowerCurve(powerData) {
+    function renderPowerCurve(powerCurves90d) {
       const canvas = document.getElementById('power-curve-chart');
-      if (!canvas) return;
+      if (!canvas) {
+        console.error('❌ Power curve chart canvas not found');
+        return;
+      }
       
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
       
-      // Extract current 90d curve
-      const curve = powerData.list && powerData.list.length > 0 ? powerData.list[0] : null;
-      if (!curve || !curve.secs || !curve.values) {
+      // Parse power curves from Intervals (from original page)
+      let powerBestsData = [];
+      if (powerCurves90d && powerCurves90d.list && powerCurves90d.list.length > 0) {
+        const curve = powerCurves90d.list[0];
+        const durations = curve.secs || [];
+        const watts = curve.values || [];
+        
+        powerBestsData = durations.map((sec, idx) => ({
+          label: formatDurationLabel(sec),
+          value: watts[idx],
+          secs: sec
+        }));
+        console.log('  Using Intervals power bests:', powerBestsData.length, 'points');
+      } else {
         console.warn('⚠️ No power curve data available');
         return;
       }
       
-      // Convert seconds to labels
-      const labels = curve.secs.map(s => {
-        if (s < 60) return `${s}s`;
-        if (s < 3600) return `${Math.floor(s / 60)}m`;
-        return `${Math.floor(s / 3600)}h`;
+      // Helper function for duration labels
+      function formatDurationLabel(secs) {
+        if (secs < 60) return `${secs}s`;
+        if (secs < 3600) {
+          const mins = Math.floor(secs / 60);
+          return `${mins}m`;
+        }
+        const hrs = Math.floor(secs / 3600);
+        const mins = Math.floor((secs % 3600) / 60);
+        return mins > 0 ? `${hrs}h${mins}m` : `${hrs}h`;
+      }
+      
+      // Extract power stats for key durations
+      const keyDurations = {
+        '5s': 5,
+        '1m': 60,
+        '5m': 300,
+        '20m': 1200
+      };
+      
+      const stats = {};
+      Object.entries(keyDurations).forEach(([label, targetSecs]) => {
+        const dataPoint = powerBestsData.find(p => p.secs === targetSecs);
+        if (dataPoint) {
+          stats[label] = Math.round(dataPoint.value);
+        }
       });
+      
+      // Calculate FTP (95% of 20min power)
+      if (stats['20m']) {
+        stats['FTP'] = Math.round(stats['20m'] * 0.95);
+      }
+      
+      // Render power stats ribbon
+      const statsRibbon = document.getElementById('power-stats-ribbon');
+      if (statsRibbon) {
+        statsRibbon.innerHTML = Object.entries(stats).map(([label, value]) => `
+          <div class="power-stat-item">
+            <div class="power-stat-label">${label}</div>
+            <div class="power-stat-value">${value}<span style="font-size: 14px; color: var(--text-3)">W</span></div>
+          </div>
+        `).join('');
+      }
+      
+      // Render chart
+      const labels = powerBestsData.map(p => p.label);
+      const values = powerBestsData.map(p => p.value);
       
       new Chart(ctx, {
         type: 'line',
@@ -2913,13 +3039,14 @@ document.addEventListener('DOMContentLoaded', async () => {
           labels,
           datasets: [{
             label: '90d Best',
-            data: curve.values,
+            data: values,
             borderColor: 'var(--accent)',
             backgroundColor: 'rgba(168, 223, 125, 0.22)',
             borderWidth: 2,
             fill: true,
             tension: 0.3,
-            pointRadius: 0
+            pointRadius: 0,
+            pointHoverRadius: 4
           }]
         },
         options: {
@@ -2931,6 +3058,9 @@ document.addEventListener('DOMContentLoaded', async () => {
               backgroundColor: 'var(--bg-1)',
               borderColor: 'var(--border)',
               borderWidth: 1,
+              titleColor: 'var(--text-1)',
+              bodyColor: 'var(--text-2)',
+              padding: 8,
               callbacks: {
                 label: (ctx) => `${ctx.parsed.y}W`
               }
@@ -2939,46 +3069,31 @@ document.addEventListener('DOMContentLoaded', async () => {
           scales: {
             x: {
               grid: { display: false },
-              ticks: { color: 'var(--text-3)', font: { size: 10 }, maxRotation: 0 }
+              ticks: { 
+                color: 'var(--text-3)', 
+                font: { size: 10 }, 
+                maxRotation: 0,
+                autoSkip: true,
+                maxTicksLimit: 15
+              }
             },
             y: {
               grid: { color: 'var(--border)' },
-              ticks: { color: 'var(--text-3)', font: { size: 10 } },
-              title: { display: true, text: 'Power (W)', color: 'var(--text-2)' }
+              ticks: { 
+                color: 'var(--text-3)', 
+                font: { size: 10 } 
+              },
+              title: { 
+                display: true, 
+                text: 'Power (W)', 
+                color: 'var(--text-2)' 
+              }
             }
           }
         }
       });
       
-      // Populate power stats ribbon
-      const statsRibbon = document.getElementById('power-stats-ribbon');
-      if (statsRibbon && curve.secs && curve.values) {
-        const durations = [5, 60, 300, 1200]; // 5s, 1m, 5m, 20m
-        const stats = [];
-        
-        durations.forEach(targetSec => {
-          const idx = curve.secs.findIndex(s => s >= targetSec);
-          if (idx >= 0) {
-            const label = targetSec < 60 ? `${targetSec}s` : `${targetSec / 60}m`;
-            const value = curve.values[idx];
-            stats.push({ label, value });
-          }
-        });
-        
-        // Add FTP (estimate from 20m)
-        const idx20m = curve.secs.findIndex(s => s >= 1200);
-        if (idx20m >= 0) {
-          const ftp = Math.round(curve.values[idx20m] * 0.95);
-          stats.push({ label: 'FTP', value: ftp });
-        }
-        
-        statsRibbon.innerHTML = stats.map(stat => `
-          <div class="power-stat-item">
-            <div class="power-stat-label">${stat.label}</div>
-            <div class="power-stat-value">${stat.value}<span style="font-size: 14px; color: var(--text-3)">W</span></div>
-          </div>
-        `).join('');
-      }
+      console.log('✅ Power curve rendered with', powerBestsData.length, 'points');
     }
     
     console.log('✅ Design system page loaded successfully');

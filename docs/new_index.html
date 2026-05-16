@@ -1172,9 +1172,11 @@
 
   .health-table-row {
     display: grid;
-    grid-template-columns: 70px 1fr 1fr;
+    grid-template-columns: 70px 1fr 50px;
+    gap: 8px;
     padding: 6px 0;
     border-bottom: 1px solid var(--border);
+    align-items: center;
   }
 
   .health-table-row:last-child {
@@ -1184,10 +1186,37 @@
   .health-table-date {
     color: var(--text-3);
   }
+  
+  .health-table-bar-wrapper {
+    position: relative;
+    height: 18px;
+    background: var(--bg-2);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  
+  .health-table-bar {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+  }
+  
+  .health-table-bar-hrv {
+    background: linear-gradient(90deg, #a8df7d 0%, #c4e89f 100%);
+  }
+  
+  .health-table-bar-sleep {
+    background: linear-gradient(90deg, #7dd3fc 0%, #a5e0fd 100%);
+  }
+  
+  .health-table-bar-rhr {
+    background: linear-gradient(90deg, #f4a261 0%, #f7b886 100%);
+  }
 
   .health-table-value {
     color: var(--text-1);
     text-align: right;
+    font-weight: 500;
   }
 
   /* Section 8: Weekly Load */
@@ -2634,7 +2663,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('health-rhr').textContent = latest.resting_hr ? latest.resting_hr.toFixed(0) + ' bpm' : '—';
       document.getElementById('health-sleep').textContent = latest.sleep ? latest.sleep.toFixed(1) + 'h' : '—';
       
-      // Populate tables (last 7 days)
+      // Populate tables (last 7 days) with graphical bars
       const hrvTable = document.getElementById('hrv-table');
       const sleepTable = document.getElementById('sleep-table');
       const rhrTable = document.getElementById('rhr-table');
@@ -2646,7 +2675,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       console.log('  Populating tables with', recent7d.length, 'days of data');
       
-      // Build HTML strings instead of innerHTML +=
+      // Calculate min/max for scaling bars
+      const hrvValues = recent7d.map(w => w.hrv).filter(v => v);
+      const sleepValues = recent7d.map(w => w.sleep).filter(v => v);
+      const rhrValues = recent7d.map(w => w.resting_hr).filter(v => v);
+      
+      const hrvMin = Math.min(...hrvValues);
+      const hrvMax = Math.max(...hrvValues);
+      const sleepMin = Math.min(...sleepValues);
+      const sleepMax = Math.max(...sleepValues);
+      const rhrMin = Math.min(...rhrValues);
+      const rhrMax = Math.max(...rhrValues);
+      
+      // Build HTML strings with graphical bars
       let hrvHTML = '';
       let sleepHTML = '';
       let rhrHTML = '';
@@ -2654,23 +2695,38 @@ document.addEventListener('DOMContentLoaded', async () => {
       recent7d.reverse().forEach(w => {
         const date = w.date ? new Date(w.date).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' }) : '—';
         
+        // HRV row with bar
+        const hrvPercent = w.hrv ? ((w.hrv - hrvMin) / (hrvMax - hrvMin) * 100) : 0;
         hrvHTML += `
           <div class="health-table-row">
             <span class="health-table-date">${date}</span>
+            <div class="health-table-bar-wrapper">
+              <div class="health-table-bar health-table-bar-hrv" style="width: ${hrvPercent}%"></div>
+            </div>
             <span class="health-table-value">${w.hrv ? w.hrv.toFixed(0) : '—'}</span>
           </div>
         `;
         
+        // Sleep row with bar
+        const sleepPercent = w.sleep ? ((w.sleep - sleepMin) / (sleepMax - sleepMin) * 100) : 0;
         sleepHTML += `
           <div class="health-table-row">
             <span class="health-table-date">${date}</span>
+            <div class="health-table-bar-wrapper">
+              <div class="health-table-bar health-table-bar-sleep" style="width: ${sleepPercent}%"></div>
+            </div>
             <span class="health-table-value">${w.sleep ? w.sleep.toFixed(1) + 'h' : '—'}</span>
           </div>
         `;
         
+        // RHR row with bar (inverted - lower is better)
+        const rhrPercent = w.resting_hr ? (1 - (w.resting_hr - rhrMin) / (rhrMax - rhrMin)) * 100 : 0;
         rhrHTML += `
           <div class="health-table-row">
             <span class="health-table-date">${date}</span>
+            <div class="health-table-bar-wrapper">
+              <div class="health-table-bar health-table-bar-rhr" style="width: ${rhrPercent}%"></div>
+            </div>
             <span class="health-table-value">${w.resting_hr ? w.resting_hr.toFixed(0) : '—'}</span>
           </div>
         `;

@@ -1177,11 +1177,72 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('  Wellness:', wellnessResp?.wellness?.length || 0);
     console.log('  YTD:', ytdResp);
     
+    // Normalize data (matching original page data-loader.js patterns)
+    
+    // Normalize wellness: convert sleepSecs to hours, restingHR to resting_hr
+    const normalizeWellness = (w) => ({
+      ...w,
+      resting_hr: w.restingHR != null ? w.restingHR : (w.resting_hr ?? null),
+      sleep: w.sleepSecs != null ? Math.round(w.sleepSecs / 3600 * 10) / 10 : (w.sleep ?? null),
+    });
+    
+    // Normalize YTD: aggregate by sport categories
+    const normalizeYTD = (raw) => {
+      const sports = raw.ytd || {};
+      const CYCLING = ['Ride','VirtualRide','EBikeRide','EMountainBikeRide','GravelRide','MountainBikeRide','TrackRide','Velomobile'];
+      const RUNNING = ['Run','VirtualRun','TrailRun'];
+      const ROWING  = ['Rowing','VirtualRow'];
+      const CARDIO  = ['Workout'];
+
+      const sum = (keys) => keys.reduce((acc, k) => {
+        const s = sports[k];
+        if (!s) return acc;
+        acc.distance  += s.distance_m    || 0;
+        acc.hours     += (s.moving_time_s || 0) / 3600;
+        acc.tss       += s.tss           || 0;
+        acc.count     += s.count         || 0;
+        acc.elevation += s.elevation_m   || 0;
+        return acc;
+      }, { distance: 0, hours: 0, tss: 0, count: 0, elevation: 0 });
+
+      const round = o => ({
+        distance:  Math.round(o.distance / 1000),
+        hours:     Math.round(o.hours * 10) / 10,
+        tss:       Math.round(o.tss),
+        count:     o.count,
+        elevation: Math.round(o.elevation),
+      });
+
+      const cycling = round(sum(CYCLING));
+      const running = round(sum(RUNNING));
+      const rowing  = round(sum(ROWING));
+      const cardio  = round(sum(CARDIO));
+      const knownKeys = [...CYCLING, ...RUNNING, ...ROWING, ...CARDIO];
+      const other = round(sum(Object.keys(sports).filter(k => !knownKeys.includes(k))));
+
+      const total = {
+        distance:  cycling.distance  + running.distance  + rowing.distance  + cardio.distance + other.distance,
+        hours:     Math.round((cycling.hours + running.hours + rowing.hours + cardio.hours + other.hours) * 10) / 10,
+        tss:       cycling.tss + running.tss + rowing.tss + cardio.tss + other.tss,
+        count:     cycling.count + running.count + rowing.count + cardio.count + other.count,
+        elevation: cycling.elevation + running.elevation + rowing.elevation + cardio.elevation + other.elevation,
+      };
+
+      return { total, cycling, running, rowing, cardio, other, raw: sports };
+    };
+    
     // Validate critical data - API returns {wellness: [...]} not just [...]
     const activities = activitiesResp.activities || [];
-    const wellness = wellnessResp.wellness || [];
+    const wellness = (wellnessResp.wellness || []).map(normalizeWellness);
+    const ytd = normalizeYTD(ytdResp);
+    
     if (!Array.isArray(activities)) throw new Error('Invalid activities data');
     if (!Array.isArray(wellness)) throw new Error('Invalid wellness data');
+    
+    console.log('✅ Data normalized');
+    console.log('  YTD total:', ytd.total);
+    console.log('  Latest wellness sleep:', wellness[wellness.length - 1]?.sleep);
+    console.log('  Latest wellness HRV:', wellness[wellness.length - 1]?.hrv);
     
     const data = {
       wellness: {
@@ -1190,7 +1251,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       },
       activities: activities,
       recentActivities: activities.slice(0, 20),
-      ytdStats: ytdResp,
+      ytdStats: ytd,
       weeklyTSS: weeklyTssResp.weekly_tss || weeklyTssResp
     };
     
@@ -1199,10 +1260,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       ctl: data.wellness.latest.ctl,
       atl: data.wellness.latest.atl,
       hrv: data.wellness.latest.hrv,
-      sleep: data.wellness.latest.sleepSecs,
+      sleep: data.wellness.latest.sleep,
       rhr: data.wellness.latest.resting_hr
     });
-    console.log('  YTD raw object:', data.ytdStats);
+    console.log('  YTD total:', data.ytdStats.total);
     console.log('  YTD cardio object:', data.ytdStats.cardio);
     if (data.ytdStats.cardio) {
       console.log('  YTD cardio details:', {

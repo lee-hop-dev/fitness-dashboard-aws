@@ -772,7 +772,7 @@
   /* Activity feed */
   .activity-feed {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    grid-template-columns: repeat(5, 1fr);
     gap: 16px;
   }
   
@@ -2460,33 +2460,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Render Section 6: Upcoming Activities/Events
     console.log('📅 Rendering upcoming events from Intervals.icu API...');
     
-    // Fetch upcoming events from Intervals.icu API (next 30 days)
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
-    const thirtyDaysLater = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
-    const thirtyDaysStr = thirtyDaysLater.toISOString().split('T')[0];
-    
-    fetch(`https://intervals.icu/api/v1/athlete/i5718022/events?oldest=${todayStr}&newest=${thirtyDaysStr}`, {
-      headers: {
-        'Authorization': 'Basic ' + btoa('API_KEY:fc35ccda-a59e-49b5-bcf7-56f72c93e10f')
-      }
-    })
+    // Use static file for now since direct API calls are blocked by CORS
+    fetch('data/upcoming_events.json', { cache: 'no-cache' })
       .then(r => r.json())
       .then(events => {
-        console.log('  Loaded events from Intervals.icu:', events.length);
+        console.log('  Loaded events from static file:', events.length);
         renderWeekPlan(events, data.activities);
         renderUpcomingRaces(events);
       })
       .catch(err => {
-        console.warn('⚠️ Failed to load events from Intervals.icu:', err);
-        // Fallback to static file
-        fetch('data/upcoming_events.json', { cache: 'no-cache' })
-          .then(r => r.json())
-          .then(events => {
-            renderWeekPlan(events, data.activities);
-            renderUpcomingRaces(events);
-          })
-          .catch(() => console.warn('⚠️ Upcoming events not available'));
+        console.warn('⚠️ Failed to load upcoming events:', err);
       });
     
     function renderWeekPlan(events, activities) {

@@ -1159,33 +1159,39 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     console.log('🎨 New design system loading...');
     
-    // Load data from static JSON files with error handling
-    console.log('📡 Fetching data files...');
+    // API configuration (same as original index.html)
+    const API_BASE = 'https://j2zxz92vd4.execute-api.eu-west-2.amazonaws.com/prod';
+    const API_KEY = 'GCJhJuPjOs8o7pigoB75N8cfvZx78mXL6gj6qQzd';
+    
+    // Load data from API Gateway (same as original page)
+    console.log('📡 Fetching data from API...');
     const [activitiesResp, wellnessResp, ytdResp, weeklyTssResp] = await Promise.all([
-      fetch('data/activities.json').then(r => { if (!r.ok) throw new Error(`Activities: ${r.status}`); return r.json(); }),
-      fetch('data/wellness.json').then(r => { if (!r.ok) throw new Error(`Wellness: ${r.status}`); return r.json(); }),
-      fetch('data/ytd.json').then(r => { if (!r.ok) throw new Error(`YTD: ${r.status}`); return r.json(); }),
-      fetch('data/weekly_tss.json').then(r => { if (!r.ok) throw new Error(`Weekly TSS: ${r.status}`); return r.json(); })
+      fetch(`${API_BASE}/activities?days=90&limit=1000`, { headers: { 'x-api-key': API_KEY } }).then(r => { if (!r.ok) throw new Error(`Activities: ${r.status}`); return r.json(); }),
+      fetch(`${API_BASE}/wellness?days=180`, { headers: { 'x-api-key': API_KEY } }).then(r => { if (!r.ok) throw new Error(`Wellness: ${r.status}`); return r.json(); }),
+      fetch(`${API_BASE}/ytd`, { headers: { 'x-api-key': API_KEY } }).then(r => { if (!r.ok) throw new Error(`YTD: ${r.status}`); return r.json(); }),
+      fetch(`${API_BASE}/weekly-tss?weeks=52`, { headers: { 'x-api-key': API_KEY } }).then(r => { if (!r.ok) throw new Error(`Weekly TSS: ${r.status}`); return r.json(); })
     ]);
     
     console.log('✅ Data fetched successfully');
-    console.log('  Activities:', activitiesResp?.length || 0);
-    console.log('  Wellness records:', wellnessResp?.length || 0);
-    console.log('  YTD stats:', ytdResp);
+    console.log('  Activities:', activitiesResp?.activities?.length || 0);
+    console.log('  Wellness:', wellnessResp?.wellness?.length || 0);
+    console.log('  YTD:', ytdResp);
     
-    // Validate critical data
-    if (!activitiesResp || !Array.isArray(activitiesResp)) throw new Error('Invalid activities data');
-    if (!wellnessResp || !Array.isArray(wellnessResp)) throw new Error('Invalid wellness data');
+    // Validate critical data - API returns {wellness: [...]} not just [...]
+    const activities = activitiesResp.activities || [];
+    const wellness = wellnessResp.wellness || [];
+    if (!Array.isArray(activities)) throw new Error('Invalid activities data');
+    if (!Array.isArray(wellness)) throw new Error('Invalid wellness data');
     
     const data = {
       wellness: {
-        latest: wellnessResp[0] || {},
-        recent: wellnessResp
+        latest: wellness[wellness.length - 1] || {}, // Last record = latest date
+        recent: wellness
       },
-      activities: activitiesResp,
-      recentActivities: activitiesResp.slice(0, 20),
+      activities: activities,
+      recentActivities: activities.slice(0, 20),
       ytdStats: ytdResp,
-      weeklyTSS: weeklyTssResp
+      weeklyTSS: weeklyTssResp.weekly_tss || weeklyTssResp
     };
     
     console.log('✅ Data structured successfully');

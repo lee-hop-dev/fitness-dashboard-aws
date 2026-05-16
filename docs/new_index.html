@@ -1576,9 +1576,24 @@ document.addEventListener('DOMContentLoaded', async () => {
       console.warn('⚠️ No recent activities data available');
     }
     
-    // 6. Render Training Heatmap (improved with proper week layout)
+    // 6. Render Training Heatmap (deferred 365-day fetch like original page)
+    console.log('📅 Loading calendar data (365 days)...');
+    fetch(`${API_BASE}/activities?days=365&limit=1000`, { 
+      headers: { 'x-api-key': API_KEY } 
+    })
+      .then(r => r.json())
+      .then(resp => {
+        const activities365 = resp.activities || [];
+        console.log('  Calendar activities loaded:', activities365.length);
+        renderCalendar(activities365);
+      })
+      .catch(err => {
+        console.warn('⚠️ Calendar failed to load:', err);
+      });
+    
+    function renderCalendar(activities) {
     console.log('📅 Rendering training calendar...');
-    if (data.activities && data.activities.length > 0) {
+    if (activities && activities.length > 0) {
       const container = document.getElementById('calendar-heatmap');
       if (!container) {
         console.error('❌ Calendar heatmap container not found');
@@ -1593,7 +1608,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Build TSS by date map
         const tssByDate = {};
-        data.activities.forEach(a => {
+        activities.forEach(a => {
           const dateStr = (a.start_date || a.date || '').split('T')[0];
           if (dateStr) {
             tssByDate[dateStr] = (tssByDate[dateStr] || 0) + (a.tss || a.icu_training_load || 0);
@@ -1649,6 +1664,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
       console.warn('⚠️ No activities data available for calendar');
     }
+    } // End renderCalendar function
     
     console.log('✅ Design system page loaded successfully');
     

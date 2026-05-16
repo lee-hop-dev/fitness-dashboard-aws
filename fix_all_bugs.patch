@@ -1,0 +1,130 @@
+--- a/docs/new_index.html
++++ b/docs/new_index.html
+@@ -1158,14 +1158,23 @@ document.addEventListener('DOMContentLoaded', async () => {
+   try {
+     console.log('🎨 New design system loading...');
+     
+-    // Load data from static JSON files (same as original pages)
++    // Load data from static JSON files with error handling
++    console.log('📡 Fetching data files...');
+     const [activitiesResp, wellnessResp, ytdResp, weeklyTssResp] = await Promise.all([
+-      fetch('data/activities.json').then(r => r.json()),
+-      fetch('data/wellness.json').then(r => r.json()),
+-      fetch('data/ytd.json').then(r => r.json()),
+-      fetch('data/weekly_tss.json').then(r => r.json())
++      fetch('data/activities.json').then(r => { if (!r.ok) throw new Error(`Activities: ${r.status}`); return r.json(); }),
++      fetch('data/wellness.json').then(r => { if (!r.ok) throw new Error(`Wellness: ${r.status}`); return r.json(); }),
++      fetch('data/ytd.json').then(r => { if (!r.ok) throw new Error(`YTD: ${r.status}`); return r.json(); }),
++      fetch('data/weekly_tss.json').then(r => { if (!r.ok) throw new Error(`Weekly TSS: ${r.status}`); return r.json(); })
+     ]);
+     
++    console.log('✅ Data fetched successfully');
++    console.log('  Activities:', activitiesResp?.length || 0);
++    console.log('  Wellness:', wellnessResp?.length || 0);
++    console.log('  YTD:', ytdResp);
++    
++    // Validate critical data
++    if (!activitiesResp || !Array.isArray(activitiesResp)) throw new Error('Invalid activities data');
++    if (!wellnessResp || !Array.isArray(wellnessResp)) throw new Error('Invalid wellness data');
++    
+     const data = {
+       wellness: {
+         latest: wellnessResp[0] || {},
+@@ -1177,7 +1186,17 @@ document.addEventListener('DOMContentLoaded', async () => {
+       weeklyTSS: weeklyTssResp
+     };
+     
+-    console.log('✅ Data loaded:', data);
++    console.log('✅ Data structured successfully');
++    console.log('  Latest wellness:', {
++      ctl: data.wellness.latest.ctl,
++      atl: data.wellness.latest.atl,
++      hrv: data.wellness.latest.hrv,
++      sleep: data.wellness.latest.sleepSecs,
++      rhr: data.wellness.latest.resting_hr
++    });
++    console.log('  YTD cardio:', {
++      hours: data.ytdStats.cardio?.hours,
++      tss: data.ytdStats.cardio?.tss
++    });
+     
+     // Hide loading, show content
+     document.getElementById('loading-state').classList.add('hidden');
+@@ -1453,8 +1472,10 @@ document.addEventListener('DOMContentLoaded', async () => {
+     }
+     
+     // 4. Render Fitness Trend Chart with Legend
++    console.log('📈 Rendering fitness trend chart...');
+     if (data.wellness?.recent) {
+       const chartContainer = document.getElementById('fitness-chart');
++      if (!chartContainer) throw new Error('Fitness chart container not found');
+       const chartData = data.wellness.recent.slice(0, 90).reverse();
+       
+       // Calculate TSB from CTL and ATL (TSB = CTL - ATL)
+@@ -1477,6 +1498,7 @@ document.addEventListener('DOMContentLoaded', async () => {
+         }
+       ];
+       
++      console.log('  Series data:', series.map(s => ({ key: s.key, points: s.data.length })));
+       renderLineChart(chartContainer, {
+         series,
+         zeroLine: true
+@@ -1500,12 +1522,15 @@ document.addEventListener('DOMContentLoaded', async () => {
+         `;
+         chartContainer.insertAdjacentHTML('afterend', legendHTML);
+       }, 100);
++      console.log('✅ Fitness trend chart rendered');
++    } else {
++      console.warn('⚠️ No wellness data for fitness chart');
+     }
+     
+     // 5. Populate Recent Activities
++    console.log('📋 Populating recent activities...');
+     if (data.recentActivities) {
+       const container = document.getElementById('recent-activities');
+-      container.innerHTML = data.recentActivities.slice(0, 10).map(activity => {
++      if (container) {
+         const glyph = getSportGlyph(activity.type);
+         const color = getSportColor(activity.type);
+         const activityDate = activity.start_date || activity.start_date_local || activity.date;
+@@ -1526,12 +1551,18 @@ document.addEventListener('DOMContentLoaded', async () => {
+           </div>
+         `;
+       }).join('');
++        console.log(`✅ Rendered ${data.recentActivities.slice(0, 10).length} recent activities`);
++      } else {
++        console.error('❌ Recent activities container not found');
++      }
++    } else {
++      console.warn('⚠️ No recent activities data');
+     }
+     
+     // 6. Render Training Heatmap (improved with proper week layout)
++    console.log('📅 Rendering training calendar...');
+     if (data.activities) {
+       const container = document.getElementById('calendar-heatmap');
+-      container.innerHTML = ''; // Clear existing
++      if (!container) throw new Error('Calendar heatmap container not found');
++      
++      container.innerHTML = ''; // Clear loading message
+       
+       const today = new Date();
+       const oneYearAgo = new Date(today);
+@@ -1577,12 +1608,15 @@ document.addEventListener('DOMContentLoaded', async () => {
+         
+         container.appendChild(weekCol);
+       });
++      console.log(`✅ Rendered ${weeks.length} weeks in calendar`);
++    } else {
++      console.warn('⚠️ No activities data for calendar');
+     }
+     
+     console.log('✅ Design system page loaded successfully');
+     
+   } catch (err) {
+-    console.error('❌ Error loading dashboard:', err);
++    console.error('❌ FATAL ERROR loading dashboard:', err);
++    console.error('Stack:', err.stack);
+     document.getElementById('loading-state').classList.add('hidden');
+     document.getElementById('error-state').classList.remove('hidden');
+     document.getElementById('error-msg').textContent = err.message;

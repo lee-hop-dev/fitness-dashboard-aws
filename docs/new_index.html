@@ -1448,34 +1448,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
     
-    // 3. Populate Fitness Metrics
-    if (data.wellness?.latest) {
-      const latest = data.wellness.latest;
-      document.getElementById('ctl-value').textContent = latest.ctl?.toFixed(1) || '—';
-      document.getElementById('atl-value').textContent = latest.atl?.toFixed(1) || '—';
-      document.getElementById('tsb-value').textContent = latest.tsb?.toFixed(1) || '—';
-      document.getElementById('hrv-value').textContent = latest.hrv?.toFixed(0) || '—';
-      document.getElementById('sleep-value').textContent = latest.sleep?.toFixed(1) || '—';
-      document.getElementById('rhr-value').textContent = latest.restingHR?.toFixed(0) || '—';
-      
-      // Deltas (7-day comparison)
-      if (data.wellness.recent?.length >= 7) {
-        const weekAgo = data.wellness.recent[6];
-        const ctlDelta = latest.ctl - (weekAgo.ctl || 0);
-        const atlDelta = latest.atl - (weekAgo.atl || 0);
-        const tsbDelta = latest.tsb - (weekAgo.tsb || 0);
-        
-        document.getElementById('ctl-delta').textContent = (ctlDelta > 0 ? '+' : '') + ctlDelta.toFixed(1);
-        document.getElementById('ctl-delta').className = 'fitness-metric-delta ' + (ctlDelta > 0 ? 'positive' : 'negative');
-        
-        document.getElementById('atl-delta').textContent = (atlDelta > 0 ? '+' : '') + atlDelta.toFixed(1);
-        document.getElementById('atl-delta').className = 'fitness-metric-delta ' + (atlDelta > 0 ? 'positive' : 'negative');
-        
-        document.getElementById('tsb-delta').textContent = (tsbDelta > 0 ? '+' : '') + tsbDelta.toFixed(1);
-        document.getElementById('tsb-delta').className = 'fitness-metric-delta ' + (tsbDelta > 0 ? 'positive' : 'negative');
-      }
-    }
-    
     // 4. Render Fitness Trend Chart with Legend
     console.log('📈 Rendering fitness trend chart...');
     if (data.wellness?.recent) {

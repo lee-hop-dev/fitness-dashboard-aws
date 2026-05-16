@@ -1159,13 +1159,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     console.log('🎨 New design system loading...');
     
-    // Load data from static JSON files (same as original pages)
+    // Load data from static JSON files with error handling
+    console.log('📡 Fetching data files...');
     const [activitiesResp, wellnessResp, ytdResp, weeklyTssResp] = await Promise.all([
-      fetch('data/activities.json').then(r => r.json()),
-      fetch('data/wellness.json').then(r => r.json()),
-      fetch('data/ytd.json').then(r => r.json()),
-      fetch('data/weekly_tss.json').then(r => r.json())
+      fetch('data/activities.json').then(r => { if (!r.ok) throw new Error(`Activities: ${r.status}`); return r.json(); }),
+      fetch('data/wellness.json').then(r => { if (!r.ok) throw new Error(`Wellness: ${r.status}`); return r.json(); }),
+      fetch('data/ytd.json').then(r => { if (!r.ok) throw new Error(`YTD: ${r.status}`); return r.json(); }),
+      fetch('data/weekly_tss.json').then(r => { if (!r.ok) throw new Error(`Weekly TSS: ${r.status}`); return r.json(); })
     ]);
+    
+    console.log('✅ Data fetched successfully');
+    console.log('  Activities:', activitiesResp?.length || 0);
+    console.log('  Wellness records:', wellnessResp?.length || 0);
+    console.log('  YTD stats:', ytdResp);
+    
+    // Validate critical data
+    if (!activitiesResp || !Array.isArray(activitiesResp)) throw new Error('Invalid activities data');
+    if (!wellnessResp || !Array.isArray(wellnessResp)) throw new Error('Invalid wellness data');
     
     const data = {
       wellness: {
@@ -1178,7 +1188,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       weeklyTSS: weeklyTssResp
     };
     
-    console.log('✅ Data loaded:', data);
+    console.log('✅ Data structured successfully');
+    console.log('  Latest wellness:', {
+      ctl: data.wellness.latest.ctl,
+      atl: data.wellness.latest.atl,
+      hrv: data.wellness.latest.hrv,
+      sleep: data.wellness.latest.sleepSecs,
+      rhr: data.wellness.latest.resting_hr
+    });
+    console.log('  YTD cardio:', {
+      hours: data.ytdStats.cardio?.hours,
+      tss: data.ytdStats.cardio?.tss,
+      distance: data.ytdStats.cardio?.distance
+    });
     
     // Hide loading, show content
     document.getElementById('loading-state').classList.add('hidden');
@@ -1455,9 +1477,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     // 4. Render Fitness Trend Chart with Legend
+    console.log('📈 Rendering fitness trend chart...');
     if (data.wellness?.recent) {
       const chartContainer = document.getElementById('fitness-chart');
+      if (!chartContainer) {
+        console.error('❌ Fitness chart container not found');
+        throw new Error('Fitness chart container not found');
+      }
       const chartData = data.wellness.recent.slice(0, 90).reverse();
+      
+      console.log('  Chart data points:', chartData.length);
       
       // Calculate TSB from CTL and ATL (TSB = CTL - ATL)
       const series = [
@@ -1479,10 +1508,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       ];
       
-      renderLineChart(chartContainer, {
-        series,
-        zeroLine: true
-      });
+      console.log('  Series prepared:', series.map(s => ({ key: s.key, points: s.data.length })));
+      
+      try {
+        renderLineChart(chartContainer, {
+          series,
+          zeroLine: true
+        });
+        console.log('✅ Chart render call completed');
+      } catch (chartErr) {
+        console.error('❌ Chart rendering failed:', chartErr);
+        throw chartErr;
+      }
       
       // Add legend after chart renders
       setTimeout(() => {
@@ -1503,100 +1540,130 @@ document.addEventListener('DOMContentLoaded', async () => {
           </div>
         `;
         chartContainer.insertAdjacentHTML('afterend', legendHTML);
+        console.log('✅ Fitness trend chart legend added');
       }, 100);
+      console.log('✅ Fitness trend chart rendered successfully');
+    } else {
+      console.warn('⚠️ No wellness data available for fitness chart');
     }
     
     // 5. Populate Recent Activities
-    if (data.recentActivities) {
+    console.log('📋 Populating recent activities...');
+    if (data.recentActivities && data.recentActivities.length > 0) {
       const container = document.getElementById('recent-activities');
-      container.innerHTML = data.recentActivities.slice(0, 10).map(activity => {
-        const glyph = getSportGlyph(activity.type);
-        const color = getSportColor(activity.type);
-        const activityDate = activity.start_date || activity.start_date_local || activity.date;
+      if (!container) {
+        console.error('❌ Recent activities container not found');
+      } else {
+        const activitiesToShow = data.recentActivities.slice(0, 10);
+        console.log('  Activities to render:', activitiesToShow.length);
         
-        return `
-          <div class="activity-card-new" onclick="window.location.href='activity.html?id=${activity.id}'">
-            <div class="activity-card-header">
-              <div class="activity-card-name">${glyph} ${activity.name}</div>
-              <div class="activity-card-time">${activityDate ? formatRelativeTime(activityDate) : '—'}</div>
+        container.innerHTML = activitiesToShow.map(activity => {
+          const glyph = getSportGlyph(activity.type);
+          const color = getSportColor(activity.type);
+          const activityDate = activity.start_date || activity.start_date_local || activity.date;
+          
+          return `
+            <div class="activity-card-new" onclick="window.location.href='activity.html?id=${activity.id}'">
+              <div class="activity-card-header">
+                <div class="activity-card-name">${glyph} ${activity.name}</div>
+                <div class="activity-card-time">${activityDate ? formatRelativeTime(activityDate) : '—'}</div>
+              </div>
+              <div class="activity-card-stats">
+                ${activity.distance ? `<span class="activity-stat">${formatDistance(activity.distance)}</span>` : ''}
+                ${activity.duration || activity.moving_time ? `<span class="activity-stat">${formatDuration(activity.duration || activity.moving_time)}</span>` : ''}
+                ${activity.avg_power || activity.average_watts ? `<span class="activity-stat">${formatPower(activity.avg_power || activity.average_watts)}</span>` : ''}
+                ${activity.avg_hr || activity.average_heartrate ? `<span class="activity-stat">${formatHeartRate(activity.avg_hr || activity.average_heartrate)}</span>` : ''}
+                ${activity.tss || activity.icu_training_load ? `<span class="activity-stat">${(activity.tss || activity.icu_training_load).toFixed(0)} TSS</span>` : ''}
+              </div>
             </div>
-            <div class="activity-card-stats">
-              ${activity.distance ? `<span class="activity-stat">${formatDistance(activity.distance)}</span>` : ''}
-              ${activity.duration || activity.moving_time ? `<span class="activity-stat">${formatDuration(activity.duration || activity.moving_time)}</span>` : ''}
-              ${activity.avg_power || activity.average_watts ? `<span class="activity-stat">${formatPower(activity.avg_power || activity.average_watts)}</span>` : ''}
-              ${activity.avg_hr || activity.average_heartrate ? `<span class="activity-stat">${formatHeartRate(activity.avg_hr || activity.average_heartrate)}</span>` : ''}
-              ${activity.tss || activity.icu_training_load ? `<span class="activity-stat">${(activity.tss || activity.icu_training_load).toFixed(0)} TSS</span>` : ''}
-            </div>
-          </div>
-        `;
-      }).join('');
+          `;
+        }).join('');
+        console.log('✅ Recent activities rendered successfully');
+      }
+    } else {
+      console.warn('⚠️ No recent activities data available');
     }
     
     // 6. Render Training Heatmap (improved with proper week layout)
-    if (data.activities) {
+    console.log('📅 Rendering training calendar...');
+    if (data.activities && data.activities.length > 0) {
       const container = document.getElementById('calendar-heatmap');
-      container.innerHTML = ''; // Clear existing
-      
-      const today = new Date();
-      const oneYearAgo = new Date(today);
-      oneYearAgo.setFullYear(today.getFullYear() - 1);
-      
-      // Build TSS by date map
-      const tssByDate = {};
-      data.activities.forEach(a => {
-        const dateStr = (a.start_date || a.date || '').split('T')[0];
-        if (dateStr) {
-          tssByDate[dateStr] = (tssByDate[dateStr] || 0) + (a.tss || a.icu_training_load || 0);
-        }
-      });
-      
-      // Create 53 weeks of cells (7 days each)
-      const weeks = [];
-      let currentDate = new Date(oneYearAgo);
-      
-      // Start from Sunday
-      while (currentDate.getDay() !== 0) {
-        currentDate.setDate(currentDate.getDate() - 1);
-      }
-      
-      for (let week = 0; week < 53; week++) {
-        const weekCells = [];
-        for (let day = 0; day < 7; day++) {
-          const dateStr = currentDate.toISOString().split('T')[0];
-          const tss = tssByDate[dateStr] || 0;
-          const intensity = tss === 0 ? 0 : Math.min(5, Math.ceil(tss / 30));
-          
-          weekCells.push({ date: dateStr, tss, intensity });
-          currentDate.setDate(currentDate.getDate() + 1);
-        }
-        weeks.push(weekCells);
-      }
-      
-      // Render as vertical columns (weeks) with horizontal days
-      weeks.forEach(week => {
-        const weekCol = document.createElement('div');
-        weekCol.style.display = 'flex';
-        weekCol.style.flexDirection = 'column';
-        weekCol.style.gap = '3px';
+      if (!container) {
+        console.error('❌ Calendar heatmap container not found');
+      } else {
+        container.innerHTML = ''; // Clear loading message
         
-        week.forEach(cell => {
-          const cellEl = document.createElement('div');
-          cellEl.className = 'calendar-cell';
-          cellEl.setAttribute('data-intensity', cell.intensity);
-          cellEl.title = `${cell.date}: ${cell.tss.toFixed(0)} TSS`;
-          cellEl.style.width = '12px';
-          cellEl.style.height = '12px';
-          weekCol.appendChild(cellEl);
+        const today = new Date();
+        const oneYearAgo = new Date(today);
+        oneYearAgo.setFullYear(today.getFullYear() - 1);
+        
+        console.log('  Date range:', oneYearAgo.toISOString().split('T')[0], 'to', today.toISOString().split('T')[0]);
+        
+        // Build TSS by date map
+        const tssByDate = {};
+        data.activities.forEach(a => {
+          const dateStr = (a.start_date || a.date || '').split('T')[0];
+          if (dateStr) {
+            tssByDate[dateStr] = (tssByDate[dateStr] || 0) + (a.tss || a.icu_training_load || 0);
+          }
         });
         
-        container.appendChild(weekCol);
-      });
+        console.log('  Days with activity:', Object.keys(tssByDate).length);
+        
+        // Create 53 weeks of cells (7 days each)
+        const weeks = [];
+        let currentDate = new Date(oneYearAgo);
+        
+        // Start from Sunday
+        while (currentDate.getDay() !== 0) {
+          currentDate.setDate(currentDate.getDate() - 1);
+        }
+        
+        for (let week = 0; week < 53; week++) {
+          const weekCells = [];
+          for (let day = 0; day < 7; day++) {
+            const dateStr = currentDate.toISOString().split('T')[0];
+            const tss = tssByDate[dateStr] || 0;
+            const intensity = tss === 0 ? 0 : Math.min(5, Math.ceil(tss / 30));
+            
+            weekCells.push({ date: dateStr, tss, intensity });
+            currentDate.setDate(currentDate.getDate() + 1);
+          }
+          weeks.push(weekCells);
+        }
+        
+        // Render as vertical columns (weeks) with horizontal days
+        weeks.forEach(week => {
+          const weekCol = document.createElement('div');
+          weekCol.style.display = 'flex';
+          weekCol.style.flexDirection = 'column';
+          weekCol.style.gap = '3px';
+          
+          week.forEach(cell => {
+            const cellEl = document.createElement('div');
+            cellEl.className = 'calendar-cell';
+            cellEl.setAttribute('data-intensity', cell.intensity);
+            cellEl.title = `${cell.date}: ${cell.tss.toFixed(0)} TSS`;
+            cellEl.style.width = '12px';
+            cellEl.style.height = '12px';
+            weekCol.appendChild(cellEl);
+          });
+          
+          container.appendChild(weekCol);
+        });
+        
+        console.log(`✅ Rendered ${weeks.length} weeks (${weeks.length * 7} days) in calendar`);
+      }
+    } else {
+      console.warn('⚠️ No activities data available for calendar');
     }
     
     console.log('✅ Design system page loaded successfully');
     
   } catch (err) {
-    console.error('❌ Error loading dashboard:', err);
+    console.error('❌ FATAL ERROR loading dashboard:', err);
+    console.error('Error message:', err.message);
+    console.error('Stack trace:', err.stack);
     document.getElementById('loading-state').classList.add('hidden');
     document.getElementById('error-state').classList.remove('hidden');
     document.getElementById('error-msg').textContent = err.message;

@@ -2715,6 +2715,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         return d.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
       });
       
+      console.log('  HRV chart data:', {
+        days: wellness.length,
+        hrvRange: [Math.min(...hrvData.filter(v => v !== null)), Math.max(...hrvData.filter(v => v !== null))],
+        sampleValues: hrvData.slice(-7)
+      });
+      
       window.healthChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
@@ -2722,13 +2728,15 @@ document.addEventListener('DOMContentLoaded', async () => {
           datasets: [{
             label: 'HRV',
             data: hrvData,
-            borderColor: '#a8df7d',                      // Lime/accent
-            backgroundColor: 'rgba(168, 223, 125, 0.22)',
-            borderWidth: 2,
+            borderColor: '#a8df7d',
+            backgroundColor: 'rgba(168, 223, 125, 0.1)',  // Lighter fill to see line better
+            borderWidth: 3,                                // Thicker line
             fill: true,
-            tension: 0.3,
-            pointRadius: 0,
-            pointHoverRadius: 4,
+            tension: 0.4,
+            pointRadius: 2,                                // Show small points
+            pointHoverRadius: 6,
+            pointBackgroundColor: '#a8df7d',
+            pointBorderColor: '#a8df7d',
             spanGaps: true
           }]
         },
@@ -2738,23 +2746,39 @@ document.addEventListener('DOMContentLoaded', async () => {
           plugins: {
             legend: { display: false },
             tooltip: {
-              backgroundColor: 'var(--bg-1)',
-              borderColor: 'var(--border)',
+              backgroundColor: '#1a1d24',     // bg-1 hex
+              borderColor: '#2a2d35',         // border hex
               borderWidth: 1,
-              titleColor: 'var(--text-1)',
-              bodyColor: 'var(--text-2)',
-              padding: 8
+              titleColor: '#e8eaed',          // text-1 hex
+              bodyColor: '#c4c7cc',           // text-2 hex
+              padding: 8,
+              displayColors: false,
+              callbacks: {
+                title: (items) => items[0].label,
+                label: (item) => `HRV: ${item.parsed.y}`
+              }
             }
           },
           scales: {
             x: {
               grid: { display: false },
-              ticks: { color: 'var(--text-3)', font: { size: 10 }, maxRotation: 0 }
+              ticks: { 
+                color: '#8a8f98',  // text-3 hex
+                font: { size: 10 }, 
+                maxRotation: 0,
+                autoSkip: true,
+                maxTicksLimit: 8
+              }
             },
             y: {
               beginAtZero: false,
-              grid: { color: 'var(--border)' },
-              ticks: { color: 'var(--text-3)', font: { size: 10 } }
+              suggestedMin: Math.floor(Math.min(...hrvData.filter(v => v !== null)) * 0.9),
+              suggestedMax: Math.ceil(Math.max(...hrvData.filter(v => v !== null)) * 1.1),
+              grid: { color: '#2a2d35' },  // border hex
+              ticks: { 
+                color: '#8a8f98',  // text-3 hex
+                font: { size: 10 } 
+              }
             }
           }
         }

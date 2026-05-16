@@ -771,9 +771,9 @@
   
   /* Activity feed */
   .activity-feed {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 16px;
   }
   
   .activity-card-new {
@@ -2228,7 +2228,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       try {
         renderLineChart(chartContainer, {
           series,
-          zeroLine: true
+          zeroLine: true,
+          yAxis: {
+            suggestedMin: -25,
+            suggestedMax: 75,
+            ticks: {
+              stepSize: 25
+            }
+          }
         });
         console.log('✅ Chart render call completed');
       } catch (chartErr) {
@@ -2593,11 +2600,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Render Section 7: Health Metrics
     console.log('💓 Rendering health metrics...');
+    console.log('  Wellness data available:', data.wellness.recent.length, 'records');
+    console.log('  Sample wellness record:', data.wellness.recent[data.wellness.recent.length - 1]);
     renderHealthMetrics(data.wellness.recent);
     
     function renderHealthMetrics(wellness) {
+      if (!wellness || wellness.length === 0) {
+        console.warn('⚠️ No wellness data available for health metrics');
+        return;
+      }
+      
       const latest = wellness[wellness.length - 1] || {};
       const recent7d = wellness.slice(-7);
+      
+      console.log('  Latest wellness:', { hrv: latest.hrv, sleep: latest.sleep, rhr: latest.resting_hr });
       
       // Populate stats
       document.getElementById('health-hrv-current').textContent = latest.hrv ? latest.hrv.toFixed(0) : '—';
@@ -2721,17 +2737,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Render Section 8: Weekly Load
     console.log('📊 Rendering weekly load...');
+    console.log('  Weekly TSS data:', data.weeklyTSS);
+    console.log('  Weekly TSS type:', typeof data.weeklyTSS, Array.isArray(data.weeklyTSS));
     renderWeeklyLoad(data.weeklyTSS);
     
     function renderWeeklyLoad(weeklyData) {
       const canvas = document.getElementById('weekly-load-chart');
-      if (!canvas) return;
+      if (!canvas) {
+        console.error('❌ Weekly load chart canvas not found');
+        return;
+      }
       
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
       
+      if (!weeklyData || weeklyData.length === 0) {
+        console.warn('⚠️ No weekly TSS data available');
+        return;
+      }
+      
       // Take last 12 weeks
-      const recent12 = (weeklyData || []).slice(-12);
+      const recent12 = weeklyData.slice(-12);
+      console.log('  Rendering', recent12.length, 'weeks');
+      console.log('  Sample week:', recent12[0]);
       
       const labels = recent12.map(w => `W${w.week || ''}`);
       const cycling = recent12.map(w => w.cycling || 0);

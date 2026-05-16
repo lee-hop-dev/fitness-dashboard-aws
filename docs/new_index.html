@@ -2716,7 +2716,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             fill: true,
             tension: 0.3,
             pointRadius: 0,
-            pointHoverRadius: 4
+            pointHoverRadius: 4,
+            spanGaps: true
           }]
         },
         options: {
@@ -2739,6 +2740,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               ticks: { color: 'var(--text-3)', font: { size: 10 }, maxRotation: 0 }
             },
             y: {
+              beginAtZero: false,
               grid: { color: 'var(--border)' },
               ticks: { color: 'var(--text-3)', font: { size: 10 } }
             }
@@ -2774,10 +2776,24 @@ document.addEventListener('DOMContentLoaded', async () => {
       console.log('  Sample week:', recent12[0]);
       
       const labels = recent12.map(w => `W${w.week || ''}`);
-      const cycling = recent12.map(w => w.cycling || 0);
-      const running = recent12.map(w => w.running || 0);
-      const rowing = recent12.map(w => w.rowing || 0);
-      const cardio = recent12.map(w => w.cardio || 0);
+      
+      // Map sports object to separate arrays
+      const cycling = recent12.map(w => {
+        const s = w.sports || {};
+        return (s.VirtualRide || 0) + (s.Ride || 0) + (s.GravelRide || 0);
+      });
+      const running = recent12.map(w => {
+        const s = w.sports || {};
+        return (s.Run || 0) + (s.VirtualRun || 0) + (s.TrailRun || 0);
+      });
+      const rowing = recent12.map(w => {
+        const s = w.sports || {};
+        return (s.Rowing || 0) + (s.VirtualRow || 0);
+      });
+      const cardio = recent12.map(w => {
+        const s = w.sports || {};
+        return (s.Workout || 0) + (s.WeightTraining || 0) + (s.HIIT || 0) + (s.CrossTraining || 0) + (s.Yoga || 0) + (s.Pilates || 0) + (s.Calisthenics || 0);
+      });
       
       new Chart(ctx, {
         type: 'bar',

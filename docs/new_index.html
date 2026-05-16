@@ -2402,6 +2402,74 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.warn('⚠️ Calendar failed to load:', err);
       });
     
+    // Render heatmap for Section 10
+    function renderHeatmap(activities365) {
+      const container = document.getElementById('calendar-heatmap');
+      if (!container) return;
+      
+      container.innerHTML = ''; // Clear loading message
+      
+      const today = new Date();
+      const oneYearAgo = new Date(today);
+      oneYearAgo.setFullYear(today.getFullYear() - 1);
+      
+      // Build TSS by date map
+      const tssByDate = {};
+      activities365.forEach(a => {
+        const dateStr = (a.start_date || a.date || '').split('T')[0];
+        if (dateStr) {
+          tssByDate[dateStr] = (tssByDate[dateStr] || 0) + (a.tss || a.icu_training_load || 0);
+        }
+      });
+      
+      // Create 53 weeks of cells (7 days each)
+      const weeks = [];
+      let currentDate = new Date(oneYearAgo);
+      
+      // Start from Sunday
+      while (currentDate.getDay() !== 0) {
+        currentDate.setDate(currentDate.getDate() - 1);
+      }
+      
+      for (let week = 0; week < 53; week++) {
+        const weekCells = [];
+        for (let day = 0; day < 7; day++) {
+          const dateStr = currentDate.toISOString().split('T')[0];
+          const tss = tssByDate[dateStr] || 0;
+          const intensity = tss === 0 ? 0 : Math.min(5, Math.ceil(tss / 30));
+          
+          weekCells.push({ date: dateStr, tss, intensity });
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+        weeks.push(weekCells);
+      }
+      
+      // Render as vertical columns (weeks) with horizontal days
+      weeks.forEach(week => {
+        const weekCol = document.createElement('div');
+        weekCol.style.display = 'flex';
+        weekCol.style.flexDirection = 'column';
+        weekCol.style.gap = '3px';
+        
+        week.forEach(cell => {
+          const cellEl = document.createElement('div');
+          cellEl.className = 'calendar-cell';
+          cellEl.setAttribute('data-intensity', cell.intensity);
+          cellEl.title = `${cell.date}: ${cell.tss.toFixed(0)} TSS`;
+          cellEl.style.width = '12px';
+          cellEl.style.height = '12px';
+          weekCol.appendChild(cellEl);
+        });
+        
+        container.appendChild(weekCol);
+      });
+      
+      console.log(`✅ Heatmap rendered: ${weeks.length} weeks`);
+    }
+    
+    // Call heatmap render with loaded 365-day data
+    renderHeatmap(activities365);
+    
     // Render Section 6: Upcoming Activities/Events
     console.log('📅 Rendering upcoming events from Intervals.icu API...');
     
@@ -2758,6 +2826,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Render Section 9: Training Calendar (with week summaries) - LIFTED FROM ORIGINAL
     console.log('📅 Rendering training calendar with week summaries...');
+    
+    // Helper function for ISO week number calculation
+    function getWeekNumber(date) {
+      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      const dayNum = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    }
+    
     renderCalendar(data.activities);
     
     function renderCalendar(activities) {

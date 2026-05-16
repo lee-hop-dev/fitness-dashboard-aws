@@ -2639,36 +2639,48 @@ document.addEventListener('DOMContentLoaded', async () => {
       const sleepTable = document.getElementById('sleep-table');
       const rhrTable = document.getElementById('rhr-table');
       
+      // Clear tables first
+      if (hrvTable) hrvTable.innerHTML = '';
+      if (sleepTable) sleepTable.innerHTML = '';
+      if (rhrTable) rhrTable.innerHTML = '';
+      
+      console.log('  Populating tables with', recent7d.length, 'days of data');
+      
+      // Build HTML strings instead of innerHTML +=
+      let hrvHTML = '';
+      let sleepHTML = '';
+      let rhrHTML = '';
+      
       recent7d.reverse().forEach(w => {
         const date = w.date ? new Date(w.date).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' }) : '—';
         
-        if (hrvTable) {
-          hrvTable.innerHTML += `
-            <div class="health-table-row">
-              <span class="health-table-date">${date}</span>
-              <span class="health-table-value">${w.hrv ? w.hrv.toFixed(0) : '—'}</span>
-            </div>
-          `;
-        }
+        hrvHTML += `
+          <div class="health-table-row">
+            <span class="health-table-date">${date}</span>
+            <span class="health-table-value">${w.hrv ? w.hrv.toFixed(0) : '—'}</span>
+          </div>
+        `;
         
-        if (sleepTable) {
-          sleepTable.innerHTML += `
-            <div class="health-table-row">
-              <span class="health-table-date">${date}</span>
-              <span class="health-table-value">${w.sleep ? w.sleep.toFixed(1) + 'h' : '—'}</span>
-            </div>
-          `;
-        }
+        sleepHTML += `
+          <div class="health-table-row">
+            <span class="health-table-date">${date}</span>
+            <span class="health-table-value">${w.sleep ? w.sleep.toFixed(1) + 'h' : '—'}</span>
+          </div>
+        `;
         
-        if (rhrTable) {
-          rhrTable.innerHTML += `
-            <div class="health-table-row">
-              <span class="health-table-date">${date}</span>
-              <span class="health-table-value">${w.resting_hr ? w.resting_hr.toFixed(0) : '—'}</span>
-            </div>
-          `;
-        }
+        rhrHTML += `
+          <div class="health-table-row">
+            <span class="health-table-date">${date}</span>
+            <span class="health-table-value">${w.resting_hr ? w.resting_hr.toFixed(0) : '—'}</span>
+          </div>
+        `;
       });
+      
+      if (hrvTable) hrvTable.innerHTML = hrvHTML;
+      if (sleepTable) sleepTable.innerHTML = sleepHTML;
+      if (rhrTable) rhrTable.innerHTML = rhrHTML;
+      
+      console.log('  ✅ Tables populated');
       
       // Render HRV chart (42d by default)
       renderHealthChart(wellness.slice(-42));
@@ -2794,6 +2806,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const s = w.sports || {};
         return (s.Workout || 0) + (s.WeightTraining || 0) + (s.HIIT || 0) + (s.CrossTraining || 0) + (s.Yoga || 0) + (s.Pilates || 0) + (s.Calisthenics || 0);
       });
+      
+      console.log('  Mapped data:');
+      console.log('    Cycling:', cycling);
+      console.log('    Running:', running);
+      console.log('    Rowing:', rowing);
+      console.log('    Cardio:', cardio);
       
       new Chart(ctx, {
         type: 'bar',

@@ -1105,8 +1105,8 @@
 
   .health-combined-stats-row {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: var(--space-2);
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-3);
     padding: var(--space-3);
     border-bottom: 1px solid var(--border);
   }
@@ -1114,7 +1114,7 @@
   .health-stat {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
   }
 
   .health-stat-label {
@@ -1126,10 +1126,16 @@
   }
 
   .health-stat-value {
-    font-size: 22px;
+    font-size: 24px;
     font-family: var(--font-mono);
     font-weight: 600;
     color: var(--text-1);
+  }
+  
+  .health-stat-sparkline {
+    width: 100%;
+    height: 40px;
+    margin-top: 4px;
   }
 
   .health-chart-wrapper {
@@ -1802,18 +1808,17 @@
             <div class="health-stat">
               <span class="health-stat-label">HRV</span>
               <span class="health-stat-value" id="health-hrv-current">—</span>
-            </div>
-            <div class="health-stat">
-              <span class="health-stat-label">HRV 7d avg</span>
-              <span class="health-stat-value" id="health-hrv-avg">—</span>
+              <canvas id="health-hrv-sparkline" class="health-stat-sparkline"></canvas>
             </div>
             <div class="health-stat">
               <span class="health-stat-label">Resting HR</span>
               <span class="health-stat-value" id="health-rhr">—</span>
+              <canvas id="health-rhr-sparkline" class="health-stat-sparkline"></canvas>
             </div>
             <div class="health-stat">
               <span class="health-stat-label">Sleep</span>
               <span class="health-stat-value" id="health-sleep">—</span>
+              <canvas id="health-sleep-sparkline" class="health-stat-sparkline"></canvas>
             </div>
           </div>
           <div class="health-chart-wrapper">
@@ -2768,11 +2773,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       // Populate stats row
       document.getElementById('health-hrv-current').textContent = latest.hrv ? latest.hrv.toFixed(0) : '—';
-      const hrvValues = recent7d.map(w => w.hrv).filter(v => v != null);
-      const hrvAvg = hrvValues.length > 0 ? hrvValues.reduce((sum, v) => sum + v, 0) / hrvValues.length : 0;
-      document.getElementById('health-hrv-avg').textContent = hrvAvg > 0 ? hrvAvg.toFixed(0) : '—';
       document.getElementById('health-rhr').textContent = latest.resting_hr ? latest.resting_hr.toFixed(0) + ' bpm' : '—';
       document.getElementById('health-sleep').textContent = latest.sleep ? latest.sleep.toFixed(1) + 'h' : '—';
+      
+      // Render 90d sparklines in stats row
+      const recent90d = wellness.slice(-90);
+      renderHealthStatSparkline('health-hrv-sparkline', recent90d.map(w => w.hrv || null), '#a8df7d');
+      renderHealthStatSparkline('health-rhr-sparkline', recent90d.map(w => w.resting_hr || null), '#f4a261');
+      renderHealthStatSparkline('health-sleep-sparkline', recent90d.map(w => w.sleep || null), '#7dd3fc');
       
       // Render chart (42d by default)
       renderHealthChart(wellness.slice(-42));
@@ -2786,6 +2794,50 @@ document.addEventListener('DOMContentLoaded', async () => {
           renderHealthChart(wellness.slice(-days));
         });
       });
+    }
+    
+    function renderHealthStatSparkline(canvasId, data, color) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      // Filter out nulls
+      const validData = data.filter(v => v !== null);
+      if (validData.length === 0) return;
+      
+      const min = Math.min(...validData);
+      const max = Math.max(...validData);
+      const range = max - min || 1;
+      
+      // Set canvas size
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = canvas.offsetWidth * dpr;
+      canvas.height = canvas.offsetHeight * dpr;
+      ctx.scale(dpr, dpr);
+      
+      const width = canvas.offsetWidth;
+      const height = canvas.offsetHeight;
+      const padding = 2;
+      
+      // Draw line
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      
+      data.forEach((value, i) => {
+        if (value === null) return;
+        const x = (i / (data.length - 1)) * width;
+        const y = height - padding - ((value - min) / range) * (height - padding * 2);
+        if (i === 0 || data[i - 1] === null) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      });
+      
+      ctx.stroke();
     }
     
     function renderHealthChart(wellness) {

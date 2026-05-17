@@ -2235,7 +2235,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // 2b. Populate Hero Cards Row with Sparklines
     if (data.wellness?.recent && data.wellness.recent.length > 0) {
-      const latest = data.wellness.recent[data.wellness.recent.length - 1] || {}; // LAST record = latest date
+      // Use latest non-null values (not just last record which might have nulls)
+      const latest = getLatestWellness(data.wellness.recent);
       const recent = data.wellness.recent.slice(-28); // Last 28 days for sparklines
       
       // CTL

@@ -2901,6 +2901,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const latest = wellness[wellness.length - 1] || {};
       const recent7d = wellness.slice(-7);
       const recent28d = wellness.slice(-28);
+      const recent30d = wellness.slice(-30);
       const recent90d = wellness.slice(-90);
       
       console.log('  Latest wellness:', { hrv: latest.hrv, sleep: latest.sleep, rhr: latest.resting_hr });

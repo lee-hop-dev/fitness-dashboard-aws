@@ -1098,96 +1098,99 @@
     font-weight: 600;
   }
 
-  /* Section 7: Health Metrics */
-  .health-metrics-section {
+  /* Section 7: Recovery Cards */
+  .recovery-section {
     margin-bottom: var(--space-4);
   }
 
-  .health-metrics-grid {
+  .recovery-grid-3 {
     display: grid;
-    grid-template-columns: 70fr 30fr;
+    grid-template-columns: repeat(3, 1fr);
     gap: var(--space-3);
   }
 
-  .health-stats-row {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: var(--space-2);
+  .recovery-card {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: 14px;
     padding: var(--space-3);
-    border-bottom: 1px solid var(--border);
-  }
-
-  .health-stat {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: var(--space-2);
   }
 
-  .health-stat-label {
-    font-size: 10px;
+  .recovery-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .recovery-card-title {
+    font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--text-3);
   }
 
-  .health-stat-value {
-    font-size: 22px;
+  .recovery-card-badge {
+    font-size: 10px;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: color-mix(in oklch, var(--accent) 15%, var(--bg-2));
+    color: var(--accent);
+  }
+
+  .recovery-card-value {
+    font-size: 38px;
     font-family: var(--font-mono);
     font-weight: 600;
     color: var(--text-1);
+    line-height: 1;
   }
 
-  .health-chart-wrapper {
-    padding: var(--space-3);
-    height: 240px;
-  }
-
-  .health-tables {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
-  }
-
-  .health-table-card {
-    background: var(--bg-1);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: var(--space-2);
-  }
-
-  .health-table-title {
+  .recovery-card-stats {
     font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text-2);
-    margin-bottom: 8px;
+    font-family: var(--font-mono);
+    color: var(--text-3);
   }
 
-  .health-table {
+  .recovery-sparkline-wrapper {
+    height: 80px;
+    margin: var(--space-2) 0;
+  }
+
+  .recovery-sparkline-wrapper canvas {
+    width: 100% !important;
+    height: 80px !important;
+  }
+
+  .recovery-table {
     font-size: 11px;
     font-family: var(--font-mono);
   }
 
-  .health-table-row {
+  .recovery-table-row {
     display: grid;
-    grid-template-columns: 70px 1fr 50px;
+    grid-template-columns: 60px 1fr 50px;
     gap: 8px;
     padding: 6px 0;
     border-bottom: 1px solid var(--border);
     align-items: center;
   }
 
-  .health-table-row:last-child {
+  .recovery-table-row:last-child {
     border-bottom: none;
   }
 
-  .health-table-date {
+  .recovery-table-date {
     color: var(--text-3);
+    font-size: 10px;
   }
   
-  .health-table-bar-wrapper {
+  .recovery-table-bar-wrapper {
     position: relative;
     height: 18px;
     background: var(--bg-2);
@@ -1195,26 +1198,35 @@
     overflow: hidden;
   }
   
-  .health-table-bar {
+  .recovery-table-bar {
     height: 100%;
     border-radius: 3px;
     transition: width 0.3s ease;
   }
   
-  .health-table-bar-hrv {
-    background: linear-gradient(90deg, #a8df7d 0%, #c4e89f 100%);
+  .recovery-table-bar-hrv {
+    background: linear-gradient(90deg, 
+      color-mix(in oklch, var(--accent) 40%, transparent),
+      var(--accent)
+    );
   }
   
-  .health-table-bar-sleep {
-    background: linear-gradient(90deg, #7dd3fc 0%, #a5e0fd 100%);
+  .recovery-table-bar-sleep {
+    background: linear-gradient(90deg,
+      color-mix(in oklch, var(--accent-3) 40%, transparent),
+      var(--accent-3)
+    );
   }
   
-  .health-table-bar-rhr {
-    background: linear-gradient(90deg, #f4a261 0%, #f7b886 100%);
+  .recovery-table-bar-rhr {
+    background: linear-gradient(90deg,
+      color-mix(in oklch, var(--accent-2) 40%, transparent),
+      var(--accent-2)
+    );
   }
 
-  .health-table-value {
-    color: var(--text-1);
+  .recovery-table-value {
+    color: var(--text-2);
     text-align: right;
     font-weight: 500;
   }
@@ -1727,62 +1739,52 @@
       </section>
 
       <!-- Section 7: Health Metrics (70/30 split) -->
-      <section class="health-metrics-section">
-        <div class="health-metrics-grid">
-          <!-- Left: HRV/Sleep Chart (70%) -->
-          <div class="health-chart-container">
-            <div class="chart-card-new">
-              <div class="chart-card-header">
-                <h3 class="chart-card-title">Recovery · HRV · Sleep</h3>
-                <div class="chart-controls">
-                  <div class="toggle-group">
-                    <button class="toggle-btn active" data-health-range="42">42d</button>
-                    <button class="toggle-btn" data-health-range="365">365d</button>
-                  </div>
-                </div>
-              </div>
-              <div class="health-stats-row" id="health-stats-row">
-                <div class="health-stat">
-                  <span class="health-stat-label">HRV</span>
-                  <span class="health-stat-value" id="health-hrv-current">—</span>
-                </div>
-                <div class="health-stat">
-                  <span class="health-stat-label">HRV 7d avg</span>
-                  <span class="health-stat-value" id="health-hrv-avg">—</span>
-                </div>
-                <div class="health-stat">
-                  <span class="health-stat-label">Resting HR</span>
-                  <span class="health-stat-value" id="health-rhr">—</span>
-                </div>
-                <div class="health-stat">
-                  <span class="health-stat-label">Sleep</span>
-                  <span class="health-stat-value" id="health-sleep">—</span>
-                </div>
-              </div>
-              <div class="health-chart-wrapper">
-                <canvas id="health-chart"></canvas>
-              </div>
+      <!-- Section 7: Recovery (3 cards) -->
+      <section class="recovery-section">
+        <div class="recovery-grid-3">
+          
+          <!-- Card 1: HRV -->
+          <div class="recovery-card">
+            <div class="recovery-card-header">
+              <span class="recovery-card-title" id="hrv-card-title">HRV · RMSSD</span>
+              <span class="recovery-card-badge" id="hrv-badge">—</span>
             </div>
+            <div class="recovery-card-value" id="hrv-value">—</div>
+            <div class="recovery-card-stats" id="hrv-stats">—</div>
+            <div class="recovery-sparkline-wrapper">
+              <canvas id="hrv-sparkline"></canvas>
+            </div>
+            <div class="recovery-table" id="hrv-table"></div>
           </div>
           
-          <!-- Right: Tables (30%) -->
-          <div class="health-tables">
-            <!-- HRV Table -->
-            <div class="health-table-card">
-              <h4 class="health-table-title">HRV</h4>
-              <div class="health-table" id="hrv-table"></div>
+          <!-- Card 2: Sleep -->
+          <div class="recovery-card">
+            <div class="recovery-card-header">
+              <span class="recovery-card-title">Sleep Duration</span>
+              <span class="recovery-card-badge" id="sleep-badge">—</span>
             </div>
-            <!-- Sleep Table -->
-            <div class="health-table-card">
-              <h4 class="health-table-title">Sleep</h4>
-              <div class="health-table" id="sleep-table"></div>
+            <div class="recovery-card-value" id="sleep-value">—</div>
+            <div class="recovery-card-stats" id="sleep-stats">—</div>
+            <div class="recovery-sparkline-wrapper">
+              <canvas id="sleep-sparkline"></canvas>
             </div>
-            <!-- Resting HR Table -->
-            <div class="health-table-card">
-              <h4 class="health-table-title">Resting HR</h4>
-              <div class="health-table" id="rhr-table"></div>
-            </div>
+            <div class="recovery-table" id="sleep-table"></div>
           </div>
+          
+          <!-- Card 3: Resting HR -->
+          <div class="recovery-card">
+            <div class="recovery-card-header">
+              <span class="recovery-card-title">Resting HR</span>
+              <span class="recovery-card-badge" id="rhr-badge">—</span>
+            </div>
+            <div class="recovery-card-value" id="rhr-value">—</div>
+            <div class="recovery-card-stats" id="rhr-stats">—</div>
+            <div class="recovery-sparkline-wrapper">
+              <canvas id="rhr-sparkline"></canvas>
+            </div>
+            <div class="recovery-table" id="rhr-table"></div>
+          </div>
+          
         </div>
       </section>
 
@@ -2640,159 +2642,139 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     // Render Section 7: Health Metrics
-    console.log('💓 Rendering health metrics...');
+    console.log('💓 Rendering recovery metrics (3 cards)...');
     console.log('  Wellness data available:', data.wellness.recent.length, 'records');
-    console.log('  Sample wellness record:', data.wellness.recent[data.wellness.recent.length - 1]);
-    renderHealthMetrics(data.wellness.recent);
+    renderRecoveryCards(data.wellness.recent);
     
-    function renderHealthMetrics(wellness) {
+    function renderRecoveryCards(wellness) {
       if (!wellness || wellness.length === 0) {
-        console.warn('⚠️ No wellness data available for health metrics');
+        console.warn('⚠️ No wellness data available for recovery metrics');
         return;
       }
       
       const latest = wellness[wellness.length - 1] || {};
       const recent7d = wellness.slice(-7);
+      const recent28d = wellness.slice(-28);
+      const recent90d = wellness.slice(-90);
       
       console.log('  Latest wellness:', { hrv: latest.hrv, sleep: latest.sleep, rhr: latest.resting_hr });
       
-      // Populate stats
-      document.getElementById('health-hrv-current').textContent = latest.hrv ? latest.hrv.toFixed(0) : '—';
-      const hrvAvg = recent7d.reduce((sum, w) => sum + (w.hrv || 0), 0) / recent7d.length;
-      document.getElementById('health-hrv-avg').textContent = hrvAvg > 0 ? hrvAvg.toFixed(0) : '—';
-      document.getElementById('health-rhr').textContent = latest.resting_hr ? latest.resting_hr.toFixed(0) + ' bpm' : '—';
-      document.getElementById('health-sleep').textContent = latest.sleep ? latest.sleep.toFixed(1) + 'h' : '—';
+      // Calculate averages
+      const hrv7dAvg = recent7d.reduce((sum, w) => sum + (w.hrv || 0), 0) / recent7d.filter(w => w.hrv).length || 0;
+      const hrv28dAvg = recent28d.reduce((sum, w) => sum + (w.hrv || 0), 0) / recent28d.filter(w => w.hrv).length || 0;
+      const sleep7dAvg = recent7d.reduce((sum, w) => sum + (w.sleep || 0), 0) / recent7d.filter(w => w.sleep).length || 0;
+      const rhr7dAvg = recent7d.reduce((sum, w) => sum + (w.resting_hr || 0), 0) / recent7d.filter(w => w.resting_hr).length || 0;
       
-      // Populate tables (last 7 days) with graphical bars
-      const hrvTable = document.getElementById('hrv-table');
-      const sleepTable = document.getElementById('sleep-table');
-      const rhrTable = document.getElementById('rhr-table');
+      // Calculate deltas
+      const hrvDelta7d = latest.hrv && hrv7dAvg ? (latest.hrv - hrv7dAvg) : 0;
+      const rhrDelta7d = latest.resting_hr && rhr7dAvg ? (rhr7dAvg - latest.resting_hr) : 0; // inverted: lower is better
       
-      // Clear tables first
-      if (hrvTable) hrvTable.innerHTML = '';
-      if (sleepTable) sleepTable.innerHTML = '';
-      if (rhrTable) rhrTable.innerHTML = '';
+      // --- Card 1: HRV ---
+      const hrvValue = document.getElementById('hrv-value');
+      const hrvStats = document.getElementById('hrv-stats');
+      const hrvBadge = document.getElementById('hrv-badge');
       
-      console.log('  Populating tables with', recent7d.length, 'days of data');
+      if (hrvValue) hrvValue.textContent = latest.hrv ? `${latest.hrv.toFixed(0)} ms` : '—';
+      if (hrvStats) hrvStats.textContent = `7d avg ${hrv7dAvg.toFixed(0)} | 28d avg ${hrv28dAvg.toFixed(0)}`;
+      if (hrvBadge) {
+        if (hrvDelta7d > 0) {
+          hrvBadge.textContent = `↑ ${hrvDelta7d.toFixed(1)} 7d`;
+          hrvBadge.style.background = 'color-mix(in oklch, var(--accent) 15%, var(--bg-2))';
+          hrvBadge.style.color = 'var(--accent)';
+        } else if (hrvDelta7d < 0) {
+          hrvBadge.textContent = `↓ ${Math.abs(hrvDelta7d).toFixed(1)} 7d`;
+          hrvBadge.style.background = 'color-mix(in oklch, var(--accent-2) 15%, var(--bg-2))';
+          hrvBadge.style.color = 'var(--accent-2)';
+        } else {
+          hrvBadge.textContent = '→ 0.0 7d';
+        }
+      }
       
-      // Calculate min/max for scaling bars
-      const hrvValues = recent7d.map(w => w.hrv).filter(v => v);
-      const sleepValues = recent7d.map(w => w.sleep).filter(v => v);
-      const rhrValues = recent7d.map(w => w.resting_hr).filter(v => v);
+      // --- Card 2: Sleep ---
+      const sleepValue = document.getElementById('sleep-value');
+      const sleepStats = document.getElementById('sleep-stats');
+      const sleepBadge = document.getElementById('sleep-badge');
       
-      const hrvMin = Math.min(...hrvValues);
-      const hrvMax = Math.max(...hrvValues);
-      const sleepMin = Math.min(...sleepValues);
-      const sleepMax = Math.max(...sleepValues);
-      const rhrMin = Math.min(...rhrValues);
-      const rhrMax = Math.max(...rhrValues);
+      if (sleepValue) sleepValue.textContent = latest.sleep ? `${latest.sleep.toFixed(1)} h` : '—';
+      if (sleepStats) sleepStats.textContent = `7d avg ${sleep7dAvg.toFixed(1)}h`;
+      if (sleepBadge) {
+        // Simple status based on duration
+        if (latest.sleep >= 7.5) {
+          sleepBadge.textContent = 'OPTIMAL';
+          sleepBadge.style.background = 'color-mix(in oklch, var(--accent) 15%, var(--bg-2))';
+          sleepBadge.style.color = 'var(--accent)';
+        } else if (latest.sleep >= 6) {
+          sleepBadge.textContent = 'ADEQUATE';
+          sleepBadge.style.background = 'color-mix(in oklch, var(--accent-3) 15%, var(--bg-2))';
+          sleepBadge.style.color = 'var(--accent-3)';
+        } else {
+          sleepBadge.textContent = 'LOW';
+          sleepBadge.style.background = 'color-mix(in oklch, var(--accent-2) 15%, var(--bg-2))';
+          sleepBadge.style.color = 'var(--accent-2)';
+        }
+      }
       
-      // Build HTML strings with graphical bars
-      let hrvHTML = '';
-      let sleepHTML = '';
-      let rhrHTML = '';
+      // --- Card 3: Resting HR ---
+      const rhrValue = document.getElementById('rhr-value');
+      const rhrStats = document.getElementById('rhr-stats');
+      const rhrBadge = document.getElementById('rhr-badge');
       
-      recent7d.reverse().forEach(w => {
-        const date = w.date ? new Date(w.date).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' }) : '—';
-        
-        // HRV row with bar
-        const hrvPercent = w.hrv ? ((w.hrv - hrvMin) / (hrvMax - hrvMin) * 100) : 0;
-        hrvHTML += `
-          <div class="health-table-row">
-            <span class="health-table-date">${date}</span>
-            <div class="health-table-bar-wrapper">
-              <div class="health-table-bar health-table-bar-hrv" style="width: ${hrvPercent}%"></div>
-            </div>
-            <span class="health-table-value">${w.hrv ? w.hrv.toFixed(0) : '—'}</span>
-          </div>
-        `;
-        
-        // Sleep row with bar
-        const sleepPercent = w.sleep ? ((w.sleep - sleepMin) / (sleepMax - sleepMin) * 100) : 0;
-        sleepHTML += `
-          <div class="health-table-row">
-            <span class="health-table-date">${date}</span>
-            <div class="health-table-bar-wrapper">
-              <div class="health-table-bar health-table-bar-sleep" style="width: ${sleepPercent}%"></div>
-            </div>
-            <span class="health-table-value">${w.sleep ? w.sleep.toFixed(1) + 'h' : '—'}</span>
-          </div>
-        `;
-        
-        // RHR row with bar (inverted - lower is better)
-        const rhrPercent = w.resting_hr ? (1 - (w.resting_hr - rhrMin) / (rhrMax - rhrMin)) * 100 : 0;
-        rhrHTML += `
-          <div class="health-table-row">
-            <span class="health-table-date">${date}</span>
-            <div class="health-table-bar-wrapper">
-              <div class="health-table-bar health-table-bar-rhr" style="width: ${rhrPercent}%"></div>
-            </div>
-            <span class="health-table-value">${w.resting_hr ? w.resting_hr.toFixed(0) : '—'}</span>
-          </div>
-        `;
-      });
+      if (rhrValue) rhrValue.textContent = latest.resting_hr ? `${latest.resting_hr.toFixed(0)} bpm` : '—';
+      if (rhrStats) rhrStats.textContent = `7d avg ${rhr7dAvg.toFixed(0)}`;
+      if (rhrBadge) {
+        if (rhrDelta7d > 0) { // positive delta means RHR went down = good
+          rhrBadge.textContent = `↓ ${rhrDelta7d.toFixed(1)} 7d`;
+          rhrBadge.style.background = 'color-mix(in oklch, var(--accent) 15%, var(--bg-2))';
+          rhrBadge.style.color = 'var(--accent)';
+        } else if (rhrDelta7d < 0) {
+          rhrBadge.textContent = `↑ ${Math.abs(rhrDelta7d).toFixed(1)} 7d`;
+          rhrBadge.style.background = 'color-mix(in oklch, var(--accent-2) 15%, var(--bg-2))';
+          rhrBadge.style.color = 'var(--accent-2)';
+        } else {
+          rhrBadge.textContent = '→ 0.0 7d';
+        }
+      }
       
-      if (hrvTable) hrvTable.innerHTML = hrvHTML;
-      if (sleepTable) sleepTable.innerHTML = sleepHTML;
-      if (rhrTable) rhrTable.innerHTML = rhrHTML;
+      // Render sparklines (~90 days)
+      renderRecoverySparkline('hrv-sparkline', recent90d.map(w => w.hrv || null), '#a8df7d');
+      renderRecoverySparkline('sleep-sparkline', recent90d.map(w => w.sleep || null), '#7dd3fc');
+      renderRecoverySparkline('rhr-sparkline', recent90d.map(w => w.resting_hr || null), '#f4a261');
       
-      console.log('  ✅ Tables populated');
-      
-      // Render HRV chart (42d by default)
-      renderHealthChart(wellness.slice(-42));
-      
-      // Add toggle listeners
-      document.querySelectorAll('[data-health-range]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          document.querySelectorAll('[data-health-range]').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          const days = parseInt(btn.dataset.healthRange);
-          renderHealthChart(wellness.slice(-days));
-        });
-      });
+      // Populate tables (last 7 days)
+      populateRecoveryTable('hrv-table', recent7d, 'hrv', 'hrv');
+      populateRecoveryTable('sleep-table', recent7d, 'sleep', 'sleep', 'h');
+      populateRecoveryTable('rhr-table', recent7d, 'resting_hr', 'rhr', 'bpm');
     }
     
-    function renderHealthChart(wellness) {
-      const canvas = document.getElementById('health-chart');
+    function renderRecoverySparkline(canvasId, data, color) {
+      const canvas = document.getElementById(canvasId);
       if (!canvas) return;
       
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
       
       // Destroy existing chart if any
-      if (window.healthChartInstance) {
-        window.healthChartInstance.destroy();
+      const chartKey = `${canvasId}Instance`;
+      if (window[chartKey]) {
+        window[chartKey].destroy();
       }
       
-      const hrvData = wellness.map(w => w.hrv || null);
-      const dates = wellness.map(w => {
-        if (!w.date) return '';
-        const d = new Date(w.date);
-        return d.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
-      });
+      const validData = data.filter(v => v !== null);
+      if (validData.length === 0) return;
       
-      console.log('  HRV chart data:', {
-        days: wellness.length,
-        hrvRange: [Math.min(...hrvData.filter(v => v !== null)), Math.max(...hrvData.filter(v => v !== null))],
-        sampleValues: hrvData.slice(-7)
-      });
-      
-      window.healthChartInstance = new Chart(ctx, {
+      window[chartKey] = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: dates,
+          labels: data.map((_, i) => ''), // no labels
           datasets: [{
-            label: 'HRV',
-            data: hrvData,
-            borderColor: '#a8df7d',
-            backgroundColor: 'rgba(168, 223, 125, 0.1)',  // Lighter fill to see line better
-            borderWidth: 3,                                // Thicker line
-            fill: true,
+            data: data,
+            borderColor: color,
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            fill: false,
             tension: 0.4,
-            pointRadius: 2,                                // Show small points
-            pointHoverRadius: 6,
-            pointBackgroundColor: '#a8df7d',
-            pointBorderColor: '#a8df7d',
+            pointRadius: 0,
+            pointHoverRadius: 0,
             spanGaps: true
           }]
         },
@@ -2801,44 +2783,77 @@ document.addEventListener('DOMContentLoaded', async () => {
           maintainAspectRatio: false,
           plugins: {
             legend: { display: false },
-            tooltip: {
-              backgroundColor: '#1a1d24',     // bg-1 hex
-              borderColor: '#2a2d35',         // border hex
-              borderWidth: 1,
-              titleColor: '#e8eaed',          // text-1 hex
-              bodyColor: '#c4c7cc',           // text-2 hex
-              padding: 8,
-              displayColors: false,
-              callbacks: {
-                title: (items) => items[0].label,
-                label: (item) => `HRV: ${item.parsed.y}`
-              }
-            }
+            tooltip: { enabled: false }
           },
           scales: {
-            x: {
-              grid: { display: false },
-              ticks: { 
-                color: '#8a8f98',  // text-3 hex
-                font: { size: 10 }, 
-                maxRotation: 0,
-                autoSkip: true,
-                maxTicksLimit: 8
-              }
-            },
-            y: {
-              beginAtZero: false,
-              suggestedMin: Math.floor(Math.min(...hrvData.filter(v => v !== null)) * 0.9),
-              suggestedMax: Math.ceil(Math.max(...hrvData.filter(v => v !== null)) * 1.1),
-              grid: { color: '#2a2d35' },  // border hex
-              ticks: { 
-                color: '#8a8f98',  // text-3 hex
-                font: { size: 10 } 
-              }
+            x: { display: false },
+            y: { 
+              display: false,
+              suggestedMin: Math.min(...validData) * 0.95,
+              suggestedMax: Math.max(...validData) * 1.05
+            }
+          },
+          elements: {
+            line: {
+              borderWidth: 2
             }
           }
         }
       });
+    }
+    
+    function populateRecoveryTable(tableId, recent7d, field, barClass, unit = '') {
+      const table = document.getElementById(tableId);
+      if (!table) return;
+      
+      const values = recent7d.map(w => w[field]).filter(v => v);
+      if (values.length === 0) {
+        table.innerHTML = '<div style="color: var(--text-3); font-size: 11px;">No data</div>';
+        return;
+      }
+      
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      const range = max - min || 1;
+      
+      let html = '';
+      recent7d.slice().reverse().forEach(w => {
+        const date = w.date ? new Date(w.date).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' }) : '—';
+        const value = w[field];
+        
+        if (!value) {
+          html += `
+            <div class="recovery-table-row">
+              <span class="recovery-table-date">${date}</span>
+              <div class="recovery-table-bar-wrapper"></div>
+              <span class="recovery-table-value">—</span>
+            </div>
+          `;
+          return;
+        }
+        
+        // For RHR, invert percentage (lower is better)
+        let percent = 0;
+        if (barClass === 'rhr') {
+          percent = range > 0 ? (1 - (value - min) / range) * 100 : 50;
+        } else {
+          percent = range > 0 ? ((value - min) / range) * 100 : 50;
+        }
+        
+        const displayValue = unit ? `${value.toFixed(field === 'sleep' ? 1 : 0)}${unit}` : value.toFixed(0);
+        
+        html += `
+          <div class="recovery-table-row">
+            <span class="recovery-table-date">${date}</span>
+            <div class="recovery-table-bar-wrapper">
+              <div class="recovery-table-bar recovery-table-bar-${barClass}" style="width: ${percent}%"></div>
+            </div>
+            <span class="recovery-table-value">${displayValue}</span>
+          </div>
+        `;
+      });
+      
+      table.innerHTML = html;
     }
     
     // Render Section 8: Weekly Load

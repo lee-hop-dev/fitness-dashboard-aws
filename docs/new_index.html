@@ -2037,8 +2037,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     console.log('✅ Data normalized');
     console.log('  YTD total:', ytd.total);
+    console.log('  Wellness array length:', wellness.length);
+    console.log('  Latest wellness record:', wellness[wellness.length - 1]);
     console.log('  Latest wellness sleep:', wellness[wellness.length - 1]?.sleep);
     console.log('  Latest wellness HRV:', wellness[wellness.length - 1]?.hrv);
+    console.log('  Latest wellness RHR:', wellness[wellness.length - 1]?.resting_hr);
     
     const data = {
       wellness: {
@@ -2906,6 +2909,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     function renderRecoveryCards(wellness) {
+      console.log('📊 renderRecoveryCards called with:', { 
+        isArray: Array.isArray(wellness),
+        length: wellness?.length,
+        sample: wellness?.[wellness.length - 1]
+      });
+      
       if (!wellness || wellness.length === 0) {
         console.warn('⚠️ No wellness data available for recovery metrics');
         return;
@@ -2918,6 +2927,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const recent90d = wellness.slice(-90);
       
       console.log('  Latest wellness:', { hrv: latest.hrv, sleep: latest.sleep, rhr: latest.resting_hr });
+      console.log('  Recent90d sample:', recent90d[recent90d.length - 1]);
       
       // Calculate averages
       const hrv7dAvg = recent7d.reduce((sum, w) => sum + (w.hrv || 0), 0) / recent7d.filter(w => w.hrv).length || 0;

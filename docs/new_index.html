@@ -1158,10 +1158,10 @@
     background: var(--bg-1);
     border: 1.5px solid var(--border);
     border-radius: 14px;
-    padding: var(--space-3);
+    padding: var(--space-4);
     display: flex;
     flex-direction: column;
-    gap: var(--space-2);
+    gap: var(--space-3);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
 
@@ -1172,86 +1172,82 @@
   }
 
   .recovery-card-title {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.1em;
     color: var(--text-3);
   }
 
   .recovery-card-badge {
-    font-size: 10px;
+    font-size: 9px;
     font-family: var(--font-mono);
-    font-weight: 600;
-    padding: 2px 8px;
+    font-weight: 700;
+    padding: 3px 8px;
     border-radius: 4px;
     background: color-mix(in oklch, var(--accent) 15%, var(--bg-2));
     color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .recovery-card-delta {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+    color: var(--text-2);
+  }
+  
+  .recovery-card-delta.positive {
+    background: color-mix(in oklch, var(--accent) 12%, var(--bg-2));
+    color: var(--accent);
+  }
+  
+  .recovery-card-delta.negative {
+    background: color-mix(in oklch, #ef4444 12%, var(--bg-2));
+    color: #ef4444;
+  }
+
+  .recovery-card-main {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
   }
 
   .recovery-card-value {
-    font-size: 38px;
+    font-size: 52px;
     font-family: var(--font-mono);
     font-weight: 600;
     color: var(--text-1);
     line-height: 1;
+  }
+  
+  .recovery-card-unit {
+    font-size: 14px;
+    font-family: var(--font-mono);
+    font-weight: 500;
+    color: var(--text-3);
+    padding-bottom: 4px;
   }
 
   .recovery-card-stats {
     font-size: 11px;
     font-family: var(--font-mono);
     color: var(--text-3);
+    line-height: 1.6;
   }
 
-  .recovery-sparkline-wrapper {
-    height: 80px;
-    margin: var(--space-2) 0;
+  .recovery-card-chart {
+    height: 140px;
+    margin-top: var(--space-2);
   }
 
-  .recovery-sparkline-wrapper canvas {
+  .recovery-card-chart canvas {
     width: 100% !important;
-    height: 80px !important;
+    height: 140px !important;
   }
-
-  .recovery-table {
-    font-size: 11px;
-    font-family: var(--font-mono);
-    height: 120px;
-    position: relative;
-  }
-
-  .recovery-table canvas {
-    width: 100% !important;
-    height: 120px !important;
-  }
-
-  .recovery-table-row {
-    display: grid;
-    grid-template-columns: 60px 1fr 50px;
-    gap: 8px;
-    padding: 6px 0;
-    border-bottom: 1px solid var(--border);
-    align-items: center;
-  }
-
-  .recovery-table-row:last-child {
-    border-bottom: none;
-  }
-
-  .recovery-table-date {
-    color: var(--text-3);
-    font-size: 10px;
-  }
-  
-  .recovery-table-bar-wrapper {
-    position: relative;
-    height: 18px;
-    background: var(--bg-2);
-    border-radius: 3px;
-    overflow: hidden;
-  }
-  
-  .recovery-table-bar {
     height: 100%;
     border-radius: 3px;
     transition: width 0.3s ease;
@@ -1834,43 +1830,49 @@
           <!-- Card 1: HRV -->
           <div class="recovery-card">
             <div class="recovery-card-header">
-              <span class="recovery-card-title" id="hrv-card-title">HRV · RMSSD</span>
-              <span class="recovery-card-badge" id="hrv-badge">—</span>
+              <span class="recovery-card-title">HRV · RMSSD</span>
+              <span class="recovery-card-delta" id="hrv-delta">—</span>
             </div>
-            <div class="recovery-card-value" id="hrv-value">—</div>
+            <div class="recovery-card-main">
+              <div class="recovery-card-value" id="hrv-value">—</div>
+              <div class="recovery-card-unit">ms</div>
+            </div>
             <div class="recovery-card-stats" id="hrv-stats">—</div>
-            <div class="recovery-sparkline-wrapper">
-              <canvas id="hrv-sparkline"></canvas>
+            <div class="recovery-card-chart">
+              <canvas id="hrv-30d-chart"></canvas>
             </div>
-            <div class="recovery-table" id="hrv-table"></div>
           </div>
           
           <!-- Card 2: Sleep -->
           <div class="recovery-card">
             <div class="recovery-card-header">
-              <span class="recovery-card-title">Sleep Duration</span>
+              <span class="recovery-card-title">SLEEP DURATION</span>
               <span class="recovery-card-badge" id="sleep-badge">—</span>
             </div>
-            <div class="recovery-card-value" id="sleep-value">—</div>
-            <div class="recovery-card-stats" id="sleep-stats">—</div>
-            <div class="recovery-sparkline-wrapper">
-              <canvas id="sleep-sparkline"></canvas>
+            <div class="recovery-card-main">
+              <div class="recovery-card-value" id="sleep-value">—</div>
+              <div class="recovery-card-unit">h</div>
             </div>
-            <div class="recovery-table" id="sleep-table"></div>
+            <div class="recovery-card-stats" id="sleep-stats">—</div>
+            <div class="recovery-card-chart">
+              <canvas id="sleep-30d-chart"></canvas>
+            </div>
           </div>
           
           <!-- Card 3: Resting HR -->
           <div class="recovery-card">
             <div class="recovery-card-header">
-              <span class="recovery-card-title">Resting HR</span>
-              <span class="recovery-card-badge" id="rhr-badge">—</span>
+              <span class="recovery-card-title">RESTING HR</span>
+              <span class="recovery-card-delta" id="rhr-delta">—</span>
             </div>
-            <div class="recovery-card-value" id="rhr-value">—</div>
+            <div class="recovery-card-main">
+              <div class="recovery-card-value" id="rhr-value">—</div>
+              <div class="recovery-card-unit">bpm</div>
+            </div>
             <div class="recovery-card-stats" id="rhr-stats">—</div>
-            <div class="recovery-sparkline-wrapper">
-              <canvas id="rhr-sparkline"></canvas>
+            <div class="recovery-card-chart">
+              <canvas id="rhr-30d-chart"></canvas>
             </div>
-            <div class="recovery-table" id="rhr-table"></div>
           </div>
           
         </div>

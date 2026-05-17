@@ -1759,14 +1759,14 @@
       <!-- Section 6: Upcoming Activities / Events (75/25 split) -->
       <section class="upcoming-section">
         <div class="upcoming-grid">
-          <!-- Left: This Week Plan (75%) -->
+          <!-- Left: Next 7 Days Plan (75%) -->
           <div class="upcoming-week-plan">
             <div class="chart-card-new">
               <div class="chart-card-header">
-                <h3 class="chart-card-title">This week · plan</h3>
+                <h3 class="chart-card-title">Next 7 days · plan</h3>
               </div>
               <div class="week-plan-grid" id="week-plan-grid">
-                <!-- 7 columns for Mon-Sun -->
+                <!-- 7 columns for next 7 days -->
               </div>
             </div>
           </div>
@@ -2601,21 +2601,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!container) return;
       
       const now = new Date();
-      const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-      const today = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       
-      // Get Monday of this week
-      const monday = new Date(now);
-      monday.setDate(now.getDate() - (today === 0 ? 6 : today - 1));
-      
-      days.forEach((dayName, i) => {
-        const dayDate = new Date(monday);
-        dayDate.setDate(monday.getDate() + i);
+      // Show next 7 days starting from today
+      for (let i = 0; i < 7; i++) {
+        const dayDate = new Date(now);
+        dayDate.setDate(now.getDate() + i);
         const dateStr = dayDate.toISOString().split('T')[0];
+        const dayName = days[dayDate.getDay()];
+        const dayNum = dayDate.getDate();
         
         const dayCard = document.createElement('div');
         dayCard.className = 'day-card';
-        if (dateStr === now.toISOString().split('T')[0]) {
+        if (i === 0) { // Today
           dayCard.classList.add('today');
         }
         
@@ -2633,7 +2631,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         dayCard.innerHTML = `
           <div class="day-card-header">
-            <span class="day-label">${dayName}</span>
+            <span class="day-label">${dayName} ${dayNum}</span>
             ${dayCard.classList.contains('today') ? '<div class="day-indicator"></div>' : ''}
             ${completed ? '<span style="color: var(--accent)">✓</span>' : ''}
           </div>
@@ -2647,7 +2645,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         `;
         
         container.appendChild(dayCard);
-      });
+      }
     }
     
     function renderUpcomingRaces(events) {

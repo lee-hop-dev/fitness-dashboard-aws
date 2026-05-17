@@ -2757,12 +2757,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
       
-      const latest = wellness[wellness.length - 1] || {};
+      // Get latest non-null values (not just last record)
+      const latest = getLatestWellness(wellness);
       const recent7d = wellness.slice(-7);
       
       // Populate stats row
       document.getElementById('health-hrv-current').textContent = latest.hrv ? latest.hrv.toFixed(0) : '—';
-      const hrvAvg = recent7d.reduce((sum, w) => sum + (w.hrv || 0), 0) / recent7d.filter(w => w.hrv).length;
+      const hrvValues = recent7d.map(w => w.hrv).filter(v => v != null);
+      const hrvAvg = hrvValues.length > 0 ? hrvValues.reduce((sum, v) => sum + v, 0) / hrvValues.length : 0;
       document.getElementById('health-hrv-avg').textContent = hrvAvg > 0 ? hrvAvg.toFixed(0) : '—';
       document.getElementById('health-rhr').textContent = latest.resting_hr ? latest.resting_hr.toFixed(0) + ' bpm' : '—';
       document.getElementById('health-sleep').textContent = latest.sleep ? latest.sleep.toFixed(1) + 'h' : '—';
@@ -2909,6 +2911,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
     
+    // Helper: Get latest non-null wellness values (matches data-loader.js pattern)
+    function getLatestWellness(wellness) {
+      const rev = [...wellness].reverse();
+      return {
+        ctl:        rev.find(w => w.ctl        != null)?.ctl,
+        atl:        rev.find(w => w.atl        != null)?.atl,
+        tsb:        rev.find(w => w.tsb        != null)?.tsb,
+        hrv:        rev.find(w => w.hrv        != null)?.hrv,
+        resting_hr: rev.find(w => w.resting_hr != null)?.resting_hr,
+        sleep:      rev.find(w => w.sleep      != null)?.sleep,
+        weight:     rev.find(w => w.weight     != null)?.weight,
+      };
+    }
+    
     function renderRecoveryCards(wellness) {
       console.log('📊 renderRecoveryCards called with:', { 
         isArray: Array.isArray(wellness),
@@ -2921,13 +2937,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
       
-      const latest = wellness[wellness.length - 1] || {};
+      // Get latest non-null values (not just last record which might be incomplete)
+      const latest = getLatestWellness(wellness);
       const recent7d = wellness.slice(-7);
       const recent28d = wellness.slice(-28);
       const recent30d = wellness.slice(-30);
       const recent90d = wellness.slice(-90);
       
-      console.log('  Latest wellness:', { hrv: latest.hrv, sleep: latest.sleep, rhr: latest.resting_hr });
+      console.log('  Latest wellness (non-null):', { hrv: latest.hrv, sleep: latest.sleep, rhr: latest.resting_hr });
       console.log('  Recent90d sample:', recent90d[recent90d.length - 1]);
       
       // Calculate averages

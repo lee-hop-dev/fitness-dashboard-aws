@@ -1150,12 +1150,13 @@
 
   .recovery-card {
     background: var(--bg-1);
-    border: 1px solid var(--border);
+    border: 1.5px solid var(--border);
     border-radius: 14px;
     padding: var(--space-3);
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
 
   .recovery-card-header {
@@ -1209,6 +1210,13 @@
   .recovery-table {
     font-size: 11px;
     font-family: var(--font-mono);
+    height: 120px;
+    position: relative;
+  }
+
+  .recovery-table canvas {
+    width: 100% !important;
+    height: 120px !important;
   }
 
   .recovery-table-row {
@@ -2769,7 +2777,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       
       const hrvData = wellness.map(w => w.hrv || null);
-      const sleepData = wellness.map(w => w.sleep ? w.sleep * 10 : null); // Scale sleep for visibility
+      const sleepData = wellness.map(w => w.sleep || null);
       const dates = wellness.map(w => {
         if (!w.date) return '';
         const d = new Date(w.date);
@@ -2783,34 +2791,33 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
       
       window.healthCombinedChartInstance = new Chart(ctx, {
-        type: 'line',
+        type: 'bar',
         data: {
           labels: dates,
           datasets: [
             {
+              type: 'bar',
+              label: 'Sleep',
+              data: sleepData,
+              backgroundColor: 'rgba(125, 211, 252, 0.4)',
+              borderColor: '#7dd3fc',
+              borderWidth: 1,
+              yAxisID: 'y-sleep',
+              barPercentage: 0.8,
+              categoryPercentage: 0.9
+            },
+            {
+              type: 'line',
               label: 'HRV',
               data: hrvData,
               borderColor: '#a8df7d',
-              backgroundColor: 'rgba(168, 223, 125, 0.22)',
-              borderWidth: 2,
-              fill: true,
-              tension: 0.4,
-              pointRadius: 0,
-              pointHoverRadius: 4,
-              yAxisID: 'y',
-              spanGaps: true
-            },
-            {
-              label: 'Sleep (×10)',
-              data: sleepData,
-              borderColor: '#7dd3fc',
               backgroundColor: 'transparent',
-              borderWidth: 1.4,
+              borderWidth: 2,
               fill: false,
               tension: 0.4,
               pointRadius: 0,
               pointHoverRadius: 4,
-              yAxisID: 'y',
+              yAxisID: 'y-hrv',
               spanGaps: true
             }
           ]
@@ -2831,8 +2838,8 @@ document.addEventListener('DOMContentLoaded', async () => {
               callbacks: {
                 title: (items) => items[0].label,
                 label: (item) => {
-                  if (item.datasetIndex === 0) return `HRV: ${item.parsed.y}`;
-                  return `Sleep: ${(item.parsed.y / 10).toFixed(1)}h`;
+                  if (item.dataset.label === 'Sleep') return `Sleep: ${item.parsed.y.toFixed(1)}h`;
+                  return `HRV: ${item.parsed.y}`;
                 }
               }
             }
@@ -2848,12 +2855,36 @@ document.addEventListener('DOMContentLoaded', async () => {
                 maxTicksLimit: 8
               }
             },
-            y: {
-              beginAtZero: false,
+            'y-sleep': {
+              position: 'left',
+              beginAtZero: true,
+              max: 12,
               grid: { color: '#2a2d35' },
               ticks: { 
-                color: '#8a8f98',
+                color: '#7dd3fc',
+                font: { size: 10 },
+                callback: (value) => `${value}h`
+              },
+              title: {
+                display: true,
+                text: 'Sleep (hours)',
+                color: '#7dd3fc',
+                font: { size: 11 }
+              }
+            },
+            'y-hrv': {
+              position: 'right',
+              beginAtZero: false,
+              grid: { display: false },
+              ticks: { 
+                color: '#a8df7d',
                 font: { size: 10 }
+              },
+              title: {
+                display: true,
+                text: 'HRV (ms)',
+                color: '#a8df7d',
+                font: { size: 11 }
               }
             }
           }
@@ -2955,10 +2986,107 @@ document.addEventListener('DOMContentLoaded', async () => {
       renderRecoverySparkline('sleep-sparkline', recent90d.map(w => w.sleep || null), '#7dd3fc');
       renderRecoverySparkline('rhr-sparkline', recent90d.map(w => w.resting_hr || null), '#f4a261');
       
-      // Populate tables (last 7 days)
-      populateRecoveryTable('hrv-table', recent7d, 'hrv', 'hrv');
-      populateRecoveryTable('sleep-table', recent7d, 'sleep', 'sleep', 'h');
-      populateRecoveryTable('rhr-table', recent7d, 'resting_hr', 'rhr', 'bpm');
+      // Render 30-day line charts in table areas (not tables)
+      render30DayLineChart('hrv-table', recent30d, 'hrv', '#a8df7d', 'HRV');
+      render30DayLineChart('sleep-table', recent30d, 'sleep', '#7dd3fc', 'Sleep');
+      render30DayLineChart('rhr-table', recent30d, 'resting_hr', '#f4a261', 'RHR');
+    }
+    
+    function render30DayLineChart(containerId, data, field, color, label) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      
+      // Replace the div with a canvas
+      container.innerHTML = '<canvas></canvas>';
+      const canvas = container.querySelector('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      const values = data.map(w => w[field] || null);
+      const dates = data.map(w => {
+        if (!w.date) return '';
+        const d = new Date(w.date);
+        return d.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
+      });
+      
+      const validData = values.filter(v => v !== null);
+      if (validData.length === 0) {
+        container.innerHTML = '<div style="color: var(--text-3); font-size: 11px; padding: 8px;">No data</div>';
+        return;
+      }
+      
+      const chartKey = `${containerId}ChartInstance`;
+      if (window[chartKey]) {
+        window[chartKey].destroy();
+      }
+      
+      window[chartKey] = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: dates,
+          datasets: [{
+            label: label,
+            data: values,
+            borderColor: color,
+            backgroundColor: color.replace(')', ', 0.1)').replace('rgb', 'rgba').replace('#', 'rgba('),
+            borderWidth: 2,
+            fill: false,
+            tension: 0.4,
+            pointRadius: 1,
+            pointHoverRadius: 4,
+            pointBackgroundColor: color,
+            pointBorderColor: color,
+            spanGaps: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#1a1d24',
+              borderColor: '#2a2d35',
+              borderWidth: 1,
+              titleColor: '#e8eaed',
+              bodyColor: '#c4c7cc',
+              padding: 6,
+              displayColors: false,
+              callbacks: {
+                title: (items) => items[0].label,
+                label: (item) => {
+                  if (field === 'sleep') return `${item.parsed.y.toFixed(1)}h`;
+                  return `${item.parsed.y.toFixed(0)}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              display: true,
+              grid: { display: false },
+              ticks: { 
+                color: '#8a8f98',
+                font: { size: 9 },
+                maxRotation: 0,
+                autoSkip: true,
+                maxTicksLimit: 6
+              }
+            },
+            y: {
+              display: true,
+              beginAtZero: false,
+              suggestedMin: Math.min(...validData) * 0.95,
+              suggestedMax: Math.max(...validData) * 1.05,
+              grid: { color: '#2a2d35', lineWidth: 0.5 },
+              ticks: { 
+                color: '#8a8f98',
+                font: { size: 9 },
+                maxTicksLimit: 4
+              }
+            }
+          }
+        }
+      });
     }
     
     function renderRecoverySparkline(canvasId, data, color) {
@@ -3017,59 +3145,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
     
-    function populateRecoveryTable(tableId, recent7d, field, barClass, unit = '') {
-      const table = document.getElementById(tableId);
-      if (!table) return;
-      
-      const values = recent7d.map(w => w[field]).filter(v => v);
-      if (values.length === 0) {
-        table.innerHTML = '<div style="color: var(--text-3); font-size: 11px;">No data</div>';
-        return;
-      }
-      
-      const min = Math.min(...values);
-      const max = Math.max(...values);
-      const range = max - min || 1;
-      
-      let html = '';
-      recent7d.slice().reverse().forEach(w => {
-        const date = w.date ? new Date(w.date).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' }) : '—';
-        const value = w[field];
-        
-        if (!value) {
-          html += `
-            <div class="recovery-table-row">
-              <span class="recovery-table-date">${date}</span>
-              <div class="recovery-table-bar-wrapper"></div>
-              <span class="recovery-table-value">—</span>
-            </div>
-          `;
-          return;
-        }
-        
-        // For RHR, invert percentage (lower is better)
-        let percent = 0;
-        if (barClass === 'rhr') {
-          percent = range > 0 ? (1 - (value - min) / range) * 100 : 50;
-        } else {
-          percent = range > 0 ? ((value - min) / range) * 100 : 50;
-        }
-        
-        const displayValue = unit ? `${value.toFixed(field === 'sleep' ? 1 : 0)}${unit}` : value.toFixed(0);
-        
-        html += `
-          <div class="recovery-table-row">
-            <span class="recovery-table-date">${date}</span>
-            <div class="recovery-table-bar-wrapper">
-              <div class="recovery-table-bar recovery-table-bar-${barClass}" style="width: ${percent}%"></div>
-            </div>
-            <span class="recovery-table-value">${displayValue}</span>
-          </div>
-        `;
-      });
-      
-      table.innerHTML = html;
-    }
     
     // Render Section 8: Weekly Load
     console.log('📊 Rendering weekly load...');

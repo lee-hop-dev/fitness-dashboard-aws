@@ -2131,13 +2131,17 @@ document.addEventListener('DOMContentLoaded', async () => {
           }
           
           const today = now.toISOString().split('T')[0];
-          const todayEvent = events.find(e => e.date && e.date.startsWith(today));
+          const todayEvent = events.find(e => {
+            const eventDate = e.start_date_local ? e.start_date_local.split('T')[0] : e.date;
+            return eventDate === today;
+          });
           
           if (todayEvent) {
             document.getElementById('today-workout-name').textContent = todayEvent.name || 'Workout';
             const meta = [];
             if (todayEvent.duration) meta.push(`~ ${todayEvent.duration}`);
-            if (todayEvent.load) meta.push(`${todayEvent.load} TSS`);
+            const load = todayEvent.icu_training_load || todayEvent.load;
+            if (load) meta.push(`${Math.round(load)} TSS`);
             document.getElementById('today-workout-meta').textContent = meta.join(' · ');
             document.getElementById('today-why').textContent = todayEvent.description || 'Planned workout';
           }

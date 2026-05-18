@@ -474,7 +474,7 @@
   
   .ytd-grid {
     display: grid;
-    grid-template-columns: 1.2fr repeat(4, 1fr);
+    grid-template-columns: 1.2fr repeat(3, 1fr);
   }
   
   .ytd-col {
@@ -1647,11 +1647,11 @@
               </div>
             </div>
 
-            <!-- Column 4: Rowing -->
+            <!-- Column 4: Rowing & Cardio -->
             <div class="ytd-col ytd-sport">
               <div class="ytd-sport-header">
                 <span class="ytd-glyph" style="color: var(--accent-3)">⊕</span>
-                <span class="ytd-sport-name">ROWING</span>
+                <span class="ytd-sport-name">ROWING & CARDIO</span>
               </div>
               <div class="ytd-sport-value" id="ytd-row-primary">—</div>
               <div class="ytd-sport-meta">
@@ -1660,22 +1660,6 @@
               <div class="ytd-progress-container">
                 <div class="ytd-progress-bar" id="ytd-row-progress"></div>
                 <div class="ytd-progress-label" id="ytd-row-pct">—</div>
-              </div>
-            </div>
-
-            <!-- Column 5: Cardio -->
-            <div class="ytd-col ytd-sport">
-              <div class="ytd-sport-header">
-                <span class="ytd-glyph" style="color: var(--accent-4)">◎</span>
-                <span class="ytd-sport-name">CARDIO</span>
-              </div>
-              <div class="ytd-sport-value" id="ytd-crd-primary">—</div>
-              <div class="ytd-sport-meta">
-                <span id="ytd-crd-hrs">—</span> · <span id="ytd-crd-tss">—</span>
-              </div>
-              <div class="ytd-progress-container">
-                <div class="ytd-progress-bar" id="ytd-crd-progress"></div>
-                <div class="ytd-progress-label" id="ytd-crd-pct">—</div>
               </div>
             </div>
           </div>
@@ -2021,20 +2005,38 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const cycling = round(sum(CYCLING));
       const running = round(sum(RUNNING));
-      const rowing  = round(sum(ROWING));
-      const cardio  = round(sum(CARDIO));
+      const rowingRaw  = sum(ROWING);
+      const cardioRaw  = sum(CARDIO);
+      
+      // Combine rowing + cardio
+      const rowingCardio = round({
+        distance: rowingRaw.distance + cardioRaw.distance,
+        hours: rowingRaw.hours + cardioRaw.hours,
+        tss: rowingRaw.tss + cardioRaw.tss,
+        count: rowingRaw.count + cardioRaw.count,
+        elevation: rowingRaw.elevation + cardioRaw.elevation
+      });
+      
       const knownKeys = [...CYCLING, ...RUNNING, ...ROWING, ...CARDIO];
       const other = round(sum(Object.keys(sports).filter(k => !knownKeys.includes(k))));
 
       const total = {
-        distance:  cycling.distance  + running.distance  + rowing.distance  + cardio.distance + other.distance,
-        hours:     Math.round((cycling.hours + running.hours + rowing.hours + cardio.hours + other.hours) * 10) / 10,
-        tss:       cycling.tss + running.tss + rowing.tss + cardio.tss + other.tss,
-        count:     cycling.count + running.count + rowing.count + cardio.count + other.count,
-        elevation: cycling.elevation + running.elevation + rowing.elevation + cardio.elevation + other.elevation,
+        distance:  cycling.distance  + running.distance  + rowingCardio.distance + other.distance,
+        hours:     Math.round((cycling.hours + running.hours + rowingCardio.hours + other.hours) * 10) / 10,
+        tss:       cycling.tss + running.tss + rowingCardio.tss + other.tss,
+        count:     cycling.count + running.count + rowingCardio.count + other.count,
+        elevation: cycling.elevation + running.elevation + rowingCardio.elevation + other.elevation,
       };
+      
+      // Log for debugging cardio accuracy
+      console.log('📊 YTD Breakdown:', {
+        rowing: round(rowingRaw),
+        cardio: round(cardioRaw),
+        combined: rowingCardio,
+        rawSports: Object.keys(sports)
+      });
 
-      return { total, cycling, running, rowing, cardio, other, raw: sports };
+      return { total, cycling, running, rowingCardio, other, raw: sports };
     };
     
     // Validate critical data - API returns {wellness: [...]} not just [...]
@@ -2074,17 +2076,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       rhr: data.wellness.latest.resting_hr
     });
     console.log('  YTD total:', data.ytdStats.total);
-    console.log('  YTD cardio object:', data.ytdStats.cardio);
-    if (data.ytdStats.cardio) {
-      console.log('  YTD cardio details:', {
-        hours: data.ytdStats.cardio.hours,
-        tss: data.ytdStats.cardio.tss,
-        distance: data.ytdStats.cardio.distance,
-        keys: Object.keys(data.ytdStats.cardio)
-      });
-    } else {
-      console.warn('⚠️ YTD cardio object is null/undefined');
-    }
+    console.log('  YTD rowingCardio:', data.ytdStats.rowingCardio);
     
     // Hide loading, show content
     document.getElementById('loading-state').classList.add('hidden');
@@ -2176,75 +2168,62 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('current-atl-delta').textContent = (atl7d > 0 ? '+' : '') + atl7d.toFixed(1) + ' · 7d';
     }
     
-    // 2. Populate YTD Stats - NEW 5-column design
+    // 2. Populate YTD Stats - TSS-first design with combined rowing+cardio
     if (data.ytdStats) {
       const cy = data.ytdStats.cycling || {};
       const ru = data.ytdStats.running || {};
-      const row = data.ytdStats.rowing || {};
-      const crd = data.ytdStats.cardio || {};
+      const row = data.ytdStats.rowingCardio || {}; // Combined rowing + cardio
       
       // Calculate totals
-      const totalDist = (cy.distance || 0) + (ru.distance || 0) + (row.distance || 0) + (crd.distance || 0);
-      const totalHrs = (cy.hours || 0) + (ru.hours || 0) + (row.hours || 0) + (crd.hours || 0);
-      const totalTss = (cy.tss || 0) + (ru.tss || 0) + (row.tss || 0) + (crd.tss || 0);
+      const totalTss = (cy.tss || 0) + (ru.tss || 0) + (row.tss || 0);
+      const totalHrs = (cy.hours || 0) + (ru.hours || 0) + (row.hours || 0);
+      const totalDist = (cy.distance || 0) + (ru.distance || 0) + (row.distance || 0);
       
       // Totals column
       document.getElementById('ytd-total-dist').textContent = totalDist.toLocaleString();
       document.getElementById('ytd-total-hrs').textContent = (totalHrs || 0).toFixed(0) + 'h';
       document.getElementById('ytd-total-tss').textContent = (totalTss/1000 || 0).toFixed(1) + 'k';
       
-      // Color bar
+      // Color bar - use TSS as flex basis
       const colorBar = document.getElementById('ytd-color-bar');
-      const cyFlex = cy.distance || (cy.hours || 0) * 10 || 1;
-      const ruFlex = ru.distance || (ru.hours || 0) * 10 || 1;
-      const rowFlex = row.distance || (row.hours || 0) * 10 || 1;
-      const crdFlex = crd.distance || (crd.hours || 0) * 10 || 1;
+      const cyFlex = cy.tss || 1;
+      const ruFlex = ru.tss || 1;
+      const rowFlex = row.tss || 1;
       colorBar.innerHTML = `
         <div style="flex: ${cyFlex}; background: var(--accent)"></div>
         <div style="flex: ${ruFlex}; background: var(--accent-2)"></div>
         <div style="flex: ${rowFlex}; background: var(--accent-3)"></div>
-        <div style="flex: ${crdFlex}; background: var(--accent-4)"></div>
       `;
       
-      // Cycling
-      const cyPrimary = cy.distance > 0 ? cy.distance.toLocaleString() + ' km' : ((cy.hours || 0).toFixed(0) + ' h');
+      // Cycling - TSS primary
+      const cyPrimary = (cy.tss || 0).toLocaleString() + ' TSS';
       document.getElementById('ytd-cy-primary').textContent = cyPrimary;
       document.getElementById('ytd-cy-hrs').textContent = (cy.hours || 0).toFixed(0) + 'h';
-      document.getElementById('ytd-cy-tss').textContent = (cy.tss || 0).toLocaleString() + ' TSS';
-      const cyPct = (((cy.distance || (cy.hours || 0) * 10) / (totalDist || 1)) * 100).toFixed(0);
-      document.getElementById('ytd-cy-pct').textContent = cyPct + '% of yearly km';
+      document.getElementById('ytd-cy-tss').textContent = (cy.distance || 0).toLocaleString() + ' km';
+      const cyPct = ((cy.tss / (totalTss || 1)) * 100).toFixed(0);
+      document.getElementById('ytd-cy-pct').textContent = cyPct + '% of yearly TSS';
       document.getElementById('ytd-cy-progress').style.width = cyPct + '%';
       document.getElementById('ytd-cy-progress').style.background = 'linear-gradient(90deg, var(--accent), color-mix(in oklch, var(--accent) 30%, transparent))';
       
-      // Running
-      const ruPrimary = ru.distance > 0 ? ru.distance.toLocaleString() + ' km' : ((ru.hours || 0).toFixed(0) + ' h');
+      // Running - TSS primary
+      const ruPrimary = (ru.tss || 0).toLocaleString() + ' TSS';
       document.getElementById('ytd-ru-primary').textContent = ruPrimary;
       document.getElementById('ytd-ru-hrs').textContent = (ru.hours || 0).toFixed(0) + 'h';
-      document.getElementById('ytd-ru-tss').textContent = (ru.tss || 0).toLocaleString() + ' TSS';
-      const ruPct = (((ru.distance || (ru.hours || 0) * 10) / (totalDist || 1)) * 100).toFixed(0);
-      document.getElementById('ytd-ru-pct').textContent = ruPct + '% of yearly km';
+      document.getElementById('ytd-ru-tss').textContent = (ru.distance || 0).toLocaleString() + ' km';
+      const ruPct = ((ru.tss / (totalTss || 1)) * 100).toFixed(0);
+      document.getElementById('ytd-ru-pct').textContent = ruPct + '% of yearly TSS';
       document.getElementById('ytd-ru-progress').style.width = ruPct + '%';
       document.getElementById('ytd-ru-progress').style.background = 'linear-gradient(90deg, var(--accent-2), color-mix(in oklch, var(--accent-2) 30%, transparent))';
       
-      // Rowing
-      const rowPrimary = row.distance > 0 ? row.distance.toLocaleString() + ' km' : ((row.hours || 0).toFixed(0) + ' h');
+      // Rowing & Cardio combined - TSS primary
+      const rowPrimary = (row.tss || 0).toLocaleString() + ' TSS';
       document.getElementById('ytd-row-primary').textContent = rowPrimary;
       document.getElementById('ytd-row-hrs').textContent = (row.hours || 0).toFixed(0) + 'h';
-      document.getElementById('ytd-row-tss').textContent = (row.tss || 0).toLocaleString() + ' TSS';
-      const rowPct = (((row.distance || (row.hours || 0) * 10) / (totalDist || 1)) * 100).toFixed(0);
-      document.getElementById('ytd-row-pct').textContent = rowPct + '% of yearly km';
+      document.getElementById('ytd-row-tss').textContent = (row.distance || 0).toLocaleString() + ' km';
+      const rowPct = ((row.tss / (totalTss || 1)) * 100).toFixed(0);
+      document.getElementById('ytd-row-pct').textContent = rowPct + '% of yearly TSS';
       document.getElementById('ytd-row-progress').style.width = rowPct + '%';
       document.getElementById('ytd-row-progress').style.background = 'linear-gradient(90deg, var(--accent-3), color-mix(in oklch, var(--accent-3) 30%, transparent))';
-      
-      // Cardio
-      const crdPrimary = crd.distance > 0 ? crd.distance.toLocaleString() + ' km' : ((crd.hours || 0).toFixed(0) + ' h');
-      document.getElementById('ytd-crd-primary').textContent = crdPrimary;
-      document.getElementById('ytd-crd-hrs').textContent = (crd.hours || 0).toFixed(0) + 'h';
-      document.getElementById('ytd-crd-tss').textContent = (crd.tss || 0).toLocaleString() + ' TSS';
-      const crdPct = (((crd.distance || (crd.hours || 0) * 10) / (totalDist || 1)) * 100).toFixed(0);
-      document.getElementById('ytd-crd-pct').textContent = crdPct + '% of yearly km';
-      document.getElementById('ytd-crd-progress').style.width = crdPct + '%';
-      document.getElementById('ytd-crd-progress').style.background = 'linear-gradient(90deg, var(--accent-4), color-mix(in oklch, var(--accent-4) 30%, transparent))';
     }
     
     // 2b. Populate Hero Cards Row with Sparklines

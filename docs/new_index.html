@@ -2507,18 +2507,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>`;
         }).join('');
         
-        // Debug: log first activity to check field names
+        // Debug: log first activity to check ALL available fields
         if (activitiesToShow.length > 0) {
           const firstActivity = activitiesToShow[0];
-          console.log('🔍 First activity fields:', {
+          console.log('🔍 First activity ALL KEYS:', Object.keys(firstActivity));
+          console.log('🔍 First activity sample data:', {
             type: firstActivity.type,
             name: firstActivity.name,
-            avg_power: firstActivity.avg_power,
-            average_power: firstActivity.average_power,
-            avg_watts: firstActivity.avg_watts,
-            average_watts: firstActivity.average_watts,
-            avg_speed: firstActivity.avg_speed,
-            avg_hr: firstActivity.avg_hr
+            id: firstActivity.id,
+            distance: firstActivity.distance,
+            duration: firstActivity.duration,
+            moving_time: firstActivity.moving_time
           });
         }
         

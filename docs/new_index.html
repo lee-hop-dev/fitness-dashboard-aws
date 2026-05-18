@@ -2457,18 +2457,18 @@ document.addEventListener('DOMContentLoaded', async () => {
           const isRowing = info.label === 'Rowing';
           const isCycling = info.label === 'Cycling';
           
-          // Check multiple possible power field names
-          const power = a.avg_power || a.average_power || a.avg_watts || a.average_watts || null;
+          // Use correct field name from Intervals.icu API
+          const power = a.power || a.avg_power || null;
           
-          const paceSecKm = a.avg_speed ? Math.round(1000/a.avg_speed) : null;
-          const paceSec500m = a.avg_speed ? Math.round(500/a.avg_speed) : null;
+          const paceSecKm = a.average_speed ? Math.round(1000/a.average_speed) : null;
+          const paceSec500m = a.average_speed ? Math.round(500/a.average_speed) : null;
           
           let stat1val, stat1lbl;
-          if (isRunning && a.avg_speed) {
+          if (isRunning && a.average_speed) {
             // Running: show pace per km
             stat1val = formatPace(paceSecKm);
             stat1lbl = 'Pace/km';
-          } else if (isRowing && a.avg_speed) {
+          } else if (isRowing && a.average_speed) {
             // Rowing: show pace per 500m
             stat1val = formatPace(paceSec500m);
             stat1lbl = 'Pace/500m';
@@ -2476,7 +2476,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Cycling/other with power: show watts
             stat1val = `${Math.round(power)}W`;
             stat1lbl = 'Avg Power';
-          } else if (a.avg_speed) {
+          } else if (a.average_speed) {
             // Fallback: show pace per km
             stat1val = formatPace(paceSecKm);
             stat1lbl = 'Pace/km';
@@ -2498,7 +2498,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div class="activity-stat"><span class="activity-stat-value">${formatDuration(a.duration || a.moving_time)}</span><span class="activity-stat-label">Duration</span></div>
                 <div class="activity-stat"><span class="activity-stat-value">${a.distance?(a.distance/1000).toFixed(1):'—'}</span><span class="activity-stat-label">km</span></div>
                 <div class="activity-stat"><span class="activity-stat-value">${stat1val}</span><span class="activity-stat-label">${stat1lbl}</span></div>
-                <div class="activity-stat"><span class="activity-stat-value">${a.avg_hr||'—'}</span><span class="activity-stat-label">Avg HR</span></div>
+                <div class="activity-stat"><span class="activity-stat-value">${a.average_heartrate||'—'}</span><span class="activity-stat-label">Avg HR</span></div>
               </div>
               <div class="activity-card-footer-hero">
                 <span>${activityDate ? activityDate.split('T')[0] : '—'}</span>
@@ -2506,25 +2506,6 @@ document.addEventListener('DOMContentLoaded', async () => {
               </div>
             </div>`;
         }).join('');
-        
-        // Debug: log first activity to find power field
-        if (activitiesToShow.length > 0) {
-          const firstActivity = activitiesToShow[0];
-          console.log('🔍 Power-related fields:', {
-            average_watts: firstActivity.average_watts,
-            device_watts: firstActivity.device_watts,
-            power_field: firstActivity.power_field,
-            watts: firstActivity.watts,
-            normalized_power: firstActivity.normalized_power,
-            icu_pm_cp: firstActivity.icu_pm_cp,
-            icu_pm_ftp_watts: firstActivity.icu_pm_ftp_watts
-          });
-          console.log('🔍 Speed/HR fields:', {
-            average_speed: firstActivity.average_speed,
-            average_heartrate: firstActivity.average_heartrate,
-            pace: firstActivity.pace
-          });
-        }
         
         console.log('✅ Recent activities rendered with hero cards');
       }

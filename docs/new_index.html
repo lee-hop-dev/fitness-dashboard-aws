@@ -3093,16 +3093,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         window[chartKey].destroy();
       }
       
+      // Create gradient fill
+      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      gradient.addColorStop(0, color + '40'); // 25% opacity at top
+      gradient.addColorStop(1, color + '00'); // 0% opacity at bottom
+      
+      // Generate time-based labels (30 days ago → today)
+      const labels = data.map((_, i) => {
+        const daysAgo = data.length - 1 - i;
+        if (daysAgo === 0) return 'Now';
+        if (daysAgo % 10 === 0) return `-${daysAgo}d`;
+        return '';
+      });
+      
       window[chartKey] = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: data.map((_, i) => ''),
+          labels: labels,
           datasets: [{
             data: values,
             borderColor: color,
-            backgroundColor: 'transparent',
+            backgroundColor: gradient,
             borderWidth: 2.5,
-            fill: false,
+            fill: true,
             tension: 0.3,
             pointRadius: 0,
             pointHoverRadius: 4,
@@ -3118,9 +3131,29 @@ document.addEventListener('DOMContentLoaded', async () => {
             tooltip: { enabled: false }
           },
           scales: {
-            x: { display: false },
+            x: { 
+              display: true,
+              grid: { display: false },
+              ticks: {
+                color: '#666',
+                font: { size: 9, family: 'Geist Mono, monospace' },
+                maxRotation: 0,
+                autoSkip: false
+              }
+            },
             y: { 
-              display: false,
+              display: true,
+              position: 'right',
+              grid: { 
+                display: true,
+                color: '#e5e5e5',
+                lineWidth: 1
+              },
+              ticks: {
+                color: '#666',
+                font: { size: 9, family: 'Geist Mono, monospace' },
+                count: 5
+              },
               suggestedMin: Math.min(...validData) * 0.92,
               suggestedMax: Math.max(...validData) * 1.08
             }

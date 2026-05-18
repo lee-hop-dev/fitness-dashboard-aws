@@ -1060,7 +1060,7 @@
     padding: var(--space-3);
     display: flex;
     flex-direction: column;
-    gap: var(--space-2);
+    gap: 16px;
   }
 
   .race-item {
@@ -2454,16 +2454,30 @@ document.addEventListener('DOMContentLoaded', async () => {
           
           // Determine whether to show pace or power based on activity type
           const isRunning = info.label === 'Running';
+          const isRowing = info.label === 'Rowing';
+          const isCycling = info.label === 'Cycling';
+          
+          // Check multiple possible power field names
+          const power = a.avg_power || a.average_power || a.avg_watts || a.average_watts || null;
+          
           const paceSecKm = a.avg_speed ? Math.round(1000/a.avg_speed) : null;
+          const paceSec500m = a.avg_speed ? Math.round(500/a.avg_speed) : null;
           
           let stat1val, stat1lbl;
           if (isRunning && a.avg_speed) {
+            // Running: show pace per km
             stat1val = formatPace(paceSecKm);
             stat1lbl = 'Pace/km';
-          } else if (a.avg_power) {
-            stat1val = `${a.avg_power}W`;
+          } else if (isRowing && a.avg_speed) {
+            // Rowing: show pace per 500m
+            stat1val = formatPace(paceSec500m);
+            stat1lbl = 'Pace/500m';
+          } else if (power) {
+            // Cycling/other with power: show watts
+            stat1val = `${Math.round(power)}W`;
             stat1lbl = 'Avg Power';
           } else if (a.avg_speed) {
+            // Fallback: show pace per km
             stat1val = formatPace(paceSecKm);
             stat1lbl = 'Pace/km';
           } else {
@@ -2492,6 +2506,21 @@ document.addEventListener('DOMContentLoaded', async () => {
               </div>
             </div>`;
         }).join('');
+        
+        // Debug: log first activity to check field names
+        if (activitiesToShow.length > 0) {
+          const firstActivity = activitiesToShow[0];
+          console.log('🔍 First activity fields:', {
+            type: firstActivity.type,
+            name: firstActivity.name,
+            avg_power: firstActivity.avg_power,
+            average_power: firstActivity.average_power,
+            avg_watts: firstActivity.avg_watts,
+            average_watts: firstActivity.average_watts,
+            avg_speed: firstActivity.avg_speed,
+            avg_hr: firstActivity.avg_hr
+          });
+        }
         
         console.log('✅ Recent activities rendered with hero cards');
       }

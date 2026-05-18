@@ -2465,15 +2465,19 @@ document.addEventListener('DOMContentLoaded', async () => {
           
           // Debug first cycling activity
           if (isCycling && activitiesToShow.indexOf(a) === 0) {
-            console.log('🚴 First cycling activity:', {
+            console.log('🚴 First cycling activity - checking ALL power fields:', {
               name: a.name,
               type: a.type,
-              normalizedType: normalizedType,
-              isCycling: isCycling,
-              power: power,
-              'a.power': a.power,
-              'a.avg_power': a.avg_power,
-              average_speed: a.average_speed
+              // Check every possible power field
+              power: a.power,
+              avg_power: a.avg_power,
+              average_power: a.average_power,
+              watts: a.watts,
+              average_watts: a.average_watts,
+              normalized_power: a.normalized_power,
+              weighted_average_power: a.weighted_average_power,
+              icu_average_watts: a.icu_average_watts,
+              icu_weighted_avg_watts: a.icu_weighted_avg_watts
             });
           }
           

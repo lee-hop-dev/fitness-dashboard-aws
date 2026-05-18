@@ -2464,7 +2464,13 @@ document.addEventListener('DOMContentLoaded', async () => {
           const paceSec500m = a.average_speed ? Math.round(500/a.average_speed) : null;
           
           let stat1val, stat1lbl;
-          if (isRunning && a.average_speed) {
+          
+          // Priority: sport-specific metric first
+          if (isCycling && power) {
+            // Cycling with power: show watts
+            stat1val = `${Math.round(power)}W`;
+            stat1lbl = 'Avg Power';
+          } else if (isRunning && a.average_speed) {
             // Running: show pace per km
             stat1val = formatPace(paceSecKm);
             stat1lbl = 'Pace/km';
@@ -2473,7 +2479,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             stat1val = formatPace(paceSec500m);
             stat1lbl = 'Pace/500m';
           } else if (power) {
-            // Cycling/other with power: show watts
+            // Any other sport with power
             stat1val = `${Math.round(power)}W`;
             stat1lbl = 'Avg Power';
           } else if (a.average_speed) {

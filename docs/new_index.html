@@ -2463,6 +2463,20 @@ document.addEventListener('DOMContentLoaded', async () => {
           const paceSecKm = a.average_speed ? Math.round(1000/a.average_speed) : null;
           const paceSec500m = a.average_speed ? Math.round(500/a.average_speed) : null;
           
+          // Debug first cycling activity
+          if (isCycling && activitiesToShow.indexOf(a) === 0) {
+            console.log('🚴 First cycling activity:', {
+              name: a.name,
+              type: a.type,
+              normalizedType: normalizedType,
+              isCycling: isCycling,
+              power: power,
+              'a.power': a.power,
+              'a.avg_power': a.avg_power,
+              average_speed: a.average_speed
+            });
+          }
+          
           let stat1val, stat1lbl;
           
           // Priority: sport-specific metric first

@@ -986,7 +986,7 @@
   .week-plan-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: var(--space-3);
+    gap: 16px;
     padding: var(--space-3);
   }
 
@@ -1034,11 +1034,12 @@
     border-radius: 4px;
     position: relative;
     overflow: hidden;
+    display: flex;
+    align-items: flex-end;
   }
 
   .workout-bar-fill {
-    background: var(--accent);
-    height: 100%;
+    width: 100%;
     transition: height 0.3s ease;
   }
 
@@ -2664,6 +2665,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Use Intervals.icu event data
         const load = dayEvent ? (dayEvent.icu_training_load || dayEvent.load || 50) : 0;
         const eventName = dayEvent ? (dayEvent.name || 'Workout') : null;
+        const ifValue = dayEvent ? (dayEvent.if_val || dayEvent.icu_if) : null;
+        
+        // Determine color based on IF (preferred) or TSS
+        let barColor;
+        if (ifValue) {
+          // Use IF: <0.75=easy (lime), 0.75-0.95=moderate (orange), >0.95=hard (red)
+          if (ifValue < 0.75) {
+            barColor = '#a8df7d'; // lime - easy
+          } else if (ifValue < 0.95) {
+            barColor = '#f4a261'; // orange - moderate
+          } else {
+            barColor = '#ef4444'; // red - hard
+          }
+        } else {
+          // Fallback to TSS: <80=easy, 80-120=moderate, >120=hard
+          if (load < 80) {
+            barColor = '#a8df7d'; // lime
+          } else if (load < 120) {
+            barColor = '#f4a261'; // orange
+          } else {
+            barColor = '#ef4444'; // red
+          }
+        }
         
         dayCard.innerHTML = `
           <div class="day-card-header">
@@ -2674,9 +2698,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           ${eventName ? `
             <div class="workout-name">${eventName}</div>
             <div class="workout-bar">
-              <div class="workout-bar-fill" style="height: ${Math.min(100, load / 2)}%"></div>
+              <div class="workout-bar-fill" style="height: ${Math.min(100, load / 2)}%; background: ${barColor};"></div>
             </div>
-            <div class="workout-tss">${Math.round(load)} TSS</div>
+            <div class="workout-tss">${Math.round(load)} TSS${ifValue ? ' · IF ' + ifValue.toFixed(2) : ''}</div>
           ` : '<div class="workout-name" style="color: var(--text-3); font-size: 11px;">Rest day</div>'}
         `;
         

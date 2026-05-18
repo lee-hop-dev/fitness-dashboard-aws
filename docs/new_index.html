@@ -2507,17 +2507,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>`;
         }).join('');
         
-        // Debug: log first activity to check ALL available fields
+        // Debug: log first activity to find power field
         if (activitiesToShow.length > 0) {
           const firstActivity = activitiesToShow[0];
-          console.log('🔍 First activity ALL KEYS:', Object.keys(firstActivity));
-          console.log('🔍 First activity sample data:', {
-            type: firstActivity.type,
-            name: firstActivity.name,
-            id: firstActivity.id,
-            distance: firstActivity.distance,
-            duration: firstActivity.duration,
-            moving_time: firstActivity.moving_time
+          console.log('🔍 Power-related fields:', {
+            average_watts: firstActivity.average_watts,
+            device_watts: firstActivity.device_watts,
+            power_field: firstActivity.power_field,
+            watts: firstActivity.watts,
+            normalized_power: firstActivity.normalized_power,
+            icu_pm_cp: firstActivity.icu_pm_cp,
+            icu_pm_ftp_watts: firstActivity.icu_pm_ftp_watts
+          });
+          console.log('🔍 Speed/HR fields:', {
+            average_speed: firstActivity.average_speed,
+            average_heartrate: firstActivity.average_heartrate,
+            pace: firstActivity.pace
           });
         }
         

@@ -3710,15 +3710,21 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Parse pace curves from Intervals - Running only (from original page logic)
       let paceBestsData = [];
       if (paceCurves90d && paceCurves90d.list && paceCurves90d.list.length > 0) {
+        console.log('  Raw pace curves:', paceCurves90d.list.length, 'curves');
+        
         const runningCurves = paceCurves90d.list.filter(curve => {
           if (!curve.type) return true;
           return curve.type === 'Run' || curve.type === 'VirtualRun' || curve.type === 'TrailRun';
         });
         
+        console.log('  Filtered running curves:', runningCurves.length);
+        
         if (runningCurves.length > 0) {
           const curve = runningCurves[0];
           const distances = curve.distance || [];
           const times = curve.values || [];
+          
+          console.log('  Distances:', distances.length, 'Times:', times.length);
           
           paceBestsData = distances.map((distM, idx) => {
             let label;
@@ -3745,8 +3751,10 @@ document.addEventListener('DOMContentLoaded', async () => {
               distM: distM
             };
           }).filter(d => d.distM >= 400); // Start at 400m
-          console.log('  Pace bests:', paceBestsData.length, 'points');
+          console.log('  Pace bests:', paceBestsData.length, 'points (filtered >=400m)');
         }
+      } else {
+        console.warn('  No pace curves data available');
       }
       
       // Build charts with design theme colors

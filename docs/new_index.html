@@ -1300,9 +1300,9 @@
 
   .calendar-grid-header {
     display: grid;
-    grid-template-columns: 40px repeat(7, 1fr) 100px;
-    gap: 4px;
-    margin-bottom: 8px;
+    grid-template-columns: 60px repeat(7, 1fr) 140px;
+    gap: 8px;
+    margin-bottom: 12px;
     padding-bottom: 8px;
     border-bottom: 1px solid var(--border);
   }
@@ -1320,75 +1320,147 @@
 
   .calendar-week-row {
     display: grid;
-    grid-template-columns: 40px repeat(7, 1fr) 100px;
-    gap: 4px;
-    margin-bottom: 4px;
-    align-items: center;
+    grid-template-columns: 60px repeat(7, 1fr) 140px;
+    gap: 8px;
+    margin-bottom: 16px;
+    align-items: start;
   }
 
   .week-number {
-    font-size: 10px;
+    font-size: 12px;
     font-family: var(--font-mono);
     font-weight: 600;
-    color: var(--text-3);
+    color: var(--text-2);
     text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .calendar-day-cell {
-    aspect-ratio: 1;
-    border-radius: 4px;
+    min-height: 90px;
+    padding: 8px;
+    border-radius: 6px;
     background: var(--bg-2);
     border: 1px solid var(--border);
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    gap: 4px;
     font-size: 10px;
     font-family: var(--font-mono);
     color: var(--text-2);
     cursor: pointer;
     transition: all 0.2s ease;
+    position: relative;
   }
 
   .calendar-day-cell:hover {
     border-color: var(--accent);
-    transform: scale(1.05);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  .calendar-day-cell.empty {
+    background: transparent;
+    border: 1px dashed var(--border);
+    cursor: default;
+    min-height: 50px;
+  }
+
+  .calendar-day-cell.empty:hover {
+    transform: none;
+    box-shadow: none;
+    border-color: var(--border);
+  }
+
+  .calendar-day-cell.today {
+    border-color: var(--accent);
+    border-width: 2px;
+  }
+
+  .calendar-day-cell.future {
+    opacity: 0.5;
+  }
+
+  .activity-type-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 8px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+    align-self: flex-start;
+  }
+
+  .activity-type-cycling { background: var(--accent); color: var(--bg-1); }
+  .activity-type-running { background: var(--accent-2); color: var(--bg-1); }
+  .activity-type-rowing { background: var(--accent-3); color: var(--bg-1); }
+  .activity-type-cardio { background: var(--accent-4); color: var(--bg-1); }
+  .activity-type-other { background: var(--bg-3); color: var(--text-2); }
+
+  .activity-name-cell {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-1);
+    line-height: 1.3;
+    flex: 1;
+    font-family: var(--font-sans);
+  }
+
+  .activity-stats-cell {
+    font-size: 9px;
+    font-family: var(--font-mono);
+    color: var(--text-3);
+    margin-top: auto;
   }
 
   .calendar-day-cell[data-intensity="1"] {
-    background: color-mix(in oklch, var(--accent) 20%, var(--bg-2));
+    border-left: 3px solid color-mix(in oklch, var(--accent) 30%, var(--bg-2));
   }
 
   .calendar-day-cell[data-intensity="2"] {
-    background: color-mix(in oklch, var(--accent) 40%, var(--bg-2));
+    border-left: 3px solid color-mix(in oklch, var(--accent) 50%, var(--bg-2));
   }
 
   .calendar-day-cell[data-intensity="3"] {
-    background: color-mix(in oklch, var(--accent) 60%, var(--bg-2));
+    border-left: 3px solid color-mix(in oklch, var(--accent) 70%, var(--bg-2));
   }
 
   .calendar-day-cell[data-intensity="4"] {
-    background: color-mix(in oklch, var(--accent) 80%, var(--bg-2));
+    border-left: 3px solid color-mix(in oklch, var(--accent) 90%, var(--bg-2));
   }
 
   .calendar-day-cell[data-intensity="5"] {
-    background: var(--accent);
-    color: var(--bg-1);
+    border-left: 3px solid var(--accent);
   }
 
   .week-summary {
-    font-size: 10px;
+    font-size: 11px;
     font-family: var(--font-mono);
     color: var(--text-2);
-    text-align: right;
+    text-align: center;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 6px;
+    padding: 8px;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
   }
 
   .week-summary-tss {
     font-weight: 600;
     color: var(--text-1);
+    font-size: 13px;
+  }
+
+  .week-summary-label {
+    font-size: 9px;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
   /* Section 10: Heatmap Legend */
@@ -3449,25 +3521,68 @@ document.addEventListener('DOMContentLoaded', async () => {
             const intensity = tss === 0 ? 0 : Math.min(5, Math.ceil(tss / 30));
             const hasActivity = day.acts.length > 0;
             const hasFutureEvent = day.events.length > 0 && day.ds >= today.toISOString().split('T')[0];
+            const isFuture = day.ds > today.toISOString().split('T')[0];
             
-            html += `<div class="calendar-day-cell" 
+            let cellClass = 'calendar-day-cell';
+            if (day.isToday) cellClass += ' today';
+            if (!hasActivity && !hasFutureEvent) cellClass += ' empty';
+            if (isFuture) cellClass += ' future';
+            
+            let cellContent = '';
+            if (hasActivity) {
+              // Show completed activity
+              const act = day.acts[0]; // Primary activity
+              const actType = normalizeActivityType(act.type);
+              const actInfo = getTypeInfo(actType);
+              const duration = formatDuration(act.moving_time || act.duration);
+              const actTSS = Math.round(act.tss || act.icu_training_load || 0);
+              
+              cellContent = `
+                <span class="activity-type-badge activity-type-${actInfo.label.toLowerCase()}">${actInfo.label}</span>
+                <div class="activity-name-cell">${act.name || 'Activity'}</div>
+                <div class="activity-stats-cell">${duration} · ${actTSS} TSS</div>
+              `;
+            } else if (hasFutureEvent) {
+              // Show planned event
+              const event = day.events[0];
+              const eventLoad = event.icu_training_load || event.load || 0;
+              const eventDuration = event.moving_time ? formatDuration(event.moving_time) : '';
+              
+              cellContent = `
+                <span class="activity-type-badge activity-type-other">Planned</span>
+                <div class="activity-name-cell">${event.name || 'Workout'}</div>
+                <div class="activity-stats-cell">${eventDuration}${eventDuration ? ' · ' : ''}${Math.round(eventLoad)} TSS</div>
+              `;
+            } else {
+              // Empty day
+              cellContent = '<div class="activity-name-cell" style="color: var(--text-3); font-size: 10px; text-align: center;">Rest</div>';
+            }
+            
+            html += `<div class="${cellClass}" 
                          data-intensity="${intensity}" 
                          ${hasActivity ? `onclick="window.location='activity.html?id=${day.acts[0].id}'"` : ''}
-                         title="${day.ds}: ${tss.toFixed(0)} TSS"
                          style="cursor: ${hasActivity ? 'pointer' : 'default'}">
-              ${tss > 0 ? Math.round(tss) : ''}
-              ${hasFutureEvent ? '<div style="position:absolute;top:2px;right:2px;width:4px;height:4px;background:var(--accent);border-radius:50%"></div>' : ''}
+              ${cellContent}
             </div>`;
           });
           
           html += `<div class="week-summary">
             <div class="week-summary-tss">${Math.round(weekData.weekTSS)} TSS</div>
-            <div>${weekData.weekHours.toFixed(1)}h</div>
+            <div class="week-summary-label">${formatWeekDuration(weekData.weekHours)}</div>
           </div></div>`;
         });
         
         wrap.innerHTML = html;
         console.log('✅ Calendar rendered with', weeksData.length, 'weeks');
+      }
+      
+      function formatWeekDuration(hours) {
+        const h = Math.floor(hours);
+        const m = Math.round((hours - h) * 60);
+        if (h > 0 && m > 0) return `${h}h ${m}m`;
+        if (h > 0) return `${h}h`;
+        if (m > 0) return `${m}m`;
+        return '0m';
       }
     }
     

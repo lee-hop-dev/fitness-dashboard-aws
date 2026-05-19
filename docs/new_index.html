@@ -1993,21 +1993,17 @@
         </div>
       </section>
 
-      <!-- Section 11: 90 Day Best (Power Curve) -->
+      <!-- Section 11: 90 Day Best (Power & Pace Curves) -->
       <section>
         <div class="chart-card-new">
           <div class="chart-card-header">
-            <h3 class="chart-card-title">Power curve · 90d best</h3>
-            <div class="chart-legend">
-              <span class="legend-item"><span class="legend-dot" style="background: var(--accent)"></span>90d</span>
-              <span class="legend-item"><span class="legend-dot" style="background: var(--text-3)"></span>prev 90d</span>
-            </div>
+            <h3 class="chart-card-title">90d best · power & pace</h3>
           </div>
           <div class="power-curve-chart">
             <canvas id="power-curve-chart"></canvas>
           </div>
-          <div class="power-stats-ribbon" id="power-stats-ribbon">
-            <!-- Power stats: 5s / 1m / 5m / 20m / FTP -->
+          <div class="power-curve-chart" style="margin-top: 24px;">
+            <canvas id="pace-curve-chart"></canvas>
           </div>
         </div>
       </section>
@@ -3629,29 +3625,30 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
     
-    // Render Section 11: 90 Day Best (Power Curve) - LIFTED FROM ORIGINAL
-    console.log('⚡ Rendering power curve from Intervals data...');
+    // Render Section 11: 90 Day Best (Power & Pace Curves) - FROM ORIGINAL PAGE
+    console.log('⚡ Rendering 90d best curves...');
     
-    // Load power curves from static file
-    fetch('data/power_curves_90d.json')
-      .then(r => r.json())
-      .then(powerCurves90d => {
-        console.log('  Power curves loaded:', powerCurves90d);
-        renderPowerCurve(powerCurves90d);
-      })
-      .catch(err => console.warn('⚠️ Power curves not available:', err));
-    
-    function renderPowerCurve(powerCurves90d) {
-      const canvas = document.getElementById('power-curve-chart');
-      if (!canvas) {
-        console.error('❌ Power curve chart canvas not found');
-        return;
+    // Load both power and pace curves
+    Promise.all([
+      fetch('data/power_curves_90d.json').then(r => r.json()).catch(() => null),
+      fetch('data/pace_curves_90d.json').then(r => r.json()).catch(() => null)
+    ]).then(([powerCurves90d, paceCurves90d]) => {
+      
+      // Helper function for duration labels (from original)
+      function formatDurationLabel(secs) {
+        if (secs < 60) return secs + 's';
+        if (secs === 60) return '1min';
+        if (secs < 3600) {
+          const m = Math.floor(secs / 60);
+          const s = secs % 60;
+          return s === 0 ? m + 'min' : m + 'm' + s + 's';
+        }
+        const h = Math.floor(secs / 3600);
+        const m = Math.floor((secs % 3600) / 60);
+        return m === 0 ? h + 'h' : h + 'h' + m + 'm';
       }
       
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      
-      // Parse power curves from Intervals (from original page)
+      // Parse power curves from Intervals (from original page logic)
       let powerBestsData = [];
       if (powerCurves90d && powerCurves90d.list && powerCurves90d.list.length > 0) {
         const curve = powerCurves90d.list[0];
@@ -3663,122 +3660,295 @@ document.addEventListener('DOMContentLoaded', async () => {
           value: watts[idx],
           secs: sec
         }));
-        console.log('  Using Intervals power bests:', powerBestsData.length, 'points');
-      } else {
-        console.warn('⚠️ No power curve data available');
-        return;
+        console.log('  Power bests:', powerBestsData.length, 'points');
       }
       
-      // Helper function for duration labels
-      function formatDurationLabel(secs) {
-        if (secs < 60) return `${secs}s`;
-        if (secs < 3600) {
-          const mins = Math.floor(secs / 60);
-          return `${mins}m`;
+      // Parse pace curves from Intervals - Running only (from original page logic)
+      let paceBestsData = [];
+      if (paceCurves90d && paceCurves90d.list && paceCurves90d.list.length > 0) {
+        const runningCurves = paceCurves90d.list.filter(curve => {
+          if (!curve.type) return true;
+          return curve.type === 'Run' || curve.type === 'VirtualRun' || curve.type === 'TrailRun';
+        });
+        
+        if (runningCurves.length > 0) {
+          const curve = runningCurves[0];
+          const distances = curve.distance || [];
+          const times = curve.values || [];
+          
+          paceBestsData = distances.map((distM, idx) => {
+            let label;
+            if (distM === 100) label = '100m';
+            else if (distM === 200) label = '200m';
+            else if (distM === 400) label = '400m';
+            else if (distM === 800) label = '800m';
+            else if (distM === 1000) label = '1km';
+            else if (distM === 1500) label = '1500m';
+            else if (distM === 1609) label = '1 mile';
+            else if (distM === 3000) label = '3km';
+            else if (distM === 5000) label = '5km';
+            else if (distM === 8000) label = '5 mile';
+            else if (distM === 10000) label = '10km';
+            else if (distM === 16093) label = '10 mile';
+            else if (distM === 21097) label = 'Half';
+            else if (distM === 42195) label = 'Marathon';
+            else if (distM < 1000) label = Math.round(distM) + 'm';
+            else label = (distM / 1000).toFixed(1) + 'km';
+            
+            return {
+              label: label,
+              totalSec: times[idx],
+              distM: distM
+            };
+          }).filter(d => d.distM >= 400); // Start at 400m
+          console.log('  Pace bests:', paceBestsData.length, 'points');
         }
-        const hrs = Math.floor(secs / 3600);
-        const mins = Math.floor((secs % 3600) / 60);
-        return mins > 0 ? `${hrs}h${mins}m` : `${hrs}h`;
       }
       
-      // Extract power stats for key durations
-      const keyDurations = {
-        '5s': 5,
-        '1m': 60,
-        '5m': 300,
-        '20m': 1200
-      };
+      // Build charts with design theme colors
+      if (powerBestsData.length) buildPowerCurveChart(powerBestsData);
+      if (paceBestsData.length) buildPaceCurveChart(paceBestsData);
       
-      const stats = {};
-      Object.entries(keyDurations).forEach(([label, targetSecs]) => {
-        const dataPoint = powerBestsData.find(p => p.secs === targetSecs);
-        if (dataPoint) {
-          stats[label] = Math.round(dataPoint.value);
-        }
-      });
-      
-      // Calculate FTP (95% of 20min power)
-      if (stats['20m']) {
-        stats['FTP'] = Math.round(stats['20m'] * 0.95);
-      }
-      
-      // Render power stats ribbon
-      const statsRibbon = document.getElementById('power-stats-ribbon');
-      if (statsRibbon) {
-        statsRibbon.innerHTML = Object.entries(stats).map(([label, value]) => `
-          <div class="power-stat-item">
-            <div class="power-stat-label">${label}</div>
-            <div class="power-stat-value">${value}<span style="font-size: 14px; color: var(--text-3)">W</span></div>
-          </div>
-        `).join('');
-      }
-      
-      // Render chart
-      const labels = powerBestsData.map(p => p.label);
-      const values = powerBestsData.map(p => p.value);
-      
-      new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels,
-          datasets: [{
-            label: '90d Best',
-            data: values,
-            borderColor: 'var(--accent)',
-            backgroundColor: 'rgba(168, 223, 125, 0.22)',
-            borderWidth: 2,
-            fill: true,
-            tension: 0.3,
-            pointRadius: 0,
-            pointHoverRadius: 4
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              backgroundColor: 'var(--bg-1)',
-              borderColor: 'var(--border)',
-              borderWidth: 1,
-              titleColor: 'var(--text-1)',
-              bodyColor: 'var(--text-2)',
-              padding: 8,
-              callbacks: {
-                label: (ctx) => `${ctx.parsed.y}W`
-              }
-            }
+      // Power curve chart function (from original, with design theme applied)
+      function buildPowerCurveChart(data) {
+        const ctx = document.getElementById('power-curve-chart');
+        if (!ctx) return;
+        
+        const labels = data.map(d => d.label);
+        const values = data.map(d => d.value);
+        
+        // Find indices for key durations
+        const idx10s = labels.indexOf('10s');
+        const idx1min = labels.indexOf('1min');
+        const idx5min = labels.indexOf('5min');
+        const idx20min = labels.indexOf('20min');
+        
+        new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Power',
+              data: values,
+              borderColor: '#a8df7d',
+              backgroundColor: 'rgba(168, 223, 125, 0.15)',
+              borderWidth: 2.5,
+              pointRadius: function(context) {
+                const index = context.dataIndex;
+                if (index === idx10s || index === idx1min || index === idx5min || index === idx20min) return 5;
+                return 0;
+              },
+              pointBackgroundColor: function(context) {
+                const index = context.dataIndex;
+                if (index === idx10s) return '#f97316';
+                if (index === idx1min) return '#22c55e';
+                if (index === idx5min) return '#6c63ff';
+                if (index === idx20min) return '#ff7043';
+                return '#a8df7d';
+              },
+              pointHoverRadius: 6,
+              fill: true,
+              tension: 0.4
+            }]
           },
-          scales: {
-            x: {
-              grid: { display: false },
-              ticks: { 
-                color: 'var(--text-3)', 
-                font: { size: 10 }, 
-                maxRotation: 0,
-                autoSkip: true,
-                maxTicksLimit: 15
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { intersect: false, mode: 'index' },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: '#1a1d24',
+                borderColor: '#2a2d35',
+                borderWidth: 1,
+                titleColor: '#e8eaed',
+                bodyColor: '#c4c7cc',
+                padding: 12,
+                displayColors: false,
+                callbacks: { label: (ctx) => ctx.parsed.y + 'W' }
+              },
+              annotation: {
+                annotations: {
+                  line10s: idx10s >= 0 ? {
+                    type: 'line', xMin: idx10s, xMax: idx10s,
+                    borderColor: '#f97316', borderWidth: 1, borderDash: [5, 5],
+                    label: { display: true, content: '10s: ' + values[idx10s] + 'W', position: 'start',
+                      backgroundColor: 'rgba(249, 115, 22, 0.9)', color: '#fff', font: { size: 10 } }
+                  } : {},
+                  line1min: idx1min >= 0 ? {
+                    type: 'line', xMin: idx1min, xMax: idx1min,
+                    borderColor: '#22c55e', borderWidth: 1, borderDash: [5, 5],
+                    label: { display: true, content: '1min: ' + values[idx1min] + 'W', position: 'start',
+                      backgroundColor: 'rgba(34, 197, 94, 0.9)', color: '#fff', font: { size: 10 } }
+                  } : {},
+                  line5min: idx5min >= 0 ? {
+                    type: 'line', xMin: idx5min, xMax: idx5min,
+                    borderColor: '#6c63ff', borderWidth: 1, borderDash: [5, 5],
+                    label: { display: true, content: '5min: ' + values[idx5min] + 'W', position: 'start',
+                      backgroundColor: 'rgba(108, 99, 255, 0.9)', color: '#fff', font: { size: 10 } }
+                  } : {},
+                  line20min: idx20min >= 0 ? {
+                    type: 'line', xMin: idx20min, xMax: idx20min,
+                    borderColor: '#ff7043', borderWidth: 1, borderDash: [5, 5],
+                    label: { display: true, content: '20min: ' + values[idx20min] + 'W', position: 'start',
+                      backgroundColor: 'rgba(255, 112, 67, 0.9)', color: '#fff', font: { size: 10 } }
+                  } : {}
+                }
               }
             },
-            y: {
-              grid: { color: 'var(--border)' },
-              ticks: { 
-                color: 'var(--text-3)', 
-                font: { size: 10 } 
+            scales: {
+              x: {
+                grid: { color: '#2a2d35' },
+                ticks: { 
+                  color: '#8a8f98', font: { size: 11, family: 'Geist Mono, monospace' },
+                  autoSkip: true, maxTicksLimit: 12,
+                  callback: function(value) {
+                    const label = this.getLabelForValue(value);
+                    const showLabels = ['5s', '30s', '1min', '5min', '20min', '30min', '60min'];
+                    return showLabels.includes(label) ? label : '';
+                  }
+                },
+                title: { display: true, text: 'Duration', color: '#8a8f98', font: { size: 12, weight: '600' } }
               },
-              title: { 
-                display: true, 
-                text: 'Power (W)', 
-                color: 'var(--text-2)' 
+              y: {
+                grid: { color: '#2a2d35' },
+                ticks: { 
+                  color: '#8a8f98', font: { size: 11, family: 'Geist Mono, monospace' },
+                  callback: (value) => value + 'W', stepSize: 50
+                },
+                title: { display: true, text: 'Power (Watts)', color: '#8a8f98', font: { size: 12, weight: '600' } },
+                beginAtZero: false
               }
             }
           }
-        }
-      });
+        });
+        console.log('✅ Power curve rendered');
+      }
       
-      console.log('✅ Power curve rendered with', powerBestsData.length, 'points');
-    }
+      // Pace curve chart function (from original, with design theme applied)
+      function buildPaceCurveChart(data) {
+        const ctx = document.getElementById('pace-curve-chart');
+        if (!ctx) return;
+        
+        const labels = data.map(d => d.label);
+        const paceValues = data.map(d => {
+          const paceSecPerKm = (d.totalSec / d.distM) * 1000;
+          return paceSecPerKm / 60; // Convert to minutes
+        });
+        
+        // Find indices for key distances
+        const idx1500 = labels.findIndex(l => l === '1.5km' || l === '1500m');
+        const idx5k = labels.findIndex(l => l === '5km' || l === '5.0km');
+        const idx10k = labels.findIndex(l => l === '10km' || l === '10.0km');
+        
+        new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Pace',
+              data: paceValues,
+              borderColor: '#f4a261',
+              backgroundColor: 'rgba(244, 162, 97, 0.15)',
+              borderWidth: 2.5,
+              pointRadius: function(context) {
+                const index = context.dataIndex;
+                if (index === idx1500 || index === idx5k || index === idx10k) return 5;
+                return 0;
+              },
+              pointBackgroundColor: function(context) {
+                const index = context.dataIndex;
+                if (index === idx1500) return '#f97316';
+                if (index === idx5k) return '#22c55e';
+                if (index === idx10k) return '#6c63ff';
+                return '#f4a261';
+              },
+              pointHoverRadius: 6,
+              fill: true,
+              tension: 0.4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { intersect: false, mode: 'index' },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: '#1a1d24',
+                borderColor: '#2a2d35',
+                borderWidth: 1,
+                titleColor: '#e8eaed',
+                bodyColor: '#c4c7cc',
+                padding: 12,
+                displayColors: false,
+                callbacks: {
+                  label: (ctx) => {
+                    const mins = Math.floor(ctx.parsed.y);
+                    const secs = Math.round((ctx.parsed.y - mins) * 60);
+                    return mins + ':' + String(secs).padStart(2, '0') + '/km';
+                  }
+                }
+              },
+              annotation: {
+                annotations: {
+                  line1500: idx1500 >= 0 ? {
+                    type: 'line', xMin: idx1500, xMax: idx1500,
+                    borderColor: '#f97316', borderWidth: 1, borderDash: [5, 5],
+                    label: { display: true, 
+                      content: '1500m: ' + Math.floor(paceValues[idx1500]) + ':' + String(Math.round((paceValues[idx1500] - Math.floor(paceValues[idx1500])) * 60)).padStart(2, '0') + '/km',
+                      position: 'start', backgroundColor: 'rgba(249, 115, 22, 0.9)', color: '#fff', font: { size: 10 } }
+                  } : {},
+                  line5k: idx5k >= 0 ? {
+                    type: 'line', xMin: idx5k, xMax: idx5k,
+                    borderColor: '#22c55e', borderWidth: 1, borderDash: [5, 5],
+                    label: { display: true,
+                      content: '5K: ' + Math.floor(paceValues[idx5k]) + ':' + String(Math.round((paceValues[idx5k] - Math.floor(paceValues[idx5k])) * 60)).padStart(2, '0') + '/km',
+                      position: 'start', backgroundColor: 'rgba(34, 197, 94, 0.9)', color: '#fff', font: { size: 10 } }
+                  } : {},
+                  line10k: idx10k >= 0 ? {
+                    type: 'line', xMin: idx10k, xMax: idx10k,
+                    borderColor: '#6c63ff', borderWidth: 1, borderDash: [5, 5],
+                    label: { display: true,
+                      content: '10K: ' + Math.floor(paceValues[idx10k]) + ':' + String(Math.round((paceValues[idx10k] - Math.floor(paceValues[idx10k])) * 60)).padStart(2, '0') + '/km',
+                      position: 'start', backgroundColor: 'rgba(108, 99, 255, 0.9)', color: '#fff', font: { size: 10 } }
+                  } : {}
+                }
+              }
+            },
+            scales: {
+              x: {
+                grid: { color: '#2a2d35' },
+                ticks: { 
+                  color: '#8a8f98', font: { size: 11, family: 'Geist Mono, monospace' },
+                  autoSkip: true, maxTicksLimit: 10,
+                  callback: function(value) {
+                    const label = this.getLabelForValue(value);
+                    const showLabels = ['400m', '0.4km', '1km', '1.0km', '1.5km', '1500m', '5km', '5.0km', '10km', '10.0km'];
+                    return showLabels.includes(label) ? label : '';
+                  }
+                },
+                title: { display: true, text: 'Distance', color: '#8a8f98', font: { size: 12, weight: '600' } }
+              },
+              y: {
+                reverse: true,
+                grid: { color: '#2a2d35' },
+                ticks: { 
+                  color: '#8a8f98', font: { size: 11, family: 'Geist Mono, monospace' },
+                  callback: (value) => {
+                    const mins = Math.floor(value);
+                    const secs = Math.round((value - mins) * 60);
+                    return mins + ':' + String(secs).padStart(2, '0');
+                  }
+                },
+                title: { display: true, text: 'Pace (min/km)', color: '#8a8f98', font: { size: 12, weight: '600' } }
+              }
+            }
+          }
+        });
+        console.log('✅ Pace curve rendered');
+      }
+    });
     
     console.log('✅ Design system page loaded successfully');
     

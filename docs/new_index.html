@@ -2045,7 +2045,7 @@
             <div id="power-curve-wrapper" class="curve-chart-container">
               <canvas id="power-curve-chart"></canvas>
             </div>
-            <div id="pace-curve-wrapper" class="curve-chart-container" style="display: none;">
+            <div id="pace-curve-wrapper" class="curve-chart-container">
               <canvas id="pace-curve-chart"></canvas>
             </div>
           </div>
@@ -3761,6 +3761,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (powerBestsData.length) buildPowerCurveChart(powerBestsData);
       if (paceBestsData.length) buildPaceCurveChart(paceBestsData);
       
+      // Hide pace chart initially (after both have rendered)
+      setTimeout(() => {
+        document.getElementById('pace-curve-wrapper').style.display = 'none';
+      }, 100);
+      
       // Setup toggle between power and pace curves
       document.querySelectorAll('.curve-toggle-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -3935,7 +3940,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Pace curve chart function (from original, with design theme applied)
       function buildPaceCurveChart(data) {
         const ctx = document.getElementById('pace-curve-chart');
-        if (!ctx) return;
+        if (!ctx) {
+          console.error('❌ Pace curve canvas not found');
+          return;
+        }
+        
+        console.log('📊 Building pace curve chart with', data.length, 'points');
         
         const labels = data.map(d => d.label);
         const paceValues = data.map(d => {
@@ -3943,10 +3953,15 @@ document.addEventListener('DOMContentLoaded', async () => {
           return paceSecPerKm / 60; // Convert to minutes
         });
         
+        console.log('  Sample labels:', labels.slice(0, 5));
+        console.log('  Sample pace values:', paceValues.slice(0, 5));
+        
         // Find indices for key distances
         const idx1500 = labels.findIndex(l => l === '1.5km' || l === '1500m');
         const idx5k = labels.findIndex(l => l === '5km' || l === '5.0km');
         const idx10k = labels.findIndex(l => l === '10km' || l === '10.0km');
+        
+        console.log('  Key indices - 1500m:', idx1500, '5K:', idx5k, '10K:', idx10k);
         
         new Chart(ctx, {
           type: 'line',

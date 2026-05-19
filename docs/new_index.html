@@ -1514,9 +1514,47 @@
   }
 
   /* Section 11: Power Stats Ribbon */
-  .power-curve-chart {
-    padding: var(--space-3);
-    height: 300px;
+  /* Curve Toggle */
+  .curve-toggle {
+    display: flex;
+    gap: 8px;
+    background: var(--bg-2);
+    padding: 4px;
+    border-radius: 6px;
+  }
+
+  .curve-toggle-btn {
+    padding: 6px 16px;
+    border: none;
+    background: transparent;
+    color: var(--text-3);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .curve-toggle-btn:hover {
+    background: var(--bg-3);
+    color: var(--text-2);
+  }
+
+  .curve-toggle-btn.active {
+    background: var(--accent);
+    color: var(--bg-1);
+  }
+
+  .curve-chart-wrapper {
+    position: relative;
+    min-height: 350px;
+  }
+
+  .curve-chart-container {
+    padding: var(--space-4);
+    height: 350px;
   }
 
   .power-stats-ribbon {
@@ -1997,13 +2035,19 @@
       <section>
         <div class="chart-card-new">
           <div class="chart-card-header">
-            <h3 class="chart-card-title">90d best · power & pace</h3>
+            <h3 class="chart-card-title">90d best curves</h3>
+            <div class="curve-toggle">
+              <button class="curve-toggle-btn active" data-chart="power">Cycling</button>
+              <button class="curve-toggle-btn" data-chart="pace">Running</button>
+            </div>
           </div>
-          <div class="power-curve-chart">
-            <canvas id="power-curve-chart"></canvas>
-          </div>
-          <div class="power-curve-chart" style="margin-top: 24px;">
-            <canvas id="pace-curve-chart"></canvas>
+          <div class="curve-chart-wrapper">
+            <div id="power-curve-wrapper" class="curve-chart-container">
+              <canvas id="power-curve-chart"></canvas>
+            </div>
+            <div id="pace-curve-wrapper" class="curve-chart-container" style="display: none;">
+              <canvas id="pace-curve-chart"></canvas>
+            </div>
           </div>
         </div>
       </section>
@@ -3709,6 +3753,26 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (powerBestsData.length) buildPowerCurveChart(powerBestsData);
       if (paceBestsData.length) buildPaceCurveChart(paceBestsData);
       
+      // Setup toggle between power and pace curves
+      document.querySelectorAll('.curve-toggle-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const chartType = btn.dataset.chart;
+          
+          // Update button states
+          document.querySelectorAll('.curve-toggle-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          
+          // Show/hide charts
+          if (chartType === 'power') {
+            document.getElementById('power-curve-wrapper').style.display = 'block';
+            document.getElementById('pace-curve-wrapper').style.display = 'none';
+          } else {
+            document.getElementById('power-curve-wrapper').style.display = 'none';
+            document.getElementById('pace-curve-wrapper').style.display = 'block';
+          }
+        });
+      });
+      
       // Power curve chart function (from original, with design theme applied)
       function buildPowerCurveChart(data) {
         const ctx = document.getElementById('power-curve-chart');
@@ -3798,25 +3862,60 @@ document.addEventListener('DOMContentLoaded', async () => {
             },
             scales: {
               x: {
-                grid: { color: '#2a2d35' },
+                grid: { 
+                  display: true,
+                  color: '#2a2d35',
+                  lineWidth: 1
+                },
+                border: {
+                  display: true,
+                  color: '#3a3d45',
+                  width: 2
+                },
                 ticks: { 
-                  color: '#8a8f98', font: { size: 11, family: 'Geist Mono, monospace' },
-                  autoSkip: true, maxTicksLimit: 12,
+                  color: '#a0a4b0', 
+                  font: { size: 11, family: 'Geist Mono, monospace', weight: '500' },
+                  autoSkip: true, 
+                  maxTicksLimit: 12,
+                  padding: 8,
                   callback: function(value) {
                     const label = this.getLabelForValue(value);
                     const showLabels = ['5s', '30s', '1min', '5min', '20min', '30min', '60min'];
                     return showLabels.includes(label) ? label : '';
                   }
                 },
-                title: { display: true, text: 'Duration', color: '#8a8f98', font: { size: 12, weight: '600' } }
+                title: { 
+                  display: true, 
+                  text: 'Duration', 
+                  color: '#e8eaed', 
+                  font: { size: 13, weight: '600', family: 'Geist Sans, sans-serif' },
+                  padding: { top: 12 }
+                }
               },
               y: {
-                grid: { color: '#2a2d35' },
-                ticks: { 
-                  color: '#8a8f98', font: { size: 11, family: 'Geist Mono, monospace' },
-                  callback: (value) => value + 'W', stepSize: 50
+                grid: { 
+                  color: '#2a2d35',
+                  lineWidth: 1
                 },
-                title: { display: true, text: 'Power (Watts)', color: '#8a8f98', font: { size: 12, weight: '600' } },
+                border: {
+                  display: true,
+                  color: '#3a3d45',
+                  width: 2
+                },
+                ticks: { 
+                  color: '#a0a4b0', 
+                  font: { size: 11, family: 'Geist Mono, monospace', weight: '500' },
+                  padding: 8,
+                  callback: (value) => value + 'W', 
+                  stepSize: 50
+                },
+                title: { 
+                  display: true, 
+                  text: 'Power (Watts)', 
+                  color: '#e8eaed', 
+                  font: { size: 13, weight: '600', family: 'Geist Sans, sans-serif' },
+                  padding: { bottom: 12 }
+                },
                 beginAtZero: false
               }
             }
@@ -3918,30 +4017,64 @@ document.addEventListener('DOMContentLoaded', async () => {
             },
             scales: {
               x: {
-                grid: { color: '#2a2d35' },
+                grid: { 
+                  display: true,
+                  color: '#2a2d35',
+                  lineWidth: 1
+                },
+                border: {
+                  display: true,
+                  color: '#3a3d45',
+                  width: 2
+                },
                 ticks: { 
-                  color: '#8a8f98', font: { size: 11, family: 'Geist Mono, monospace' },
-                  autoSkip: true, maxTicksLimit: 10,
+                  color: '#a0a4b0', 
+                  font: { size: 11, family: 'Geist Mono, monospace', weight: '500' },
+                  autoSkip: true, 
+                  maxTicksLimit: 10,
+                  padding: 8,
                   callback: function(value) {
                     const label = this.getLabelForValue(value);
                     const showLabels = ['400m', '0.4km', '1km', '1.0km', '1.5km', '1500m', '5km', '5.0km', '10km', '10.0km'];
                     return showLabels.includes(label) ? label : '';
                   }
                 },
-                title: { display: true, text: 'Distance', color: '#8a8f98', font: { size: 12, weight: '600' } }
+                title: { 
+                  display: true, 
+                  text: 'Distance', 
+                  color: '#e8eaed', 
+                  font: { size: 13, weight: '600', family: 'Geist Sans, sans-serif' },
+                  padding: { top: 12 }
+                }
               },
               y: {
                 reverse: true,
-                grid: { color: '#2a2d35' },
+                grid: { 
+                  color: '#2a2d35',
+                  lineWidth: 1
+                },
+                border: {
+                  display: true,
+                  color: '#3a3d45',
+                  width: 2
+                },
                 ticks: { 
-                  color: '#8a8f98', font: { size: 11, family: 'Geist Mono, monospace' },
+                  color: '#a0a4b0', 
+                  font: { size: 11, family: 'Geist Mono, monospace', weight: '500' },
+                  padding: 8,
                   callback: (value) => {
                     const mins = Math.floor(value);
                     const secs = Math.round((value - mins) * 60);
                     return mins + ':' + String(secs).padStart(2, '0');
                   }
                 },
-                title: { display: true, text: 'Pace (min/km)', color: '#8a8f98', font: { size: 12, weight: '600' } }
+                title: { 
+                  display: true, 
+                  text: 'Pace (min/km)', 
+                  color: '#e8eaed', 
+                  font: { size: 13, weight: '600', family: 'Geist Sans, sans-serif' },
+                  padding: { bottom: 12 }
+                }
               }
             }
           }

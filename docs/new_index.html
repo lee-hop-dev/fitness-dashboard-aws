@@ -2029,6 +2029,50 @@ document.addEventListener('DOMContentLoaded', async () => {
     const API_BASE = 'https://j2zxz92vd4.execute-api.eu-west-2.amazonaws.com/prod';
     const API_KEY = 'GCJhJuPjOs8o7pigoB75N8cfvZx78mXL6gj6qQzd';
     
+    // Helper functions for activity types (used by recent activities and calendar)
+    const normalizeActivityType = (type) => {
+      if (!type) return 'Other';
+      if (type.includes('Ride') || type.includes('Cycle')) return 'Cycling';
+      if (type.includes('Run')) return 'Running';
+      if (type.includes('Row')) return 'Rowing';
+      if (type === 'Workout' || type === 'WeightTraining' || type === 'HIIT') return 'Cardio';
+      return 'Other';
+    };
+    
+    const getTypeInfo = (normalizedType) => {
+      const types = {
+        'Cycling': { label: 'Cycling', colorClass: 'type-ride', dotClass: 'dot-ride' },
+        'Running': { label: 'Running', colorClass: 'type-run', dotClass: 'dot-run' },
+        'Rowing': { label: 'Rowing', colorClass: 'type-row', dotClass: 'dot-row' },
+        'Cardio': { label: 'Cardio', colorClass: 'type-cardio', dotClass: 'dot-cardio' },
+        'Other': { label: 'Other', colorClass: 'type-other', dotClass: 'dot-other' }
+      };
+      return types[normalizedType] || types['Other'];
+    };
+    
+    const formatDuration = (secs) => {
+      if (!secs) return '—';
+      const h = Math.floor(secs / 3600);
+      const m = Math.floor((secs % 3600) / 60);
+      if (h > 0) return `${h}h${m}m`;
+      return `${m}m`;
+    };
+    
+    const formatPace = (secPerKm) => {
+      if (!secPerKm) return '—';
+      const min = Math.floor(secPerKm / 60);
+      const sec = Math.floor(secPerKm % 60);
+      return `${min}:${sec.toString().padStart(2, '0')}`;
+    };
+    
+    const getTSS = (a) => a.tss || a.icu_training_load || 0;
+    
+    const getIntervalsActivityUrl = (id) => {
+      const idStr = String(id);
+      const activityId = idStr.startsWith('i') ? idStr : `i${idStr}`;
+      return `https://intervals.icu/activities/${activityId}`;
+    };
+    
     // Load data from API Gateway (same as original page)
     console.log('📡 Fetching data from API...');
     const [activitiesResp, wellnessResp, ytdResp, weeklyTssResp] = await Promise.all([
@@ -2488,40 +2532,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('  Activities to render:', activitiesToShow.length);
         
         // Helper functions for activity card rendering (from original page)
-        const normalizeActivityType = (type) => {
-          if (!type) return 'Other';
-          if (type.includes('Ride') || type.includes('Cycle')) return 'Cycling';
-          if (type.includes('Run')) return 'Running';
-          if (type.includes('Row')) return 'Rowing';
-          if (type === 'Workout' || type === 'WeightTraining' || type === 'HIIT') return 'Cardio';
-          return 'Other';
-        };
-        
-        const getTypeInfo = (normalizedType) => {
-          const types = {
-            'Cycling': { label: 'Cycling', colorClass: 'type-ride', dotClass: 'dot-ride' },
-            'Running': { label: 'Running', colorClass: 'type-run', dotClass: 'dot-run' },
-            'Rowing': { label: 'Rowing', colorClass: 'type-row', dotClass: 'dot-row' },
-            'Cardio': { label: 'Cardio', colorClass: 'type-cardio', dotClass: 'dot-cardio' },
-            'Other': { label: 'Other', colorClass: 'type-other', dotClass: 'dot-other' }
-          };
-          return types[normalizedType] || types['Other'];
-        };
-        
-        const formatPace = (secPerKm) => {
-          if (!secPerKm) return '—';
-          const min = Math.floor(secPerKm / 60);
-          const sec = Math.floor(secPerKm % 60);
-          return `${min}:${sec.toString().padStart(2, '0')}`;
-        };
-        
-        const getTSS = (a) => a.tss || a.icu_training_load || 0;
-        
-        const getIntervalsActivityUrl = (id) => {
-          const idStr = String(id);
-          const activityId = idStr.startsWith('i') ? idStr : `i${idStr}`;
-          return `https://intervals.icu/activities/${activityId}`;
-        };
         
         // Render hero cards matching original page layout
         container.innerHTML = activitiesToShow.map(a => {

@@ -651,8 +651,8 @@
     font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: var(--fg-4);
-    font-weight: 500;
+    color: #a0a4b0;
+    font-weight: 600;
   }
   
   .hero-card-delta {
@@ -662,7 +662,7 @@
     border-radius: 4px;
     background: var(--bg-2);
     border: 1px solid var(--line);
-    color: var(--fg-3);
+    color: #c4c7cc;
   }
   
   .hero-card-delta.positive {
@@ -683,7 +683,7 @@
     font-weight: 600;
     line-height: 1;
     letter-spacing: -0.02em;
-    color: var(--fg);
+    color: #e8eaed;
   }
   
   .hero-card-sparkline {
@@ -1924,60 +1924,6 @@
         </div>
       </section>
 
-      <!-- Section 7B: Recovery (3 cards) -->
-      <section class="recovery-section">
-        <div class="recovery-grid-3">
-          
-          <!-- Card 1: HRV -->
-          <div class="recovery-card">
-            <div class="recovery-card-header">
-              <span class="recovery-card-title">HRV · RMSSD</span>
-              <span class="recovery-card-delta" id="hrv-delta">—</span>
-            </div>
-            <div class="recovery-card-main">
-              <div class="recovery-card-value" id="hrv-value">—</div>
-              <div class="recovery-card-unit">ms</div>
-            </div>
-            <div class="recovery-card-stats" id="hrv-stats">—</div>
-            <div class="recovery-card-chart">
-              <canvas id="hrv-30d-chart"></canvas>
-            </div>
-          </div>
-          
-          <!-- Card 2: Sleep -->
-          <div class="recovery-card">
-            <div class="recovery-card-header">
-              <span class="recovery-card-title">SLEEP DURATION</span>
-              <span class="recovery-card-badge" id="sleep-badge">—</span>
-            </div>
-            <div class="recovery-card-main">
-              <div class="recovery-card-value" id="sleep-value">—</div>
-              <div class="recovery-card-unit">h</div>
-            </div>
-            <div class="recovery-card-stats" id="sleep-stats">—</div>
-            <div class="recovery-card-chart">
-              <canvas id="sleep-30d-chart"></canvas>
-            </div>
-          </div>
-          
-          <!-- Card 3: Resting HR -->
-          <div class="recovery-card">
-            <div class="recovery-card-header">
-              <span class="recovery-card-title">RESTING HR</span>
-              <span class="recovery-card-delta" id="rhr-delta">—</span>
-            </div>
-            <div class="recovery-card-main">
-              <div class="recovery-card-value" id="rhr-value">—</div>
-              <div class="recovery-card-unit">bpm</div>
-            </div>
-            <div class="recovery-card-stats" id="rhr-stats">—</div>
-            <div class="recovery-card-chart">
-              <canvas id="rhr-30d-chart"></canvas>
-            </div>
-          </div>
-          
-        </div>
-      </section>
 
       <!-- Section 8: Weekly Load -->
       <section>

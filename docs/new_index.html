@@ -1705,6 +1705,63 @@
         </div>
       </section>
 
+      <!-- Hero Cards Row - Fitness Metrics with Sparklines -->
+      <section class="hero-cards-row">
+        <div class="hero-card">
+          <div class="hero-card-header">
+            <span class="hero-card-label">FITNESS · CTL</span>
+            <span class="hero-card-delta" id="hero-ctl-delta">—</span>
+          </div>
+          <div class="hero-card-value" id="hero-ctl-value">—</div>
+          <div class="hero-card-sparkline" id="hero-ctl-spark"></div>
+        </div>
+
+        <div class="hero-card">
+          <div class="hero-card-header">
+            <span class="hero-card-label">FATIGUE · ATL</span>
+            <span class="hero-card-delta" id="hero-atl-delta">—</span>
+          </div>
+          <div class="hero-card-value" id="hero-atl-value">—</div>
+          <div class="hero-card-sparkline" id="hero-atl-spark"></div>
+        </div>
+
+        <div class="hero-card">
+          <div class="hero-card-header">
+            <span class="hero-card-label">FORM · TSB</span>
+            <span class="hero-card-delta" id="hero-tsb-delta">—</span>
+          </div>
+          <div class="hero-card-value" id="hero-tsb-value">—</div>
+          <div class="hero-card-sparkline" id="hero-tsb-spark"></div>
+        </div>
+
+        <div class="hero-card">
+          <div class="hero-card-header">
+            <span class="hero-card-label">HRV</span>
+            <span class="hero-card-delta" id="hero-hrv-delta">—</span>
+          </div>
+          <div class="hero-card-value" id="hero-hrv-value">—</div>
+          <div class="hero-card-sparkline" id="hero-hrv-spark"></div>
+        </div>
+
+        <div class="hero-card">
+          <div class="hero-card-header">
+            <span class="hero-card-label">SLEEP</span>
+            <span class="hero-card-delta" id="hero-sleep-delta">—</span>
+          </div>
+          <div class="hero-card-value" id="hero-sleep-value">—</div>
+          <div class="hero-card-sparkline" id="hero-sleep-spark"></div>
+        </div>
+
+        <div class="hero-card">
+          <div class="hero-card-header">
+            <span class="hero-card-label">RESTING HR</span>
+            <span class="hero-card-delta" id="hero-rhr-delta">—</span>
+          </div>
+          <div class="hero-card-value" id="hero-rhr-value">—</div>
+          <div class="hero-card-sparkline" id="hero-rhr-spark"></div>
+        </div>
+      </section>
+
       <!-- YTD Stats Strip -->
       <section class="ytd-strip-new">
         <div class="ds-card ytd-card">
@@ -1780,63 +1837,6 @@
         </div>
       </section>
 
-      <!-- Hero Cards Row - Fitness Metrics with Sparklines -->
-      <section class="hero-cards-row">
-        <div class="hero-card">
-          <div class="hero-card-header">
-            <span class="hero-card-label">FITNESS · CTL</span>
-            <span class="hero-card-delta" id="hero-ctl-delta">—</span>
-          </div>
-          <div class="hero-card-value" id="hero-ctl-value">—</div>
-          <div class="hero-card-sparkline" id="hero-ctl-spark"></div>
-        </div>
-
-        <div class="hero-card">
-          <div class="hero-card-header">
-            <span class="hero-card-label">FATIGUE · ATL</span>
-            <span class="hero-card-delta" id="hero-atl-delta">—</span>
-          </div>
-          <div class="hero-card-value" id="hero-atl-value">—</div>
-          <div class="hero-card-sparkline" id="hero-atl-spark"></div>
-        </div>
-
-        <div class="hero-card">
-          <div class="hero-card-header">
-            <span class="hero-card-label">FORM · TSB</span>
-            <span class="hero-card-delta" id="hero-tsb-delta">—</span>
-          </div>
-          <div class="hero-card-value" id="hero-tsb-value">—</div>
-          <div class="hero-card-sparkline" id="hero-tsb-spark"></div>
-        </div>
-
-        <div class="hero-card">
-          <div class="hero-card-header">
-            <span class="hero-card-label">HRV</span>
-            <span class="hero-card-delta" id="hero-hrv-delta">—</span>
-          </div>
-          <div class="hero-card-value" id="hero-hrv-value">—</div>
-          <div class="hero-card-sparkline" id="hero-hrv-spark"></div>
-        </div>
-
-        <div class="hero-card">
-          <div class="hero-card-header">
-            <span class="hero-card-label">SLEEP</span>
-            <span class="hero-card-delta" id="hero-sleep-delta">—</span>
-          </div>
-          <div class="hero-card-value" id="hero-sleep-value">—</div>
-          <div class="hero-card-sparkline" id="hero-sleep-spark"></div>
-        </div>
-
-        <div class="hero-card">
-          <div class="hero-card-header">
-            <span class="hero-card-label">RESTING HR</span>
-            <span class="hero-card-delta" id="hero-rhr-delta">—</span>
-          </div>
-          <div class="hero-card-value" id="hero-rhr-value">—</div>
-          <div class="hero-card-sparkline" id="hero-rhr-spark"></div>
-        </div>
-      </section>
-
       <!-- Fitness Trend Chart -->
       <section>
         <div class="chart-card-new">
@@ -1846,6 +1846,42 @@
           <div class="chart-container" id="fitness-chart"></div>
         </div>
       </section>
+
+      <!-- Section 7A: Combined HRV/Sleep Chart -->
+      <section class="health-chart-section">
+        <div class="chart-card-new">
+          <div class="chart-card-header">
+            <h3 class="chart-card-title">Recovery · HRV · Sleep · Resting HR</h3>
+            <div class="chart-controls">
+              <div class="toggle-group">
+                <button class="toggle-btn active" data-health-range="42">42d</button>
+                <button class="toggle-btn" data-health-range="365">365d</button>
+              </div>
+            </div>
+          </div>
+          <div class="health-combined-stats-row" id="health-combined-stats-row">
+            <div class="health-stat">
+              <span class="health-stat-label">HRV</span>
+              <span class="health-stat-value" id="health-hrv-current">—</span>
+              <canvas id="health-hrv-sparkline" class="health-stat-sparkline"></canvas>
+            </div>
+            <div class="health-stat">
+              <span class="health-stat-label">Resting HR</span>
+              <span class="health-stat-value" id="health-rhr">—</span>
+              <canvas id="health-rhr-sparkline" class="health-stat-sparkline"></canvas>
+            </div>
+            <div class="health-stat">
+              <span class="health-stat-label">Sleep</span>
+              <span class="health-stat-value" id="health-sleep">—</span>
+              <canvas id="health-sleep-sparkline" class="health-stat-sparkline"></canvas>
+            </div>
+          </div>
+          <div class="health-chart-wrapper">
+            <canvas id="health-combined-chart"></canvas>
+          </div>
+        </div>
+      </section>
+
 
       <!-- Recent Activities -->
       <section>
@@ -1889,41 +1925,17 @@
       </section>
 
       <!-- Section 7: Health Metrics (70/30 split) -->
-      <!-- Section 7A: Combined HRV/Sleep Chart -->
-      <section class="health-chart-section">
+      <!-- Section 9: Training Calendar (with week summaries) -->
+      <section>
         <div class="chart-card-new">
           <div class="chart-card-header">
-            <h3 class="chart-card-title">Recovery · HRV · Sleep · Resting HR</h3>
-            <div class="chart-controls">
-              <div class="toggle-group">
-                <button class="toggle-btn active" data-health-range="42">42d</button>
-                <button class="toggle-btn" data-health-range="365">365d</button>
-              </div>
-            </div>
+            <h3 class="chart-card-title">Training Calendar</h3>
           </div>
-          <div class="health-combined-stats-row" id="health-combined-stats-row">
-            <div class="health-stat">
-              <span class="health-stat-label">HRV</span>
-              <span class="health-stat-value" id="health-hrv-current">—</span>
-              <canvas id="health-hrv-sparkline" class="health-stat-sparkline"></canvas>
-            </div>
-            <div class="health-stat">
-              <span class="health-stat-label">Resting HR</span>
-              <span class="health-stat-value" id="health-rhr">—</span>
-              <canvas id="health-rhr-sparkline" class="health-stat-sparkline"></canvas>
-            </div>
-            <div class="health-stat">
-              <span class="health-stat-label">Sleep</span>
-              <span class="health-stat-value" id="health-sleep">—</span>
-              <canvas id="health-sleep-sparkline" class="health-stat-sparkline"></canvas>
-            </div>
-          </div>
-          <div class="health-chart-wrapper">
-            <canvas id="health-combined-chart"></canvas>
+          <div class="training-calendar" id="training-calendar">
+            <!-- Calendar with week summaries will be rendered here -->
           </div>
         </div>
       </section>
-
 
       <!-- Section 8: Weekly Load -->
       <section>
@@ -1939,18 +1951,6 @@
           </div>
           <div class="weekly-load-chart">
             <canvas id="weekly-load-chart"></canvas>
-          </div>
-        </div>
-      </section>
-
-      <!-- Section 9: Training Calendar (with week summaries) -->
-      <section>
-        <div class="chart-card-new">
-          <div class="chart-card-header">
-            <h3 class="chart-card-title">Training Calendar</h3>
-          </div>
-          <div class="training-calendar" id="training-calendar">
-            <!-- Calendar with week summaries will be rendered here -->
           </div>
         </div>
       </section>

@@ -243,25 +243,29 @@
 .rl-kv-table { padding: 0 18px 18px; flex: 1; display: flex; flex-direction: column; }
 .rl-kv-table .act-stats-grid { display: contents; }
 .rl-kv-table .asg-tile {
-  display: flex !important; justify-content: space-between !important; align-items: baseline !important;
-  padding: 8px 0 !important; border-bottom: 1px solid var(--border) !important;
+  display: flex !important; justify-content: space-between !important; align-items: center !important;
+  padding: 9px 10px !important; border-bottom: none !important;
   flex-direction: row !important; gap: 0 !important;
+  border-radius: 6px !important;
+  margin-bottom: 2px !important;
 }
-.rl-kv-table .asg-tile:last-child { border-bottom: none !important; }
+.rl-kv-table .asg-tile:nth-child(odd)  { background: rgba(255,255,255,0.03) !important; }
+.rl-kv-table .asg-tile:nth-child(even) { background: transparent !important; }
+.rl-kv-table .asg-tile:last-child { margin-bottom: 0 !important; }
 .rl-kv-table .asg-val {
   font-family: var(--font-mono) !important; font-variant-numeric: tabular-nums !important;
-  font-size: 12px !important; font-weight: 500 !important; color: var(--text-primary) !important;
+  font-size: 13px !important; font-weight: 600 !important; color: var(--fg) !important;
   order: 2;
 }
 .rl-kv-table .asg-val.accent { color: var(--accent)  !important; }
-.rl-kv-table .asg-val.green  { color: var(--green)   !important; }
-.rl-kv-table .asg-val.red    { color: var(--red)     !important; }
-.rl-kv-table .asg-val.yellow { color: var(--yellow)  !important; }
-.rl-kv-table .asg-val.orange { color: var(--orange)  !important; }
-.rl-kv-table .asg-val.purple { color: var(--purple)  !important; }
+.rl-kv-table .asg-val.green  { color: oklch(0.82 0.18 150) !important; }
+.rl-kv-table .asg-val.red    { color: oklch(0.72 0.22 25)  !important; }
+.rl-kv-table .asg-val.yellow { color: oklch(0.84 0.18 80)  !important; }
+.rl-kv-table .asg-val.orange { color: oklch(0.82 0.18 65)  !important; }
+.rl-kv-table .asg-val.purple { color: oklch(0.76 0.18 290) !important; }
 .rl-kv-table .asg-lbl {
-  font-family: var(--font-mono) !important; font-size: 10px !important;
-  letter-spacing: 1px !important; text-transform: uppercase; color: var(--text-muted) !important;
+  font-family: var(--font-mono) !important; font-size: 10.5px !important;
+  letter-spacing: 0.06em !important; text-transform: uppercase; color: var(--fg-2) !important;
   margin: 0 !important; order: 1;
 }
 .rl-kv-table .act-stats-head { display: none !important; }
@@ -575,20 +579,26 @@
 .fd-ring-svg { width: 100%; height: 100%; }
 .fd-ring-center {
   position: absolute; inset: 0;
-  display: grid; place-items: center;
-  text-align: center;
+  display: flex; align-items: center; justify-content: center;
+}
+.fd-ring-inner {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 4px;
 }
 .fd-ring-num {
   font-family: var(--font-mono);
   font-size: 36px; font-weight: 500;
   letter-spacing: -0.02em; line-height: 1;
   color: var(--fg);
+  text-align: center;
 }
 .fd-ring-sub {
   font-family: var(--font-mono);
   font-size: 9px; color: var(--fg-3);
   text-transform: uppercase; letter-spacing: 0.08em;
-  margin-top: 5px;
+  text-align: center;
+  margin-top: 0;
 }
 .fd-ring-arc {
   transition: stroke-dasharray 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -821,8 +831,10 @@
               />
             </svg>
             <div class="fd-ring-center">
-              <div class="fd-ring-num" id="fd-ring-num">—</div>
-              <div class="fd-ring-sub" id="fd-ring-sub">TSS</div>
+              <div class="fd-ring-inner">
+                <div class="fd-ring-num" id="fd-ring-num">—</div>
+                <div class="fd-ring-sub" id="fd-ring-sub">TSS</div>
+              </div>
             </div>
           </div>
 
@@ -3479,25 +3491,26 @@ function rlPatch(data) {
       const pcts = counts.map(c => total > 0 ? +(c/total*100).toFixed(1) : 0);
       const shortNames = ['Z1\nRecovery', 'Z2\nAerobic', 'Z3\nTempo', 'Z4\nThreshold', 'Z5\nMax'];
 
-      // Solid cyan for dominant zone, light tint for others
-      const solidColor = 'rgba(168,209,79,0.80)';
-      const tintColor  = 'rgba(168,209,79,0.12)';
-      const bgColors   = pcts.map((_, i) => i === dom ? solidColor : tintColor);
+      // Each bar uses its actual HR zone colour: dominant at full opacity, others dimmer
+      const bgColors = HR_ZONE_COLOURS.map((col, i) => {
+        const opacity = i === dom ? '0.85' : '0.35';
+        return col.replace('oklch(', `oklch(`).replace(')', ` / ${opacity})`);
+      });
 
-      // Inline plugin: draw pct labels above each bar
+      // Inline plugin: draw pct labels above each bar — always bright enough to read
       const pctLabelPlugin = {
         id: 'pctLabels',
         afterDatasetDraw(chart) {
           const { ctx, data: d, scales: { x, y } } = chart;
           const ds = chart.getDatasetMeta(0);
           ctx.save();
-          ctx.font = "600 11px 'Geist Mono', monospace";
           ctx.textAlign = 'center';
           ctx.textBaseline = 'bottom';
           ds.data.forEach((bar, i) => {
             const val = d.datasets[0].data[i];
             if (val <= 0) return;
-            ctx.fillStyle = i === dom ? 'rgba(168,209,79,0.85)' : 'rgba(80,95,110,0.6)';
+            ctx.font = `${i === dom ? '700' : '500'} 11px 'Geist Mono', monospace`;
+            ctx.fillStyle = i === dom ? 'rgba(236,237,239,0.95)' : 'rgba(181,184,189,0.80)';
             ctx.fillText(val + '%', bar.x, bar.y - 3);
           });
           ctx.restore();
@@ -3524,7 +3537,8 @@ function rlPatch(data) {
           plugins: {
             legend: { display: false },
             tooltip: {
-              backgroundColor: 'rgba(15,22,32,0.88)',
+              backgroundColor: 'rgba(15,22,32,0.92)',
+              borderColor: 'rgba(255,255,255,0.10)', borderWidth: 1,
               callbacks: {
                 title: items => shortNames[items[0].dataIndex].replace('\n', ' '),
                 label: item => {
@@ -3540,7 +3554,7 @@ function rlPatch(data) {
               grid: { display: false },
               border: { display: false },
               ticks: {
-                color: (ctx) => ctx.index === dom ? 'rgba(168,209,79,0.90)' : 'rgba(80,95,110,0.65)',
+                color: (ctx) => ctx.index === dom ? 'rgba(236,237,239,0.95)' : 'rgba(181,184,189,0.70)',
                 font: { size: 9, family: "var(--font-mono)", weight: ctx => ctx.index === dom ? '700' : '400' },
                 padding: 4
               }

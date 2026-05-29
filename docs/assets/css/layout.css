@@ -1,6 +1,16 @@
 /* Training OS — Shared layout, sidebar, and component CSS
    Extracted from new_index.html for reuse across all new_* pages */
 
+* { box-sizing: border-box; }
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--fg);
+  margin: 0;
+  padding: 0;
+}
+
 .app {
   display: flex;
   min-height: 100vh;

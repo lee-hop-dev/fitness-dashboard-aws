@@ -173,11 +173,10 @@
         </div>
         <div class="hero-card">
           <div class="hero-card-header">
-            <span class="hero-card-label">FTP</span>
-            <span class="hero-card-delta lime" id="wkg-badge">— W/kg</span>
+            <span class="hero-card-label">1 MIN POWER</span>
           </div>
-          <div class="hero-card-value" id="hero-ftp">—</div>
-          <div style="font-size:11px;color:var(--fg-3);font-family:var(--font-mono);margin-top:4px" id="ftp-sub">—</div>
+          <div class="hero-card-value" id="hero-1min">—</div>
+          <div style="font-size:11px;color:var(--fg-3);font-family:var(--font-mono);margin-top:4px">90-day best</div>
         </div>
         <div class="hero-card">
           <div class="hero-card-header">
@@ -199,10 +198,6 @@
       <div class="chart-card-new">
         <div class="chart-card-header">
           <span class="chart-card-title">Season Status</span>
-          <div style="display:flex;gap:8px">
-            <span class="ytd-badge" id="ftp-badge">— W FTP</span>
-            <span class="ytd-badge" id="wkg-badge2">— W/kg</span>
-          </div>
         </div>
         <div class="season-hero">
           <div class="season-ring" id="cy-ring"></div>
@@ -404,10 +399,9 @@
       setEl('hero-ctl',  ctl ?? '—');
       setEl('hero-atl',  atl ?? '—');
       setEl('hero-tsb',  tsb != null ? (tsb > 0 ? '+' : '') + tsb : '—');
-      setEl('hero-ftp',  cp ?? '—');
+      setEl('hero-1min',  peak1min  ? peak1min  + ' W' : '—');
       setEl('hero-20min', peak20min ? peak20min + ' W' : '—');
       setEl('hero-5min',  peak5min  ? peak5min  + ' W' : '—');
-      setEl('wkg-badge',  wkg ? wkg + ' W/kg' : '—');
 
       /* ── Sparklines on fitness cards ── */
       const last30 = wellness.slice(-30);
@@ -436,8 +430,6 @@
       }
 
       /* ── Season card ── */
-      setEl('ftp-badge',  cp ? cp + ' W FTP' : '— FTP');
-      setEl('wkg-badge2', wkg ? wkg + ' W/kg' : '— W/kg');
       renderRing(document.getElementById('cy-ring'), {
         value: 75, max: 100, size: 164, stroke: 10,
         color: 'var(--accent)',

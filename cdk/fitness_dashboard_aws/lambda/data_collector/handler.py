@@ -280,7 +280,7 @@ def sync_curve(api_key: str, endpoint: str, sport_type: str, curve_key: str) -> 
     data = intervals_get(
         f"athlete/{ATHLETE_ID}/{endpoint}",
         api_key,
-        params={"type": sport_type, "curves": ["90d"]},
+        params={"type": sport_type, "curves": ["90d", "all"]},
     )
 
     if not data:

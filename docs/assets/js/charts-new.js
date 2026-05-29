@@ -502,3 +502,132 @@ export function renderPowerCurve(element, opts) {
     element.appendChild(svg);
   });
 }
+
+/* ─────────────────────────────────────────────────────────────────────
+ * renderPaceCurve(element, opts)
+ *
+ * Pace curve for running. Mirrors renderPowerCurve but:
+ *   - X axis: log10(distanceMetres), ticks at 1k/5k/10k/HM/Marathon
+ *   - Y axis: INVERTED — smaller sec/km (faster) plots higher
+ *
+ * opts.data  Array<{d: number, p: number, prev?: number}>
+ *            d = distance in metres, p = sec/km, prev = all-time sec/km
+ * opts.height  number (default 260)
+ * ─────────────────────────────────────────────────────────────────── */
+export function renderPaceCurve(element, opts = {}) {
+  const { data = [], height = 260 } = opts;
+  if (!data.length) return;
+
+  const ro = new ResizeObserver(() => _drawPaceCurve(element, data, height));
+  ro.observe(element);
+  _drawPaceCurve(element, data, height);
+}
+
+function _drawPaceCurve(element, data, height) {
+  element.innerHTML = "";
+  const w = element.clientWidth || 700;
+  const padding = { top: 18, right: 24, bottom: 28, left: 44 };
+  const innerW = w - padding.left - padding.right;
+  const innerH = height - padding.top - padding.bottom;
+
+  const svg = svgEl("svg", { width: w, height, viewBox: `0 0 ${w} ${height}` });
+
+  // gradient fill
+  const defs = svgEl("defs");
+  const grad = svgEl("linearGradient", { id: "pace-grad", x1: 0, y1: 0, x2: 0, y2: 1 });
+  [["0%", "0.18"], ["100%", "0"]].forEach(([offset, opacity]) => {
+    const s = svgEl("stop"); s.setAttribute("offset", offset);
+    s.setAttribute("stop-color", "var(--accent)"); s.setAttribute("stop-opacity", opacity);
+    grad.appendChild(s);
+  });
+  defs.appendChild(grad);
+  svg.appendChild(defs);
+
+  // X: log scale over distance
+  const xFor = d => padding.left + (Math.log10(d) - Math.log10(data[0].d)) /
+    (Math.log10(data[data.length - 1].d) - Math.log10(data[0].d)) * innerW;
+
+  // Y: inverted — faster (smaller p) → higher on chart
+  const pVals = data.map(d => d.p).concat(data.filter(d => d.prev != null).map(d => d.prev));
+  const pMin = Math.min(...pVals) * 0.97;
+  const pMax = Math.max(...pVals) * 1.03;
+  // inverted: pMax (slow) at padTop, pMin (fast) at padTop+innerH
+  const yFor = p => padding.top + ((p - pMin) / (pMax - pMin)) * innerH;
+
+  // Y grid lines & labels (pace)
+  const steps = 5;
+  for (let i = 0; i <= steps; i++) {
+    const p = pMin + (pMax - pMin) * (i / steps);
+    const y = yFor(p);
+    svg.appendChild(svgEl("line", {
+      x1: padding.left, x2: w - padding.right, y1: y, y2: y,
+      stroke: "var(--line)",
+    }));
+    const t = svgEl("text", {
+      x: padding.left - 6, y: y + 3, "text-anchor": "end",
+      "font-size": 10, "font-family": "var(--font-mono)", fill: "var(--fg-4)",
+    });
+    const m = Math.floor(p / 60), s = Math.floor(p % 60);
+    t.textContent = `${m}:${String(s).padStart(2, "0")}`;
+    svg.appendChild(t);
+  }
+
+  // X ticks
+  const xTicks = [
+    { d: 1000,  label: "1k"  },
+    { d: 5000,  label: "5k"  },
+    { d: 10000, label: "10k" },
+    { d: 21097, label: "HM"  },
+    { d: 42195, label: "M"   },
+  ];
+  xTicks.forEach(({ d, label }) => {
+    if (d < data[0].d || d > data[data.length - 1].d) return;
+    const tx = svgEl("text", {
+      x: xFor(d), y: height - 6, "text-anchor": "middle",
+      "font-size": 10, "font-family": "var(--font-mono)", fill: "var(--fg-4)",
+    });
+    tx.textContent = label;
+    svg.appendChild(tx);
+  });
+
+  // area fill (under current curve)
+  const areaD = data.map((d, i) =>
+    `${i === 0 ? "M" : "L"}${xFor(d.d)},${yFor(d.p)}`
+  ).join(" ")
+    + ` L${xFor(data[data.length - 1].d)},${yFor(pMax)} L${xFor(data[0].d)},${yFor(pMax)} Z`;
+  svg.appendChild(svgEl("path", { d: areaD, fill: "url(#pace-grad)" }));
+
+  // previous curve (dashed, all-time)
+  if (data.some(d => d.prev != null)) {
+    const prevD = data
+      .map((d, i) => `${i === 0 ? "M" : "L"}${xFor(d.d)},${yFor(d.prev ?? d.p)}`)
+      .join(" ");
+    svg.appendChild(svgEl("path", {
+      d: prevD, fill: "none", stroke: "var(--fg-4)",
+      "stroke-width": 1.2, "stroke-dasharray": "3 3",
+    }));
+  }
+
+  // current curve
+  const curD = data.map((d, i) => `${i === 0 ? "M" : "L"}${xFor(d.d)},${yFor(d.p)}`).join(" ");
+  const curPath = svgEl("path", {
+    d: curD, fill: "none", stroke: "var(--accent)", "stroke-width": 1.8,
+    "stroke-linejoin": "round", "stroke-linecap": "round",
+    class: "draw-path",
+  });
+  curPath.style.setProperty("--len", 1600);
+  curPath.style.filter = "drop-shadow(0 0 6px color-mix(in oklch, var(--accent) 50%, transparent))";
+  svg.appendChild(curPath);
+
+  // dots at tick positions
+  xTicks.forEach(({ d }) => {
+    const pt = data.find(dd => Math.abs(dd.d - d) < 200);
+    if (!pt) return;
+    svg.appendChild(svgEl("circle", {
+      cx: xFor(pt.d), cy: yFor(pt.p), r: 2.5,
+      fill: "var(--bg-1)", stroke: "var(--accent)", "stroke-width": 1.2,
+    }));
+  });
+
+  element.appendChild(svg);
+}

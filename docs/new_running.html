@@ -434,7 +434,7 @@
   document.addEventListener('DOMContentLoaded', async () => {
     try {
       /* ── Same call as running.html ── */
-      const { activities, wellness, meta, athlete } = await DATA.loadAll({ activityDays: 400 });
+      const { activities, wellness, meta, athlete, ytd } = await DATA.loadAll({ activityDays: 400 });
       const latest = DATA.latestWellness(wellness);
 
       /* ── Pace curves — same fetch as running.html ── */
@@ -449,16 +449,15 @@
       const cutoff90 = new Date(Date.now() - 90*864e5).toISOString().split('T')[0];
       const runs90   = allRuns.filter(a => a.date >= cutoff90);
 
-      /* ── YTD — computed from activities, same as running.html ── */
-      const year = String(new Date().getFullYear());
-      const ytdRuns = allRuns.filter(a => a.date?.startsWith(year));
-      const distKm  = (ytdRuns.reduce((s,a)=>s+(a.distance||0),0)/1000);
-      const hrsYtd  = (ytdRuns.reduce((s,a)=>s+(a.duration||0),0)/3600);
-      const tssYtd  = Math.round(ytdRuns.reduce((s,a)=>s+(a.tss||0),0));
+      /* ── YTD — use pre-aggregated /ytd endpoint (accurate, full year) ── */
+      const ru = ytd?.running ?? {};
+      const distKm  = ru.distance ?? 0;
+      const hrsYtd  = ru.hours    ?? 0;
+      const tssYtd  = ru.tss      ?? 0;
 
-      setEl('ru-distance', distKm.toFixed(0));
-      setEl('ru-hours',    hrsYtd.toFixed(1));
-      setEl('ru-tss',      tssYtd.toLocaleString());
+      setEl('ru-distance', Number(distKm).toFixed(0));
+      setEl('ru-hours',    Number(hrsYtd).toFixed(1));
+      setEl('ru-tss',      Math.round(tssYtd).toLocaleString());
 
       setTimeout(() => {
         const db = document.getElementById('ru-dist-bar');

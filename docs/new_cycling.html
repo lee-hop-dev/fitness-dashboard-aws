@@ -449,7 +449,7 @@
   document.addEventListener('DOMContentLoaded', async () => {
     try {
       /* ── Same call as cycling.html ── */
-      const { activities, wellness, meta } = await DATA.loadAll();
+      const { activities, wellness, meta, ytd } = await DATA.loadAll();
       const latest = DATA.latestWellness(wellness);
       const weight = latest?.weight ?? meta?.weight ?? null;
 
@@ -465,15 +465,14 @@
       const cutoff90 = new Date(Date.now() - 90*864e5).toISOString().split('T')[0];
       const rides90  = allRides.filter(a => a.date >= cutoff90);
 
-      /* ── YTD ── */
-      const year = String(new Date().getFullYear());
-      const ytdRides = allRides.filter(a => a.date?.startsWith(year));
-      const distKm = Math.round(ytdRides.reduce((s,a)=>s+(a.distance||0),0)/1000);
-      const hrsYtd = (ytdRides.reduce((s,a)=>s+(a.duration||0),0)/3600);
-      const tssYtd = Math.round(ytdRides.reduce((s,a)=>s+(a.tss||0),0));
+      /* ── YTD — use pre-aggregated /ytd endpoint data (full year, all sport types) ── */
+      const cy = ytd?.cycling ?? {};
+      const distKm = cy.distance ?? 0;
+      const hrsYtd = cy.hours    ?? 0;
+      const tssYtd = cy.tss      ?? 0;
 
       setEl('cy-distance', distKm.toLocaleString());
-      setEl('cy-hours',    hrsYtd.toFixed(1));
+      setEl('cy-hours',    Number(hrsYtd).toFixed(1));
       setEl('cy-tss',      tssYtd.toLocaleString());
 
       // Animate progress bars — targets: 5000km / 250h / 12000 TSS cycling YTD

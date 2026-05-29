@@ -602,8 +602,9 @@
   margin-top: 0;
 }
 .fd-ring-arc {
-  transition: stroke-dasharray 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-  filter: drop-shadow(0 0 6px var(--accent));
+  transition: stroke-dasharray 1.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+              stroke 0.6s ease;
+  filter: drop-shadow(0 0 6px var(--fd-ring-color, var(--accent)));
 }
 
 /* ── B. Identity + stat strip ── */
@@ -669,7 +670,7 @@
 }
 .fd-bigstat { display: flex; flex-direction: column; gap: 5px; }
 .fd-bigstat .l {
-  font-size: 10px; color: var(--fg-4);
+  font-size: 10px; color: var(--fg-2);
   letter-spacing: 0.1em; text-transform: uppercase;
 }
 .fd-bigstat .v {
@@ -825,7 +826,8 @@
               <circle cx="79" cy="79" r="68" stroke="rgba(125,125,125,0.14)" stroke-width="11" fill="none"/>
               <circle class="fd-ring-arc" id="fd-ring-arc"
                 cx="79" cy="79" r="68"
-                stroke="var(--accent)" stroke-width="11"
+                stroke="#4a9eff"
+                stroke-width="11"
                 stroke-linecap="round" fill="none"
                 transform="rotate(-90 79 79)"
                 stroke-dasharray="0 427"
@@ -3104,6 +3106,21 @@ function buildFlightDeck(data, ftp, hrmax) {
 
   if (ringNumEl) ringNumEl.textContent = tss != null ? tss : '—';
 
+  // TSS-based ring colour scale:
+  //  < 40  → vibrant blue     (easy / recovery)
+  //  < 60  → bright green     (moderate)
+  //  < 80  → bright yellow    (solid effort)
+  //  < 100 → bold red-orange  (hard)
+  //  100+  → coral/hot red    (high exertion)
+  const tssRingColor = (() => {
+    if (tss == null) return 'oklch(0.65 0.18 240)';   // blue default
+    if (tss <  40)   return 'oklch(0.68 0.22 240)';   // vibrant blue
+    if (tss <  60)   return 'oklch(0.84 0.24 145)';   // bright green
+    if (tss <  80)   return 'oklch(0.92 0.22 100)';   // bright yellow
+    if (tss < 100)   return 'oklch(0.72 0.26 35)';    // bold red-orange
+    return               'oklch(0.68 0.28 20)';        // coral / hot red 100+
+  })();
+
   // Arc fill = intensity ratio (IF or rIF), clamped 0–1
   let arcFill = 0;
   let subText = 'TSS';
@@ -3116,14 +3133,19 @@ function buildFlightDeck(data, ftp, hrmax) {
     arcFill   = Math.min(1, Math.max(0, rIF));
     subText   = `TRAINING STRESS · rIF ${rIF.toFixed(2)}`;
   } else if (tss != null) {
-    arcFill = Math.min(1, tss / 150);   // fallback: scale to 150 TSS = full arc
+    arcFill = Math.min(1, tss / 150);
     subText = 'TRAINING STRESS';
   }
   if (ringSubEl) ringSubEl.textContent = subText;
 
-  // Animate the arc: circumference = 2π×68 ≈ 427.3
+  // Animate arc + apply TSS colour
   if (ringArcEl) {
     const circ = 2 * Math.PI * 68;
+    // Set colour immediately (no delay needed)
+    ringArcEl.setAttribute('stroke', tssRingColor);
+    // Set CSS custom property for the drop-shadow to match
+    ringArcEl.closest('.fd-ring-wrap')?.style.setProperty('--fd-ring-color', tssRingColor);
+    // Animate dasharray after paint
     setTimeout(() => {
       ringArcEl.style.strokeDasharray = `${arcFill * circ} ${circ}`;
     }, 80);

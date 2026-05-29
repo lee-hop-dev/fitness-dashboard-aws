@@ -11,156 +11,122 @@
   <link rel="stylesheet" href="assets/css/design-system.css">
   <script src="assets/js/theme-toggle.js"></script>
   <style>
-    /* ── Layout ── */
     body { margin:0; display:flex; min-height:100vh; background:var(--bg); color:var(--fg); font-family:var(--font-sans); }
 
-    .sidebar { width:192px; flex-shrink:0; display:flex; flex-direction:column; border-right:1px solid var(--line);
-               padding:20px 12px; position:sticky; top:0; height:100vh; overflow-y:auto; box-sizing:border-box; }
+    /* Sidebar */
+    .sidebar { width:192px; flex-shrink:0; display:flex; flex-direction:column; border-right:1px solid var(--line); padding:20px 12px; position:sticky; top:0; height:100vh; overflow-y:auto; box-sizing:border-box; }
     .sidebar-brand { display:flex; align-items:center; gap:10px; padding:4px 8px 20px; }
-    .brand-initials { width:30px; height:30px; border-radius:8px; background:var(--accent); display:grid;
-                      place-items:center; font-size:12px; font-weight:600;
-                      color:color-mix(in oklch,var(--accent) 10%,#000); flex-shrink:0; }
-    .brand-text { font-size:12px; font-weight:600; line-height:1.2; color:var(--fg); }
+    .brand-initials { width:30px; height:30px; border-radius:8px; background:var(--accent); display:grid; place-items:center; font-size:12px; font-weight:600; color:color-mix(in oklch,var(--accent) 10%,#000); flex-shrink:0; }
+    .brand-text { font-size:12px; font-weight:600; line-height:1.2; }
     .nav-links { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:2px; }
-    .nav-item a { display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:6px;
-                  text-decoration:none; font-size:13px; color:var(--fg-3); transition:background .12s,color .12s; }
+    .nav-item a { display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:6px; text-decoration:none; font-size:13px; color:var(--fg-3); transition:background .12s,color .12s; }
     .nav-item a:hover { background:var(--bg-2); color:var(--fg); }
     .nav-item.active a { background:var(--bg-2); color:var(--fg); font-weight:500; }
     .nav-icon { font-size:13px; width:18px; text-align:center; flex-shrink:0; }
     .sidebar-footer { margin-top:auto; padding-top:16px; display:flex; flex-direction:column; gap:8px; }
-    .theme-toggle-nav { display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:6px;
-                        cursor:pointer; font-size:12px; color:var(--fg-3); }
+    .theme-toggle-nav { display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:6px; cursor:pointer; font-size:12px; color:var(--fg-3); }
     .theme-toggle-nav:hover { background:var(--bg-2); color:var(--fg); }
+    .sync-status { display:flex; align-items:center; gap:6px; padding:0 8px; }
     .sync-dot { width:6px; height:6px; border-radius:50%; background:var(--accent); flex-shrink:0; }
     .sync-text { font-size:10.5px; color:var(--fg-4); font-family:var(--font-mono); }
-    .sync-status { display:flex; align-items:center; gap:6px; padding:0 8px; }
 
+    /* Main */
     .main-content { flex:1; min-width:0; padding:24px 28px 48px; display:flex; flex-direction:column; gap:20px; }
-    .page-header { display:flex; align-items:baseline; gap:12px; margin-bottom:4px; }
-    .page-title { margin:0; font-size:20px; font-weight:600; color:var(--fg); letter-spacing:-0.02em; }
+    .page-header { display:flex; align-items:baseline; gap:12px; }
+    .page-title { margin:0; font-size:20px; font-weight:600; letter-spacing:-0.02em; }
     .page-subtitle { font-size:12px; color:var(--fg-3); font-family:var(--font-mono); }
 
-    /* ── Utilities ── */
-    .num   { font-family:var(--font-mono); font-variant-numeric:tabular-nums; letter-spacing:-0.01em; }
+    /* Utilities */
+    .num { font-family:var(--font-mono); font-variant-numeric:tabular-nums; letter-spacing:-0.01em; }
     .hidden { display:none !important; }
     #page-content { display:flex; }
 
-    /* ── Cards ── */
+    /* Cards */
     .card { background:var(--bg-1); border:1px solid var(--line); border-radius:var(--r-lg); padding:var(--pad); }
     .card-hd { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
-    .card-hd h3 { margin:0; font-size:11px; font-weight:500; color:var(--fg-3);
-                  letter-spacing:0.08em; text-transform:uppercase; }
+    .card-hd h3 { margin:0; font-size:11px; font-weight:500; color:var(--fg-3); letter-spacing:0.08em; text-transform:uppercase; }
 
-    /* ── Badges ── */
-    .badge { display:inline-flex; align-items:center; gap:5px; padding:2px 8px; border-radius:4px;
-             background:var(--bg-2); border:1px solid var(--line); color:var(--fg-3);
-             font-size:10.5px; font-family:var(--font-mono); }
-    .badge.lime { background:color-mix(in oklch,var(--accent) 14%,transparent);
-                  border-color:color-mix(in oklch,var(--accent) 30%,transparent);
-                  color:color-mix(in oklch,var(--accent) 90%,var(--fg)); }
+    /* Badges */
+    .badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius:4px; background:var(--bg-2); border:1px solid var(--line); color:var(--fg-3); font-size:10.5px; font-family:var(--font-mono); }
+    .badge.lime { background:color-mix(in oklch,var(--accent) 14%,transparent); border-color:color-mix(in oklch,var(--accent) 30%,transparent); color:color-mix(in oklch,var(--accent) 90%,var(--fg)); }
 
-    /* ── Grids ── */
+    /* Grids */
     .grid { display:grid; gap:16px; }
     .g73 { grid-template-columns:minmax(0,7fr) minmax(0,3fr); }
-    .g2 { grid-template-columns:1fr 1fr; gap:12px; }
+    .g2  { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
     .g22 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 
-    /* ── Hero layout ── */
+    /* Hero */
     .hero-inner { display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap; }
-    .hero-ring-wrap { flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:6px; }
+    .hero-ring-wrap { flex-shrink:0; }
     .hero-ytd { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; flex:1; min-width:180px; align-items:start; }
-    .ytd-val { font-size:28px; font-weight:600; font-family:var(--font-mono); color:var(--fg);
-               letter-spacing:-0.03em; line-height:1; }
+    .ytd-val { font-size:28px; font-weight:600; font-family:var(--font-mono); letter-spacing:-0.03em; line-height:1; }
     .ytd-lbl { font-size:10px; color:var(--fg-3); text-transform:uppercase; letter-spacing:0.07em; margin-top:5px; }
     .hero-readings { display:flex; flex-direction:column; min-width:130px; border-left:1px solid var(--line); padding-left:20px; }
-    .mr { display:flex; justify-content:space-between; align-items:baseline; gap:8px;
-          padding:8px 0; border-bottom:1px solid var(--line); }
+    .mr { display:flex; justify-content:space-between; align-items:baseline; gap:8px; padding:8px 0; border-bottom:1px solid var(--line); }
     .mr:last-child { border-bottom:0; }
     .mr-lbl { font-size:10px; color:var(--fg-3); text-transform:uppercase; letter-spacing:0.06em; }
-    .mr-val  { font-family:var(--font-mono); font-size:13px; color:var(--fg); font-weight:500; }
+    .mr-val { font-family:var(--font-mono); font-size:13px; font-weight:500; }
 
-    /* ── Stat tiles ── */
-    .tile { background:var(--bg-2); border-radius:var(--r-md); padding:14px;
-            display:flex; flex-direction:column; gap:4px; }
-    .tile-val { font-size:22px; font-weight:600; font-family:var(--font-mono);
-                color:var(--fg); letter-spacing:-0.02em; line-height:1; }
+    /* Tiles */
+    .tile { background:var(--bg-2); border-radius:var(--r-md); padding:14px; display:flex; flex-direction:column; gap:4px; }
+    .tile-val { font-size:22px; font-weight:600; font-family:var(--font-mono); letter-spacing:-0.02em; line-height:1; }
     .tile-lbl { font-size:10px; color:var(--fg-3); text-transform:uppercase; letter-spacing:0.06em; }
 
-    /* ── Best efforts strip ── */
+    /* Efforts strip */
     .strip-scroll { overflow-x:auto; padding-bottom:2px; }
     .strip-scroll::-webkit-scrollbar { height:5px; }
     .strip-scroll::-webkit-scrollbar-thumb { background:var(--line-3); border-radius:3px; }
     .strip-inner { display:flex; gap:10px; min-width:max-content; }
-    .effort-tile { background:var(--bg-2); border-radius:var(--r-md); padding:12px 16px;
-                   min-width:105px; display:flex; flex-direction:column; gap:4px; }
-    .et-dur  { font-size:10px; font-family:var(--font-mono); color:var(--fg-3);
-               text-transform:uppercase; letter-spacing:0.06em; }
-    .et-90d  { font-size:18px; font-weight:600; font-family:var(--font-mono);
-               color:var(--accent); letter-spacing:-0.02em; line-height:1.1; }
-    .et-all  { font-size:11px; font-family:var(--font-mono); color:var(--fg-4); margin-top:2px; }
+    .effort-tile { background:var(--bg-2); border-radius:var(--r-md); padding:12px 16px; min-width:100px; display:flex; flex-direction:column; gap:4px; }
+    .et-dur  { font-size:10px; font-family:var(--font-mono); color:var(--fg-3); text-transform:uppercase; letter-spacing:0.06em; }
+    .et-val  { font-size:18px; font-weight:600; font-family:var(--font-mono); color:var(--accent); letter-spacing:-0.02em; line-height:1.1; }
+    .et-all  { font-size:11px; font-family:var(--font-mono); color:var(--fg-4); }
 
-    /* ── Feed ── */
-    .feed-item { display:grid; grid-template-columns:28px 1fr auto; gap:10px; padding:9px 0;
-                 border-top:1px solid var(--line); align-items:center;
-                 text-decoration:none; color:inherit; }
+    /* Feed */
+    .feed-item { display:grid; grid-template-columns:28px 1fr auto; gap:10px; padding:9px 0; border-top:1px solid var(--line); align-items:center; text-decoration:none; color:inherit; }
     .feed-item:first-child { border-top:0; padding-top:2px; }
-    .feed-glyph { width:28px; height:28px; border-radius:7px; display:grid; place-items:center;
-                  font-size:13px; border:1px solid;
-                  color:var(--accent);
-                  background:color-mix(in oklch,var(--accent) 10%,transparent);
-                  border-color:color-mix(in oklch,var(--accent) 30%,transparent); }
-    .feed-title { font-size:13px; color:var(--fg); font-weight:500; white-space:nowrap;
-                  overflow:hidden; text-overflow:ellipsis; }
+    .feed-glyph { width:28px; height:28px; border-radius:7px; display:grid; place-items:center; font-size:13px; border:1px solid; color:var(--accent); background:color-mix(in oklch,var(--accent) 10%,transparent); border-color:color-mix(in oklch,var(--accent) 30%,transparent); }
+    .feed-title { font-size:13px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .feed-sub   { font-size:11px; color:var(--fg-3); font-family:var(--font-mono); margin-top:1px; }
     .feed-right { text-align:right; flex-shrink:0; }
     .feed-right .num { font-size:13px; font-weight:500; }
     .feed-right small { display:block; font-size:10px; color:var(--fg-3); font-family:var(--font-mono); }
 
-    /* ── Segment styles (from main.css, re-skinned for design system) ── */
-    .segment-header { margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid var(--line); }
-    .segment-header h3 { margin:0 0 2px; font-size:13px; font-weight:500; color:var(--fg); }
+    /* Segment styles */
+    .segment-header { margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--line); }
+    .segment-header h3 { margin:0 0 2px; font-size:12px; font-weight:500; }
     .segment-date { font-size:11px; color:var(--fg-3); font-family:var(--font-mono); }
     .segment-grid { display:flex; flex-direction:column; gap:8px; }
     .segment-card { background:var(--bg-2); border:1px solid var(--line); border-radius:var(--r-md); padding:10px 12px; }
     .segment-card.achievement-gold   { border-left:3px solid #FFD700; }
     .segment-card.achievement-silver { border-left:3px solid #C0C0C0; }
     .segment-card.achievement-bronze { border-left:3px solid #CD7F32; }
-    .segment-card-header { display:flex; justify-content:space-between; align-items:flex-start;
-                           margin-bottom:8px; gap:8px; }
-    .segment-name { font-size:12px; font-weight:500; color:var(--fg); flex:1; }
+    .segment-card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; gap:8px; }
+    .segment-name { font-size:12px; font-weight:500; flex:1; }
     .segment-badges { display:flex; flex-wrap:wrap; gap:4px; justify-content:flex-end; }
-    .achievement-badge { display:inline-flex; align-items:center; gap:3px; padding:1px 5px;
-                         border-radius:3px; font-size:10px; font-weight:600; white-space:nowrap; }
+    .achievement-badge { display:inline-flex; align-items:center; gap:3px; padding:1px 5px; border-radius:3px; font-size:10px; font-weight:600; }
     .badge-gold   { background:#FFD700; color:#000; }
     .badge-silver { background:#C0C0C0; color:#000; }
     .badge-bronze { background:#CD7F32; color:#fff; }
-    .climb-badge  { display:inline-flex; align-items:center; gap:3px; padding:1px 5px;
-                    border-radius:3px; font-size:10px; font-weight:600;
-                    background:color-mix(in oklch,var(--accent) 20%,transparent);
-                    color:var(--accent); border:1px solid color-mix(in oklch,var(--accent) 40%,transparent); }
-    .kom-badge    { display:inline-flex; padding:1px 5px; border-radius:3px; font-size:10px;
-                    font-weight:600; background:#FC4C02; color:white; }
+    .climb-badge  { display:inline-flex; align-items:center; gap:3px; padding:1px 5px; border-radius:3px; font-size:10px; font-weight:600; background:color-mix(in oklch,var(--accent) 20%,transparent); color:var(--accent); border:1px solid color-mix(in oklch,var(--accent) 40%,transparent); }
+    .kom-badge    { display:inline-flex; padding:1px 5px; border-radius:3px; font-size:10px; font-weight:600; background:#FC4C02; color:white; }
     .segment-stats { display:grid; grid-template-columns:repeat(2,1fr); gap:6px 10px; margin-bottom:6px; }
     .stat-label { font-size:10px; color:var(--fg-3); text-transform:uppercase; letter-spacing:0.05em; }
-    .stat-value { font-size:12px; font-weight:600; color:var(--fg); font-family:var(--font-mono); }
-    .pr-comparison { padding:6px 8px; border-radius:5px; font-size:11px; margin-top:4px;
-                     display:flex; align-items:center; gap:5px; font-family:var(--font-mono); }
+    .stat-value { font-size:12px; font-weight:600; font-family:var(--font-mono); }
+    .pr-comparison { padding:6px 8px; border-radius:5px; font-size:11px; margin-top:4px; display:flex; align-items:center; gap:5px; font-family:var(--font-mono); }
     .pr-slower { background:rgba(249,115,22,0.08); color:#ea580c; border:1px solid rgba(249,115,22,0.2); }
     .pr-faster { background:rgba(34,197,94,0.08); color:#16a34a; border:1px solid rgba(34,197,94,0.2); }
     .effort-count { font-size:10px; color:var(--fg-4); margin-top:4px; font-family:var(--font-mono); }
     .no-data { font-size:12px; color:var(--fg-4); padding:16px 0; text-align:center; font-family:var(--font-mono); }
 
-    /* ── Animations ── */
-    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.85)} }
-    @keyframes draw  { from{stroke-dashoffset:var(--len,1000)} to{stroke-dashoffset:0} }
+    /* Animations */
+    @keyframes draw { from{stroke-dashoffset:var(--len,1000)} to{stroke-dashoffset:0} }
     .draw-path { stroke-dasharray:var(--len,1000); animation:draw 1.4s cubic-bezier(.2,.8,.2,1) forwards; }
     @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
 
-    /* ── Loading / footer ── */
-    #loading-state { display:flex; align-items:center; justify-content:center; min-height:60vh;
-                     font-family:var(--font-mono); font-size:13px; color:var(--fg-3); }
-    .footer { margin-top:4px; padding-top:16px; border-top:1px solid var(--line);
-              display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+    #loading-state { display:flex; align-items:center; justify-content:center; min-height:60vh; font-family:var(--font-mono); font-size:13px; color:var(--fg-3); }
+    .footer { margin-top:4px; padding-top:16px; border-top:1px solid var(--line); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; }
     .footer-lbl { font-size:10.5px; color:var(--fg-4); font-family:var(--font-mono); }
   </style>
 </head>
@@ -184,7 +150,7 @@
       <li class="nav-item"><a href="about.html"><span class="nav-icon">⚙</span><span>Architecture</span></a></li>
     </ul>
     <div class="sidebar-footer">
-      <div class="theme-toggle-nav" onclick="toggleTheme()" title="Toggle dark/light mode">
+      <div class="theme-toggle-nav" onclick="toggleTheme()">
         <span class="nav-icon theme-icon">☀️</span><span>Theme</span>
       </div>
       <div class="sync-status">
@@ -204,7 +170,7 @@
 
     <div id="page-content" class="hidden" style="flex-direction:column;gap:20px;">
 
-      <!-- 1. Hero ── Season status -->
+      <!-- 1. Hero -->
       <div class="card">
         <div class="card-hd">
           <h3>Season Status</h3>
@@ -218,18 +184,9 @@
             <div id="cy-ring" style="width:164px;height:164px"></div>
           </div>
           <div class="hero-ytd">
-            <div>
-              <div class="ytd-val num" id="cy-distance">—</div>
-              <div class="ytd-lbl">km YTD</div>
-            </div>
-            <div>
-              <div class="ytd-val num" id="cy-hours">—</div>
-              <div class="ytd-lbl">hrs YTD</div>
-            </div>
-            <div>
-              <div class="ytd-val num" id="cy-tss">—</div>
-              <div class="ytd-lbl">TSS YTD</div>
-            </div>
+            <div><div class="ytd-val num" id="cy-distance">—</div><div class="ytd-lbl">km YTD</div></div>
+            <div><div class="ytd-val num" id="cy-hours">—</div><div class="ytd-lbl">hrs YTD</div></div>
+            <div><div class="ytd-val num" id="cy-tss">—</div><div class="ytd-lbl">TSS YTD</div></div>
           </div>
           <div class="hero-readings">
             <div class="mr"><span class="mr-lbl">CTL</span><span class="mr-val num" id="cy-ctl">—</span></div>
@@ -240,30 +197,15 @@
         </div>
       </div>
 
-      <!-- 2. 7:3 ── Training overview | Peak power -->
+      <!-- 2. 7:3 — Training overview | Peak power -->
       <div class="grid g73">
         <div class="card">
-          <div class="card-hd">
-            <h3>Training Overview</h3>
-            <span class="badge" id="rides-range-badge">90 days</span>
-          </div>
+          <div class="card-hd"><h3>Training Overview</h3><span class="badge">90 days</span></div>
           <div class="g2">
-            <div class="tile">
-              <div class="tile-val num" id="cy-rides-90d">—</div>
-              <div class="tile-lbl">Rides</div>
-            </div>
-            <div class="tile">
-              <div class="tile-val num" id="cy-avg-power">—</div>
-              <div class="tile-lbl">Avg Power</div>
-            </div>
-            <div class="tile">
-              <div class="tile-val num" id="cy-avg-tss">—</div>
-              <div class="tile-lbl">Avg TSS / ride</div>
-            </div>
-            <div class="tile">
-              <div class="tile-val num" id="cy-avg-dur">—</div>
-              <div class="tile-lbl">Avg Duration</div>
-            </div>
+            <div class="tile"><div class="tile-val num" id="cy-rides-90d">—</div><div class="tile-lbl">Rides</div></div>
+            <div class="tile"><div class="tile-val num" id="cy-avg-power">—</div><div class="tile-lbl">Avg Power</div></div>
+            <div class="tile"><div class="tile-val num" id="cy-avg-tss">—</div><div class="tile-lbl">Avg TSS / ride</div></div>
+            <div class="tile"><div class="tile-val num" id="cy-avg-dur">—</div><div class="tile-lbl">Avg Duration</div></div>
           </div>
         </div>
         <div class="card">
@@ -277,22 +219,19 @@
         </div>
       </div>
 
-      <!-- 3. Power curve (full width) -->
+      <!-- 3. Power curve -->
       <div class="card">
         <div class="card-hd">
           <h3>Power Curve</h3>
-          <span class="badge lime" id="curve-label-badge">90 days</span>
+          <span class="badge lime" id="curve-badge">90 days</span>
         </div>
         <div id="cy-power-curve" style="min-height:260px"></div>
       </div>
 
-      <!-- 4. 7:3 ── Weekly volume | Fitness -->
+      <!-- 4. 7:3 — Weekly volume | Fitness -->
       <div class="grid g73">
         <div class="card">
-          <div class="card-hd">
-            <h3>Weekly Volume</h3>
-            <span class="badge">TSS · 12 weeks</span>
-          </div>
+          <div class="card-hd"><h3>Weekly Volume</h3><span class="badge">km · 12 weeks</span></div>
           <div id="cy-weekly-bars" style="min-height:200px"></div>
         </div>
         <div class="card">
@@ -301,10 +240,7 @@
             <div class="mr"><span class="mr-lbl">CTL</span><span class="mr-val num" id="cy-fit-ctl">—</span></div>
             <div class="mr"><span class="mr-lbl">ATL</span><span class="mr-val num" id="cy-fit-atl">—</span></div>
             <div class="mr"><span class="mr-lbl">TSB</span><span class="mr-val num" id="cy-fit-tsb">—</span></div>
-            <div class="mr" style="border-bottom:0">
-              <span class="mr-lbl">FTP</span>
-              <span class="mr-val num" id="cy-fit-ftp">—</span>
-            </div>
+            <div class="mr" style="border-bottom:0"><span class="mr-lbl">FTP</span><span class="mr-val num" id="cy-fit-ftp">—</span></div>
           </div>
         </div>
       </div>
@@ -312,24 +248,18 @@
       <!-- 5. Best efforts strip -->
       <div class="card">
         <div class="card-hd">
-          <h3>Best Efforts</h3>
-          <div style="display:flex;gap:6px">
-            <span class="badge lime">90 days</span>
-            <span class="badge" id="efforts-all-badge" style="display:none">all time</span>
-          </div>
+          <h3>Best Efforts · 90 days</h3>
+          <span class="badge lime">from Intervals.icu</span>
         </div>
         <div class="strip-scroll">
           <div class="strip-inner" id="cy-efforts"></div>
         </div>
       </div>
 
-      <!-- 6. 7:3 ── Recent rides | Segments -->
+      <!-- 6. 7:3 — Recent rides | Segments -->
       <div class="grid g73">
         <div class="card">
-          <div class="card-hd">
-            <h3>Recent Rides</h3>
-            <span class="badge">Last 8</span>
-          </div>
+          <div class="card-hd"><h3>Recent Rides</h3><span class="badge">Last 8</span></div>
           <div id="cy-feed"></div>
         </div>
         <div class="card">
@@ -343,16 +273,16 @@
         <span class="footer-lbl" id="footer-sync">—</span>
       </footer>
 
-    </div><!-- /page-content -->
+    </div>
   </main>
 
-  <!-- formatDuration must be global so segments.js can call it -->
+  <!-- formatDuration must be global for segments.js -->
   <script>
-    function formatDuration(seconds) {
-      if (!seconds) return '—';
-      const h = Math.floor(seconds / 3600), m = Math.floor((seconds % 3600) / 60), s = seconds % 60;
-      if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-      return `${m}:${String(s).padStart(2,'0')}`;
+    function formatDuration(s) {
+      if (!s) return '—';
+      const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+      if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+      return `${m}:${String(sec).padStart(2,'0')}`;
     }
   </script>
   <script src="assets/js/data-loader.js"></script>
@@ -360,229 +290,204 @@
   <script type="module">
     import { renderRing, renderBarChart, renderPowerCurve } from './assets/js/charts-new.js';
 
-    /* ── Helpers ── */
-    function setEl(id, val) {
-      const el = document.getElementById(id);
-      if (el) el.textContent = val ?? '—';
-    }
-    function fmtDur(seconds) {
-      if (!seconds) return '—';
-      const h = Math.floor(seconds / 3600), m = Math.floor((seconds % 3600) / 60);
+    function setEl(id, val) { const el = document.getElementById(id); if (el) el.textContent = val ?? '—'; }
+    function fmtDur(s) {
+      if (!s) return '—';
+      const h = Math.floor(s/3600), m = Math.floor((s%3600)/60);
       return h > 0 ? `${h}h ${m}m` : `${m}m`;
-    }
-    // Find a value in a power curve by exact second match
-    function wattsAt(curve, sec) {
-      if (!curve?.secs) return null;
-      const idx = curve.secs.indexOf(sec);
-      return idx >= 0 ? Math.round(curve.values[idx]) : null;
-    }
-    // Find the 90d curve regardless of how the label is capitalised/spaced
-    function find90d(list) {
-      if (!list?.length) return null;
-      return list.find(c => /90/i.test(c.label)) ?? list[0];
-    }
-    function findAll(list) {
-      if (!list?.length) return null;
-      return list.find(c => /^all/i.test(c.label)) ?? null;
     }
 
     const POWER_TARGETS = [
-      { sec: 5,    label: '5 sec'  },
-      { sec: 30,   label: '30 sec' },
-      { sec: 60,   label: '1 min'  },
-      { sec: 300,  label: '5 min'  },
-      { sec: 1200, label: '20 min' },
-      { sec: 3600, label: '60 min' },
+      { sec:5,    label:'5 sec'  },
+      { sec:30,   label:'30 sec' },
+      { sec:60,   label:'1 min'  },
+      { sec:300,  label:'5 min'  },
+      { sec:1200, label:'20 min' },
+      { sec:3600, label:'60 min' },
     ];
-
-    // Key durations for dots on power curve chart
-    const CURVE_DOT_SECS = [5, 30, 60, 300, 1200, 3600];
 
     document.addEventListener('DOMContentLoaded', async () => {
       try {
-        /* ── Load data ── */
-        const { activities, wellness, weeklyTSS, ytd, athlete } = await DATA.loadAll();
+        /* ── Exact same call as cycling.html ── */
+        const { activities, wellness, meta } = await DATA.loadAll();
         const latest = DATA.latestWellness(wellness);
+        const weight = latest?.weight ?? meta?.weight ?? null;
 
-        const powerData = await fetch('data/power_curves_90d.json', { cache: 'no-cache' })
-          .then(r => r.json()).catch(() => null);
+        /* ── Power curves — same fetch as cycling.html ── */
+        let powerCurves90d = null;
+        try {
+          const r = await fetch('data/power_curves_90d.json');
+          if (r.ok) powerCurves90d = await r.json();
+        } catch(e) {}
 
-        /* ── Sync timestamp ── */
-        const lastWellness = wellness[wellness.length - 1];
-        if (lastWellness) {
-          setEl('last-sync', lastWellness.date);
-          setEl('footer-sync', 'Last sync: ' + lastWellness.date);
-          setEl('page-subtitle', lastWellness.date);
+        /* ── Rides — same filter as cycling.html ── */
+        const allRides = activities.filter(a => a.type === 'Ride' || a.type === 'VirtualRide');
+        const cutoff90 = new Date(Date.now() - 90*864e5).toISOString().split('T')[0];
+        const rides90  = allRides.filter(a => a.date >= cutoff90).sort((a,b) => b.date.localeCompare(a.date));
+
+        /* ── YTD — same pattern as cycling.html ── */
+        const year = String(new Date().getFullYear());
+        const ytdRides = allRides.filter(a => a.date?.startsWith(year));
+        setEl('cy-distance', Math.round(ytdRides.reduce((s,a)=>s+(a.distance||0),0)/1000).toLocaleString());
+        setEl('cy-hours',    (ytdRides.reduce((s,a)=>s+(a.duration||0),0)/3600).toFixed(1));
+        setEl('cy-tss',      Math.round(ytdRides.reduce((s,a)=>s+(a.tss||0),0)).toLocaleString());
+
+        /* ── FTP/CP — same logic as cycling.html ── */
+        let cp = null;
+        let peak5s = null, peak1min = null, peak5min = null, peak20min = null, peak60min = null, peak30s = null;
+
+        if (powerCurves90d?.list?.length) {
+          const curve = powerCurves90d.list[0]; // 90-day curve — list[0] regardless of label
+          const durations = curve.secs || [];
+          const watts     = curve.values || [];
+
+          const at = (sec) => { const i = durations.indexOf(sec); return i >= 0 ? Math.round(watts[i]) : null; };
+          peak5s   = at(5);
+          peak30s  = at(30);
+          peak1min = at(60);
+          peak5min = at(300);
+          peak20min = at(1200);
+          peak60min = at(3600);
+          cp = peak20min; // same as cycling.html
+        } else {
+          cp = Number(latest?.cp ?? meta?.cp ?? null) || null;
         }
 
-        /* ── Filter rides — all ride types, date-sorted ── */
-        const RIDE_TYPES = ['Ride','VirtualRide','GravelRide','EBikeRide','MountainBikeRide','TrackRide'];
-        const rides = activities
-          .filter(a => RIDE_TYPES.includes(a.type))
-          .sort((a, b) => b.date.localeCompare(a.date));
+        /* ── FTP badge + ring ── */
+        const ftpVal = cp;
+        const wkg    = (ftpVal && weight) ? (ftpVal / weight).toFixed(1) : null;
 
-        // 90-day cutoff using local date (avoid UTC/BST shift)
-        const now = new Date();
-        const cutoff90 = new Date(now - 90 * 864e5);
-        const cutoff90str = `${cutoff90.getFullYear()}-${String(cutoff90.getMonth()+1).padStart(2,'0')}-${String(cutoff90.getDate()).padStart(2,'0')}`;
-        const rides90 = rides.filter(a => a.date >= cutoff90str);
-
-        /* ── FTP / W/kg ── */
-        const ftp = athlete.ftp ?? null;
-        const weight = latest.weight ?? athlete.weight ?? null;
-        const wkg = (ftp && weight) ? (ftp / weight).toFixed(1) : null;
-
-        setEl('ftp-badge', ftp ? ftp + ' W FTP' : '— FTP');
-        document.getElementById('ftp-badge').className = 'badge ' + (ftp ? 'lime' : '');
+        setEl('ftp-badge', ftpVal ? ftpVal + ' W FTP' : '— FTP');
+        document.getElementById('ftp-badge').className = 'badge' + (ftpVal ? ' lime' : '');
         setEl('wkg-badge', wkg ? wkg + ' W/kg' : '— W/kg');
+        setEl('cy-fit-ftp', ftpVal ? ftpVal + ' W' : '—');
 
-        /* ── Hero ring ── */
         renderRing(document.getElementById('cy-ring'), {
           value: 75, max: 100, size: 164, stroke: 10,
           color: 'var(--accent)',
-          label: ftp ?? '—',
-          sub: wkg ? wkg + ' W/kg' : '—',
+          label: ftpVal ?? '—',
+          sub:   wkg ? wkg + ' W/kg' : '—',
         });
 
-        /* ── YTD stats ── */
-        setEl('cy-distance', ytd.cycling?.distance ?? '—');
-        setEl('cy-hours',    ytd.cycling?.hours    ?? '—');
-        setEl('cy-tss',      ytd.cycling?.tss      ?? '—');
-
-        /* ── Hero mini readings ── */
-        const ctl = latest.ctl != null ? Math.round(latest.ctl) : null;
-        const atl = latest.atl != null ? Math.round(latest.atl) : null;
-        const tsb = latest.tsb != null ? Math.round(latest.tsb) : null;
-        setEl('cy-ctl', ctl ?? '—');
-        setEl('cy-atl', atl ?? '—');
-        setEl('cy-tsb', tsb ?? '—');
-
-        /* ── Fitness card (same values, separate elements) ── */
+        /* ── Wellness — CTL/ATL/TSB directly from latest record ── */
+        const ctl = latest?.ctl != null ? Math.round(latest.ctl) : null;
+        const atl = latest?.atl != null ? Math.round(latest.atl) : null;
+        const tsb = latest?.tsb != null ? Math.round(latest.tsb) : (ctl != null && atl != null ? ctl - atl : null);
+        setEl('cy-ctl',     ctl ?? '—');
+        setEl('cy-atl',     atl ?? '—');
+        setEl('cy-tsb',     tsb ?? '—');
+        setEl('cy-20min',   peak20min ? peak20min + ' W' : '—');
         setEl('cy-fit-ctl', ctl ?? '—');
         setEl('cy-fit-atl', atl ?? '—');
         setEl('cy-fit-tsb', tsb ?? '—');
-        setEl('cy-fit-ftp', ftp ? ftp + ' W' : '—');
 
-        /* ── Power curves ── */
-        const c90  = find90d(powerData?.list);
-        const cAll = findAll(powerData?.list);
-
-        /* ── 20 min power in hero ── */
-        const p20 = wattsAt(c90, 1200);
-        setEl('cy-20min', p20 ? p20 + ' W' : '—');
+        /* ── Last sync timestamp ── */
+        const lastDate = wellness[wellness.length - 1]?.date;
+        if (lastDate) {
+          setEl('last-sync',    lastDate);
+          setEl('footer-sync',  'Last sync: ' + lastDate);
+          setEl('page-subtitle', lastDate);
+        }
 
         /* ── Training overview (90d) ── */
         setEl('cy-rides-90d', rides90.length || '—');
 
         const poweredRides = rides90.filter(r => r.avg_power);
-        const avgPow = poweredRides.length
-          ? Math.round(poweredRides.reduce((s, r) => s + r.avg_power, 0) / poweredRides.length)
-          : null;
-        setEl('cy-avg-power', avgPow ? avgPow + ' W' : '—');
+        setEl('cy-avg-power', poweredRides.length
+          ? Math.round(poweredRides.reduce((s,r)=>s+r.avg_power,0)/poweredRides.length) + ' W'
+          : '—');
 
         const tssdRides = rides90.filter(r => r.tss);
-        const avgTSS = tssdRides.length
-          ? Math.round(tssdRides.reduce((s, r) => s + r.tss, 0) / tssdRides.length)
-          : null;
-        setEl('cy-avg-tss', avgTSS ?? '—');
+        setEl('cy-avg-tss', tssdRides.length
+          ? Math.round(tssdRides.reduce((s,r)=>s+r.tss,0)/tssdRides.length)
+          : '—');
 
         const durdRides = rides90.filter(r => r.duration);
-        const avgDur = durdRides.length
-          ? durdRides.reduce((s, r) => s + r.duration, 0) / durdRides.length
-          : null;
-        setEl('cy-avg-dur', avgDur ? fmtDur(avgDur) : '—');
+        setEl('cy-avg-dur', durdRides.length
+          ? fmtDur(durdRides.reduce((s,r)=>s+r.duration,0)/durdRides.length)
+          : '—');
 
         /* ── Peak power 2×2 ── */
-        setEl('pk-5s',  c90 ? (wattsAt(c90, 5)    != null ? wattsAt(c90, 5)    + ' W' : '—') : '—');
-        setEl('pk-1m',  c90 ? (wattsAt(c90, 60)   != null ? wattsAt(c90, 60)   + ' W' : '—') : '—');
-        setEl('pk-5m',  c90 ? (wattsAt(c90, 300)  != null ? wattsAt(c90, 300)  + ' W' : '—') : '—');
-        setEl('pk-20m', c90 ? (wattsAt(c90, 1200) != null ? wattsAt(c90, 1200) + ' W' : '—') : '—');
+        setEl('pk-5s',  peak5s   != null ? peak5s   + ' W' : '—');
+        setEl('pk-1m',  peak1min != null ? peak1min + ' W' : '—');
+        setEl('pk-5m',  peak5min != null ? peak5min + ' W' : '—');
+        setEl('pk-20m', peak20min!= null ? peak20min+ ' W' : '—');
 
-        /* ── Power curve chart ──
-           Downsample to ~40 pts on a log scale to avoid over-plotting.
-           Only draw dots at key durations. ── */
-        if (c90) {
-          // Build log-spaced sample indices from the 162-point curve
-          const secs = c90.secs;
+        /* ── Power curve chart ── */
+        if (powerCurves90d?.list?.length) {
+          const curve = powerCurves90d.list[0];
+          const secs  = curve.secs   || [];
+          const watts = curve.values || [];
+
+          // Downsample to ~50 log-spaced points — avoids over-plotting 162 raw points
           const tMin = Math.log10(secs[0]);
           const tMax = Math.log10(secs[secs.length - 1]);
-          const SAMPLES = 50;
-          const sampled = [];
           const seen = new Set();
-          for (let i = 0; i < SAMPLES; i++) {
-            const tLog = tMin + (tMax - tMin) * (i / (SAMPLES - 1));
-            const tTarget = Math.pow(10, tLog);
-            let closest = 0;
-            let bestDiff = Infinity;
+          const indices = [];
+          for (let i = 0; i < 50; i++) {
+            const tTarget = Math.pow(10, tMin + (tMax - tMin) * (i / 49));
+            let best = 0, bestDiff = Infinity;
             for (let j = 0; j < secs.length; j++) {
-              const diff = Math.abs(secs[j] - tTarget);
-              if (diff < bestDiff) { bestDiff = diff; closest = j; }
+              const d = Math.abs(secs[j] - tTarget);
+              if (d < bestDiff) { bestDiff = d; best = j; }
             }
-            if (!seen.has(closest)) {
-              seen.add(closest);
-              sampled.push(closest);
-            }
+            if (!seen.has(best)) { seen.add(best); indices.push(best); }
           }
           // Always include key durations
-          CURVE_DOT_SECS.forEach(sec => {
-            const idx = secs.indexOf(sec);
-            if (idx >= 0 && !seen.has(idx)) { seen.add(idx); sampled.push(idx); }
+          [5,30,60,300,1200,3600].forEach(sec => {
+            const i = secs.indexOf(sec);
+            if (i >= 0 && !seen.has(i)) { seen.add(i); indices.push(i); }
           });
-          sampled.sort((a, b) => a - b);
+          indices.sort((a,b) => a - b);
 
-          const pcData = sampled.map(idx => {
-            const t = secs[idx];
-            const obj = { t, w: c90.values[idx] };
-            if (cAll) {
-              const ai = cAll.secs.indexOf(t);
-              if (ai >= 0) obj.prev = cAll.values[ai];
-            }
-            return obj;
-          });
-
+          const pcData = indices.map(i => ({ t: secs[i], w: watts[i] }));
           renderPowerCurve(document.getElementById('cy-power-curve'), { data: pcData, height: 260 });
-
-          // Show all-time legend if available
-          if (cAll) {
-            document.getElementById('curve-label-badge').textContent = '90 days vs all time';
-            document.getElementById('efforts-all-badge').style.display = '';
-          }
         }
 
-        /* ── Weekly volume bars ── */
-        const last12 = weeklyTSS.slice(-12);
-        if (last12.length) {
-          renderBarChart(document.getElementById('cy-weekly-bars'), {
-            data:    last12.map(w => ({ label: w.week, ride: w.ride ?? 0 })),
-            keys:    ['ride'],
-            colors:  ['var(--accent)'],
-            height:  200,
-            // week field is "W9" — display as-is, show every other label if crowded
-            xLabel: (d) => d.label ?? '',
-            formatY: v => String(Math.round(v)),
+        /* ── Weekly volume — same approach as cycling.html: compute from activities ── */
+        const msPerWeek = 7 * 864e5;
+        const now = new Date();
+        const weekStart0 = new Date(now);
+        weekStart0.setDate(now.getDate() - now.getDay());
+        weekStart0.setHours(0,0,0,0);
+        const weeklyData = [];
+        for (let i = 11; i >= 0; i--) {
+          const ws = new Date(weekStart0.getTime() - i * msPerWeek);
+          const we = new Date(ws.getTime() + msPerWeek);
+          const wsStr = ws.toISOString().split('T')[0];
+          const weStr = we.toISOString().split('T')[0];
+          const wRides = allRides.filter(a => a.date >= wsStr && a.date < weStr);
+          weeklyData.push({
+            label: ws.toLocaleDateString('en-GB', { day:'numeric', month:'short' }),
+            km:    wRides.reduce((s,a)=>s+(a.distance||0),0)/1000,
           });
         }
+        renderBarChart(document.getElementById('cy-weekly-bars'), {
+          data:    weeklyData.map(w => ({ label: w.label, km: w.km })),
+          keys:    ['km'],
+          colors:  ['var(--accent)'],
+          height:  200,
+          xLabel:  (d) => d.label,
+          formatY: v => Math.round(v),
+        });
 
         /* ── Best efforts strip ── */
+        const peakMap = { 5:peak5s, 30:peak30s, 60:peak1min, 300:peak5min, 1200:peak20min, 3600:peak60min };
         const effortEl = document.getElementById('cy-efforts');
         POWER_TARGETS.forEach(({ sec, label }) => {
-          const w90  = wattsAt(c90, sec);
-          const wAll = wattsAt(cAll, sec);
+          const w = peakMap[sec];
           const tile = document.createElement('div');
           tile.className = 'effort-tile';
-          tile.innerHTML = `
-            <div class="et-dur">${label}</div>
-            <div class="et-90d">${w90 != null ? w90 + ' W' : '—'}</div>
-            <div class="et-all">${wAll != null ? wAll + ' W all·time' : cAll ? '— all·time' : ''}</div>
-          `;
+          tile.innerHTML = `<div class="et-dur">${label}</div><div class="et-val">${w != null ? w + ' W' : '—'}</div>`;
           effortEl.appendChild(tile);
         });
 
         /* ── Recent rides feed ── */
         const feedEl = document.getElementById('cy-feed');
-        rides.slice(0, 8).forEach(ride => {
-          const km  = ride.distance ? (ride.distance / 1000).toFixed(1) : null;
-          const dur = ride.duration ? fmtDur(ride.duration) : null;
+        const recentRides = allRides.sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8);
+        recentRides.forEach(ride => {
+          const km  = ride.distance ? (ride.distance/1000).toFixed(1) : null;
+          const dur = fmtDur(ride.duration);
           const pwr = ride.avg_power ? ride.avg_power + ' W' : null;
           const id  = String(ride.id).startsWith('i') ? ride.id : `i${ride.id}`;
           const a = document.createElement('a');
@@ -597,8 +502,7 @@
             <div class="feed-right">
               <span class="num">${km ? km + ' km' : '—'}</span>
               <small>${pwr ?? ''}</small>
-            </div>
-          `;
+            </div>`;
           feedEl.appendChild(a);
         });
 
@@ -609,7 +513,7 @@
         document.getElementById('loading-state').classList.add('hidden');
         document.getElementById('page-content').classList.remove('hidden');
 
-      } catch (err) {
+      } catch(err) {
         document.getElementById('loading-state').innerHTML =
           `<div style="color:var(--bad);font-family:var(--font-mono)">${err.message}</div>`;
         console.error(err);

@@ -1,0 +1,1580 @@
+/* Training OS — Shared layout, sidebar, and component CSS
+   Extracted from new_index.html for reuse across all new_* pages */
+
+.app {
+  display: flex;
+  min-height: 100vh;
+}
+
+  
+  /* Sidebar - keep from original */
+  .sidebar {
+    width: 224px;
+    background: var(--bg-1);
+    border-right: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    padding: 24px 16px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+  
+  .sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  
+  .brand-initials {
+    width: 40px;
+    height: 40px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--bg);
+  }
+  
+  .brand-text {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--fg);
+  }
+  
+  .nav-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    flex: 1;
+  }
+  
+  .nav-item {
+    margin-bottom: 4px;
+  }
+  
+  .nav-item a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    text-decoration: none;
+    color: var(--fg-2);
+    font-size: 14px;
+    transition: all 0.15s ease;
+  }
+  
+  .nav-item a:hover {
+    background: var(--bg-2);
+    color: var(--fg);
+  }
+  
+  .nav-item.active a {
+    background: color-mix(in oklch, var(--accent) 15%, var(--bg-2));
+    color: var(--accent);
+    font-weight: 500;
+  }
+  
+  .nav-icon {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+  }
+  
+  .sidebar-footer {
+    border-top: 1px solid var(--line);
+    padding-top: 16px;
+    margin-top: auto;
+  }
+  
+  .theme-toggle-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--fg-2);
+    font-size: 14px;
+    transition: all 0.15s ease;
+    margin-bottom: 12px;
+  }
+  
+  .theme-toggle-nav:hover {
+    background: var(--bg-2);
+    color: var(--fg);
+  }
+  
+  .sync-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    font-size: 11px;
+    color: var(--fg-3);
+    font-family: var(--font-mono);
+  }
+  
+  .sync-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  
+  /* Main content area */
+  .main-content {
+    flex: 1;
+    padding: 32px 48px;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  
+  .page-header {
+    margin-bottom: 32px;
+  }
+  
+  .page-title {
+    font-size: 32px;
+    font-weight: 600;
+    margin: 0 0 4px 0;
+    color: var(--fg);
+  }
+  
+  .page-subtitle {
+    font-size: 14px;
+    color: var(--fg-3);
+  }
+  
+  /* Loading/Error states */
+  .loading-overlay {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
+    color: var(--fg-3);
+  }
+  
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--line);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 16px;
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  
+  .error-state {
+    padding: 32px;
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    color: var(--fg);
+  }
+  
+  .hidden {
+    display: none !important;
+  }
+  
+  /* Hero readiness section */
+  .hero-section {
+    margin-bottom: 24px;
+  }
+  
+  .readiness-hero {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 32px;
+    align-items: center;
+    padding: 28px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .readiness-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.5;
+    pointer-events: none;
+    background: 
+      radial-gradient(900px 320px at 75% -10%, color-mix(in oklch, var(--accent) 22%, transparent), transparent 60%),
+      radial-gradient(600px 240px at 0% 110%, color-mix(in oklch, var(--accent-3) 14%, transparent), transparent 60%);
+  }
+  
+  .readiness-ring-container,
+  .today-planned,
+  .current-metrics {
+    position: relative;
+    z-index: 1;
+  }
+  
+  .readiness-ring-container {
+    width: 180px;
+    height: 180px;
+  }
+  
+  /* Center: Today's Planned Activity */
+  .today-planned {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+  }
+  
+  .today-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .live-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+  }
+  
+  .live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+  }
+  
+  .ytd-badge {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 3px 7px;
+    border-radius: 5px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    color: var(--fg-3);
+  }
+  
+  .today-label {
+    font-size: 12px;
+    color: var(--fg-3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  
+  .today-workout {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  
+  .today-workout-name {
+    font-size: 32px;
+    font-weight: 500;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+    color: var(--fg);
+  }
+  
+  .today-workout-meta {
+    font-family: var(--font-mono);
+    font-size: 15px;
+    color: var(--fg-3);
+  }
+  
+  .today-why {
+    font-size: 12.5px;
+    color: var(--fg-3);
+  }
+  
+  .readiness-status-inline {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-top: 8px;
+  }
+  
+  .readiness-score-inline {
+    font-family: var(--font-mono);
+    font-size: 48px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: var(--accent);
+  }
+  
+  .readiness-message-inline {
+    font-size: 16px;
+    color: var(--fg-2);
+  }
+  
+  /* Right: Current Metrics */
+  .current-metrics {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 200px;
+  }
+  
+  .current-metric {
+    padding: 9px 11px;
+    border-radius: 9px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .current-metric-label {
+    font-size: 10px;
+    color: var(--fg-4);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  
+  .current-metric-value {
+    font-family: var(--font-mono);
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 1;
+    margin-top: 2px;
+  }
+  
+  .current-metric-delta {
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    border: 1px solid;
+  }
+  
+  .current-metric-delta.lime {
+    background: color-mix(in oklch, var(--accent) 14%, transparent);
+    border-color: color-mix(in oklch, var(--accent) 30%, transparent);
+    color: color-mix(in oklch, var(--accent) 90%, var(--fg));
+  }
+  
+  .current-metric-delta.coral {
+    background: color-mix(in oklch, var(--accent-2) 14%, transparent);
+    border-color: color-mix(in oklch, var(--accent-2) 30%, transparent);
+    color: color-mix(in oklch, var(--accent-2) 90%, var(--fg));
+  }
+  
+  .current-metric-delta.ice {
+    background: color-mix(in oklch, var(--accent-3) 14%, transparent);
+    border-color: color-mix(in oklch, var(--accent-3) 30%, transparent);
+    color: color-mix(in oklch, var(--accent-3) 90%, var(--fg));
+  }
+  
+  /* YTD Stats Strip */
+  .ytd-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  
+  .ytd-sport-card {
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+  
+  .ytd-sport-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  
+  .ytd-sport-glyph {
+    font-size: 18px;
+  }
+  
+  .ytd-sport-name {
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--fg-2);
+  }
+  
+  .ytd-stats-row {
+    display: flex;
+    gap: 20px;
+  }
+  
+  .ytd-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  
+  .ytd-stat-value {
+    font-family: var(--font-mono);
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--fg);
+  }
+  
+  .ytd-stat-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--fg-3);
+  }
+  
+  /* YTD Stats Strip - NEW 5-column design */
+  .ytd-strip-new {
+    margin-bottom: 20px;
+  }
+  
+  .ytd-card {
+    padding: 0;
+    overflow: hidden;
+  }
+  
+  .ytd-grid {
+    display: grid;
+    grid-template-columns: 1.2fr repeat(3, 1fr);
+  }
+  
+  .ytd-col {
+    padding: 22px;
+    border-right: 1px solid var(--line);
+  }
+  
+  .ytd-col:last-child {
+    border-right: none;
+  }
+  
+  /* Column 1: Totals */
+  .ytd-totals {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .ytd-label {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--fg-3);
+  }
+  
+  .ytd-totals-stats {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+  
+  .ytd-total-value {
+    font-family: var(--font-mono);
+    font-size: 38px;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: var(--fg);
+  }
+  
+  .ytd-total-value::after {
+    content: ' km';
+    font-size: 13px;
+    color: var(--fg-3);
+    margin-left: 4px;
+  }
+  
+  .ytd-total-label {
+    font-size: 11px;
+    color: var(--fg-3);
+    margin-top: 4px;
+  }
+  
+  .ytd-total-sub {
+    font-family: var(--font-mono);
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: var(--fg);
+  }
+  
+  .ytd-total-sublabel {
+    font-size: 11px;
+    color: var(--fg-3);
+    margin-top: 2px;
+  }
+  
+  .ytd-color-bar {
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+    display: flex;
+    margin-top: 12px;
+  }
+  
+  .ytd-color-bar > div {
+    height: 100%;
+  }
+  
+  /* Columns 2-5: Sports */
+  .ytd-sport {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .ytd-sport-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .ytd-glyph {
+    font-size: 16px;
+  }
+  
+  .ytd-sport-name {
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--fg-2);
+  }
+  
+  .ytd-sport-value {
+    font-family: var(--font-mono);
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    color: var(--fg);
+    margin-top: 12px;
+  }
+  
+  .ytd-sport-meta {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--fg-4);
+    margin-top: 8px;
+  }
+  
+  .ytd-progress-container {
+    margin-top: 12px;
+    height: 28px;
+    border-radius: 4px;
+    background: var(--bg-2);
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .ytd-progress-bar {
+    position: absolute;
+    inset: 0;
+    width: 0%;
+    opacity: 0.7;
+    transition: width 0.5s ease;
+  }
+  
+  .ytd-progress-label {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--fg);
+  }
+  
+  /* Hero Cards Row */
+  .hero-cards-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  
+  .hero-card {
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: 18px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .hero-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .hero-card-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #a0a4b0;
+    font-weight: 600;
+  }
+  
+  .hero-card-delta {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    color: #c4c7cc;
+  }
+  
+  .hero-card-delta.positive {
+    background: color-mix(in oklch, var(--accent) 14%, transparent);
+    border-color: color-mix(in oklch, var(--accent) 30%, transparent);
+    color: color-mix(in oklch, var(--accent) 90%, var(--fg));
+  }
+  
+  .hero-card-delta.negative {
+    background: color-mix(in oklch, var(--accent-2) 14%, transparent);
+    border-color: color-mix(in oklch, var(--accent-2) 30%, transparent);
+    color: color-mix(in oklch, var(--accent-2) 90%, var(--fg));
+  }
+  
+  .hero-card-value {
+    font-family: var(--font-mono);
+    font-size: 32px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: #e8eaed;
+  }
+  
+  .hero-card-sparkline {
+    height: 36px;
+    margin-top: 4px;
+  }
+  
+  /* Fitness metrics grid */
+  .fitness-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  
+  .fitness-metric-card {
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+  
+  .fitness-metric-value {
+    font-family: var(--font-mono);
+    font-size: 36px;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--fg);
+  }
+  
+  .fitness-metric-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--fg-3);
+  }
+  
+  .fitness-metric-delta {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--fg-3);
+  }
+  
+  .fitness-metric-delta.positive {
+    color: var(--accent);
+  }
+  
+  .fitness-metric-delta.negative {
+    color: var(--accent-4);
+  }
+  
+  /* Chart cards */
+  .chart-card-new {
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+  
+  .chart-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  
+  .chart-card-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--fg);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  
+  .chart-container {
+    width: 100%;
+    height: 300px;
+  }
+  
+  /* Activity feed */
+  .activity-feed {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+  }
+  
+  .activity-card-new {
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: border-color 180ms var(--ease-out);
+  }
+  
+  .activity-card-new:hover {
+    border-color: var(--accent);
+  }
+  
+  .activity-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 8px;
+  }
+  
+  .activity-card-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--fg);
+  }
+  
+  .activity-card-time {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--fg-3);
+  }
+  
+  .activity-card-stats {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  
+  .activity-stat {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--fg-2);
+  }
+  
+  /* Calendar heatmap */
+  .calendar-heatmap {
+    display: flex;
+    gap: 3px;
+    margin-top: 16px;
+    overflow-x: auto;
+    padding: 8px 0;
+  }
+  
+  .calendar-cell {
+    border-radius: 2px;
+    transition: transform 0.1s ease;
+  }
+  
+  .calendar-cell:hover {
+    transform: scale(1.2);
+  }
+  
+  .calendar-cell[data-intensity="0"] { background: var(--bg-2); }
+  .calendar-cell[data-intensity="1"] { background: color-mix(in oklch, var(--accent) 20%, var(--bg-2)); }
+  .calendar-cell[data-intensity="2"] { background: color-mix(in oklch, var(--accent) 40%, var(--bg-2)); }
+  .calendar-cell[data-intensity="3"] { background: color-mix(in oklch, var(--accent) 60%, var(--bg-2)); }
+  .calendar-cell[data-intensity="4"] { background: color-mix(in oklch, var(--accent) 80%, var(--bg-2)); }
+  .calendar-cell[data-intensity="5"] { background: var(--accent); }
+  
+  @media (max-width: 768px) {
+    .readiness-hero {
+      grid-template-columns: 1fr;
+      text-align: center;
+    }
+    
+    .readiness-ring-container {
+      margin: 0 auto;
+    }
+    
+    .fitness-metrics {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  /* Section 6: Upcoming Activities/Events */
+  .upcoming-section {
+    margin-bottom: var(--space-4);
+  }
+
+  .upcoming-grid {
+    display: grid;
+    grid-template-columns: 3fr 1fr;
+    gap: var(--space-3);
+  }
+
+  /* Hero Card Layout for Recent Activities (from original page) - COMPACT */
+  .activity-card-hero {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    margin-bottom: 8px;
+  }
+
+  .activity-card-hero:hover {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  .activity-card-wedge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 28px;
+    height: 28px;
+    background: var(--bg-2);
+    border-bottom-left-radius: 100%;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    z-index: 1;
+  }
+
+  .activity-card-wedge:hover {
+    background: var(--accent);
+  }
+
+  .activity-card-type {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 8px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 3px 6px;
+    border-radius: 3px;
+    margin-bottom: 6px;
+  }
+
+  .type-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+  }
+
+  .type-ride, .type-ride .type-dot { background: var(--accent); color: var(--bg-1); }
+  .type-run, .type-run .type-dot { background: var(--accent-2); color: var(--bg-1); }
+  .type-row, .type-row .type-dot { background: var(--accent-3); color: var(--bg-1); }
+  .type-cardio, .type-cardio .type-dot { background: var(--accent-4); color: var(--bg-1); }
+  .type-other { background: var(--bg-3); color: var(--text-2); }
+
+  .activity-card-name-hero {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-1);
+    margin-bottom: 8px;
+    line-height: 1.3;
+  }
+
+  .activity-card-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 8px 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .activity-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .activity-stat-value {
+    font-size: 13px;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--text-1);
+  }
+
+  .activity-stat-label {
+    font-size: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-3);
+  }
+
+  .activity-card-footer-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    font-size: 9px;
+    font-family: var(--font-mono);
+    color: var(--text-3);
+  }
+
+  .tss-val-hero {
+    font-weight: 600;
+    color: var(--text-2);
+  }
+
+  .week-plan-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 16px;
+    padding: var(--space-3);
+  }
+
+  .day-card {
+    background: var(--bg-2);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: var(--space-2);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    height: 160px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+
+  .day-card.today {
+    border-color: var(--accent);
+    border-width: 2px;
+  }
+
+  .day-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .day-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-2);
+  }
+
+  .workout-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-1);
+    line-height: 1.3;
+    flex: 1;
+    display: flex;
+    align-items: center;
+  }
+
+  .workout-bar {
+    background: var(--bg-3);
+    height: 40px;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+  }
+
+  .workout-bar-fill {
+    width: 100%;
+    transition: height 0.3s ease;
+  }
+
+  .workout-tss {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--text-2);
+    text-align: center;
+  }
+
+  .day-indicator {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .races-list {
+    padding: var(--space-3);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .race-item {
+    padding: var(--space-2);
+    background: var(--bg-2);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent-2);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+
+  .race-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-1);
+    margin-bottom: 4px;
+  }
+
+  .race-date {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--text-2);
+  }
+
+  .race-meta {
+    font-size: 10px;
+    color: var(--text-3);
+    margin-top: 4px;
+  }
+
+  .days-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    background: var(--accent);
+    color: var(--bg-1);
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  /* Section 7A: Combined HRV/Sleep Chart */
+  .health-chart-section {
+    margin-bottom: var(--space-3);
+  }
+
+  .health-combined-stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-3);
+    padding: var(--space-3);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .health-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .health-stat-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-3);
+  }
+
+  .health-stat-value {
+    font-size: 24px;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--text-1);
+  }
+  
+  .health-stat-sparkline {
+    width: 100%;
+    height: 40px;
+    margin-top: 4px;
+  }
+
+  .health-chart-wrapper {
+    padding: var(--space-3);
+    height: 240px;
+  }
+
+  /* Section 7B: Recovery Cards */
+  .recovery-section {
+    margin-bottom: var(--space-4);
+  }
+
+  .recovery-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-3);
+  }
+
+  .recovery-card {
+    background: var(--bg-1);
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .recovery-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .recovery-card-title {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-3);
+  }
+
+  .recovery-card-badge {
+    font-size: 9px;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: color-mix(in oklch, var(--accent) 15%, var(--bg-2));
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .recovery-card-delta {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+    color: var(--text-2);
+  }
+  
+  .recovery-card-delta.positive {
+    background: color-mix(in oklch, var(--accent) 12%, var(--bg-2));
+    color: var(--accent);
+  }
+  
+  .recovery-card-delta.negative {
+    background: color-mix(in oklch, #ef4444 12%, var(--bg-2));
+    color: #ef4444;
+  }
+
+  .recovery-card-main {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+
+  .recovery-card-value {
+    font-size: 52px;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--text-1);
+    line-height: 1;
+  }
+  
+  .recovery-card-unit {
+    font-size: 14px;
+    font-family: var(--font-mono);
+    font-weight: 500;
+    color: var(--text-3);
+    padding-bottom: 4px;
+  }
+
+  .recovery-card-stats {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--text-3);
+    line-height: 1.6;
+  }
+
+  .recovery-card-chart {
+    height: 140px;
+    margin-top: var(--space-2);
+  }
+
+  .recovery-card-chart canvas {
+    width: 100% !important;
+    height: 140px !important;
+  }
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+  }
+  
+  .recovery-table-bar-hrv {
+    background: linear-gradient(90deg, 
+      color-mix(in oklch, var(--accent) 40%, transparent),
+      var(--accent)
+    );
+  }
+  
+  .recovery-table-bar-sleep {
+    background: linear-gradient(90deg,
+      color-mix(in oklch, var(--accent-3) 40%, transparent),
+      var(--accent-3)
+    );
+  }
+  
+  .recovery-table-bar-rhr {
+    background: linear-gradient(90deg,
+      color-mix(in oklch, var(--accent-2) 40%, transparent),
+      var(--accent-2)
+    );
+  }
+
+  .recovery-table-value {
+    color: var(--text-2);
+    text-align: right;
+    font-weight: 500;
+  }
+
+  /* Section 8: Weekly Load */
+  .weekly-load-chart {
+    padding: var(--space-3);
+    height: 280px;
+  }
+
+  /* Section 9: Training Calendar */
+  .training-calendar {
+    padding: var(--space-3);
+  }
+
+  .calendar-grid-header {
+    display: grid;
+    grid-template-columns: 60px repeat(7, 1fr) 140px;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .cal-week-label-header,
+  .cal-day-header-new,
+  .cal-summary-header {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-3);
+    text-align: center;
+  }
+
+  .calendar-week-row {
+    display: grid;
+    grid-template-columns: 60px repeat(7, 1fr) 140px;
+    gap: 8px;
+    margin-bottom: 16px;
+    align-items: start;
+  }
+
+  .week-number {
+    font-size: 12px;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--text-2);
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .calendar-day-cell {
+    min-height: 90px;
+    padding: 8px;
+    border-radius: 6px;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 10px;
+    font-family: var(--font-mono);
+    color: var(--text-2);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+
+  .calendar-day-cell:hover {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  .calendar-day-cell.empty {
+    background: transparent;
+    border: 1px dashed var(--border);
+    cursor: default;
+    min-height: 50px;
+  }
+
+  .calendar-day-cell.empty:hover {
+    transform: none;
+    box-shadow: none;
+    border-color: var(--border);
+  }
+
+  .calendar-day-cell.today {
+    border-color: var(--accent);
+    border-width: 2px;
+  }
+
+  .calendar-day-cell.future {
+    opacity: 0.5;
+  }
+
+  .activity-type-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 8px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+    align-self: flex-start;
+  }
+
+  .activity-type-cycling { background: var(--accent); color: var(--bg-1); }
+  .activity-type-running { background: var(--accent-2); color: var(--bg-1); }
+  .activity-type-rowing { background: var(--accent-3); color: var(--bg-1); }
+  .activity-type-cardio { background: var(--accent-4); color: var(--bg-1); }
+  .activity-type-other { background: var(--bg-3); color: var(--text-2); }
+
+  .activity-name-cell {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-1);
+    line-height: 1.3;
+    flex: 1;
+    font-family: var(--font-sans);
+  }
+
+  .activity-stats-cell {
+    font-size: 9px;
+    font-family: var(--font-mono);
+    color: var(--text-3);
+    margin-top: auto;
+  }
+
+  .calendar-day-cell[data-intensity="1"] {
+    border-left: 3px solid color-mix(in oklch, var(--accent) 30%, var(--bg-2));
+  }
+
+  .calendar-day-cell[data-intensity="2"] {
+    border-left: 3px solid color-mix(in oklch, var(--accent) 50%, var(--bg-2));
+  }
+
+  .calendar-day-cell[data-intensity="3"] {
+    border-left: 3px solid color-mix(in oklch, var(--accent) 70%, var(--bg-2));
+  }
+
+  .calendar-day-cell[data-intensity="4"] {
+    border-left: 3px solid color-mix(in oklch, var(--accent) 90%, var(--bg-2));
+  }
+
+  .calendar-day-cell[data-intensity="5"] {
+    border-left: 3px solid var(--accent);
+  }
+
+  .week-summary {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--text-2);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+
+  .week-summary-tss {
+    font-weight: 600;
+    color: var(--text-1);
+    font-size: 13px;
+  }
+
+  .week-summary-label {
+    font-size: 9px;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* Section 10: Heatmap Legend */
+  .heatmap-legend {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .heatmap-legend-label {
+    font-size: 10px;
+    color: var(--text-3);
+  }
+
+  .heatmap-legend-cells {
+    display: flex;
+    gap: 3px;
+  }
+
+  .heatmap-cell-sample {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+  }
+
+  .heatmap-cell-sample[data-level="0"] {
+    background: var(--bg-2);
+  }
+
+  .heatmap-cell-sample[data-level="1"] {
+    background: color-mix(in oklch, var(--accent) 20%, var(--bg-2));
+  }
+
+  .heatmap-cell-sample[data-level="2"] {
+    background: color-mix(in oklch, var(--accent) 40%, var(--bg-2));
+  }
+
+  .heatmap-cell-sample[data-level="3"] {
+    background: color-mix(in oklch, var(--accent) 60%, var(--bg-2));
+  }
+
+  .heatmap-cell-sample[data-level="4"] {
+    background: color-mix(in oklch, var(--accent) 80%, var(--bg-2));
+  }
+
+  .heatmap-cell-sample[data-level="5"] {
+    background: var(--accent);
+  }
+
+  /* Section 11: Power Stats Ribbon */
+  /* Curve Toggle */
+  .curve-toggle {
+    display: flex;
+    gap: 8px;
+    background: var(--bg-2);
+    padding: 4px;
+    border-radius: 6px;
+  }
+
+  .curve-toggle-btn {
+    padding: 6px 16px;
+    border: none;
+    background: transparent;
+    color: var(--text-3);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .curve-toggle-btn:hover {
+    background: var(--bg-3);
+    color: var(--text-2);
+  }
+
+  .curve-toggle-btn.active {
+    background: var(--accent);
+    color: var(--bg-1);
+  }
+
+  .curve-chart-wrapper {
+    position: relative;
+    min-height: 350px;
+  }
+
+  .curve-chart-container {
+    padding: var(--space-4);
+    height: 350px;
+  }
+
+  .power-stats-ribbon {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border-top: 1px solid var(--border);
+  }
+
+  .power-stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .power-stat-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-3);
+  }
+
+  .power-stat-value {
+    font-size: 20px;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--text-1);
+  }
+
+  .pr-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    background: var(--accent);
+    color: var(--bg-1);
+    border-radius: 4px;
+    font-size: 9px;
+    font-weight: 700;
+    margin-left: 4px;
+  }
+

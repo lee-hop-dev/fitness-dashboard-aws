@@ -1,15 +1,70 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark" data-accent="lime" data-density="regular">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Activity — Training OS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="stylesheet" href="assets/css/design-tokens.css">
+<link rel="stylesheet" href="assets/css/design-system.css">
+<link rel="stylesheet" href="assets/css/layout.css">
 <link rel="stylesheet" href="assets/css/main.css?v=20260320-5">
+<style>
+/* ── NEW ACTIVITY — Design System Theme Override ──────────────────────────
+   Maps main.css legacy variables → design-tokens.css values.
+   Applies lime accent, Geist typography, darker surfaces.
+   Zero structural changes — pure variable remapping.
+   ─────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Typography: Geist replaces Syne + DM Mono */
+  --font-display: var(--font-sans);
+  --font-mono:    "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Surfaces: design token dark palette */
+  --bg-base:       var(--bg);
+  --bg-surface:    var(--bg-1);
+  --bg-elevated:   var(--bg-2);
+  --bg-hover:      var(--bg-3);
+  --bg-active:     var(--bg-3);
+
+  /* Borders: design token lines */
+  --border:        var(--line);
+  --border-bright: var(--line-2);
+
+  /* Text: design token foreground scale */
+  --text-primary:   var(--fg);
+  --text-secondary: var(--fg-2);
+  --text-muted:     var(--fg-3);
+
+  /* Accent: lime replaces cyan */
+  --accent:        oklch(0.86 0.20 130);
+  --accent-dim:    oklch(0.86 0.20 130 / 0.10);
+  --accent-border: oklch(0.86 0.20 130 / 0.30);
+  --accent-glow:   0 0 24px oklch(0.86 0.20 130 / 0.35);
+
+  /* Sport colours: unchanged (green/red/orange/purple/yellow) */
+  --green:    oklch(0.82 0.18 150);
+  --green-dim: oklch(0.82 0.18 150 / 0.10);
+  --red:      oklch(0.72 0.20 25);
+  --orange:   oklch(0.76 0.19 50);
+  --orange-dim: oklch(0.76 0.19 50 / 0.10);
+  --purple:   oklch(0.72 0.18 290);
+  --yellow:   oklch(0.84 0.18 80);
+
+  /* Radii: match design tokens */
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r);
+  --transition: var(--d-fast) var(--ease-out);
+}
+
+/* Chart defaults: Geist Mono */
+</style>
 <script src="assets/js/theme-toggle.js"></script>
 <style>
 /* ============================================================
@@ -47,7 +102,7 @@
 .rl-breadcrumb .bc-id    { color: var(--text-secondary); }
 .rl-title {
   font-family: var(--font-display); font-size: 28px; font-weight: 800;
-  letter-spacing: -1px; color: #ffffff; margin: 0 0 4px; line-height: 1.1;
+  letter-spacing: -1px; color: var(--fg); margin: 0 0 4px; line-height: 1.1;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .rl-meta { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
@@ -79,7 +134,7 @@
   border: none; border-radius: var(--radius-sm);
   cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
   transition: opacity var(--transition);
-  box-shadow: 0 0 12px rgba(0,229,255,0.3);
+  box-shadow: 0 0 12px oklch(0.86 0.20 130 / 0.30);
 }
 .rl-btn-kudos:hover { opacity: .88; }
 
@@ -122,7 +177,7 @@
 .ah-num-row { display: flex; align-items: baseline; gap: 5px; margin-bottom: 5px; }
 .ah-num {
   font-size: 34px; font-weight: 800; font-family: var(--font-mono);
-  letter-spacing: -1.5px; line-height: 1; color: #ffffff; white-space: nowrap;
+  letter-spacing: -1.5px; line-height: 1; color: var(--fg); white-space: nowrap;
 }
 .ah-unit { font-size: 13px; font-weight: 400; font-family: var(--font-mono); color: var(--text-muted); padding-bottom: 3px; }
 #act-hero .ah-cell.c-accent .ah-num { color: var(--accent); }
@@ -189,25 +244,29 @@
 .rl-kv-table { padding: 0 18px 18px; flex: 1; display: flex; flex-direction: column; }
 .rl-kv-table .act-stats-grid { display: contents; }
 .rl-kv-table .asg-tile {
-  display: flex !important; justify-content: space-between !important; align-items: baseline !important;
-  padding: 8px 0 !important; border-bottom: 1px solid var(--border) !important;
+  display: flex !important; justify-content: space-between !important; align-items: center !important;
+  padding: 9px 10px !important; border-bottom: none !important;
   flex-direction: row !important; gap: 0 !important;
+  border-radius: 6px !important;
+  margin-bottom: 2px !important;
 }
-.rl-kv-table .asg-tile:last-child { border-bottom: none !important; }
+.rl-kv-table .asg-tile:nth-child(odd)  { background: rgba(255,255,255,0.03) !important; }
+.rl-kv-table .asg-tile:nth-child(even) { background: transparent !important; }
+.rl-kv-table .asg-tile:last-child { margin-bottom: 0 !important; }
 .rl-kv-table .asg-val {
   font-family: var(--font-mono) !important; font-variant-numeric: tabular-nums !important;
-  font-size: 12px !important; font-weight: 500 !important; color: var(--text-primary) !important;
+  font-size: 13px !important; font-weight: 600 !important; color: var(--fg) !important;
   order: 2;
 }
 .rl-kv-table .asg-val.accent { color: var(--accent)  !important; }
-.rl-kv-table .asg-val.green  { color: var(--green)   !important; }
-.rl-kv-table .asg-val.red    { color: var(--red)     !important; }
-.rl-kv-table .asg-val.yellow { color: var(--yellow)  !important; }
-.rl-kv-table .asg-val.orange { color: var(--orange)  !important; }
-.rl-kv-table .asg-val.purple { color: var(--purple)  !important; }
+.rl-kv-table .asg-val.green  { color: oklch(0.82 0.18 150) !important; }
+.rl-kv-table .asg-val.red    { color: oklch(0.72 0.22 25)  !important; }
+.rl-kv-table .asg-val.yellow { color: oklch(0.84 0.18 80)  !important; }
+.rl-kv-table .asg-val.orange { color: oklch(0.82 0.18 65)  !important; }
+.rl-kv-table .asg-val.purple { color: oklch(0.76 0.18 290) !important; }
 .rl-kv-table .asg-lbl {
-  font-family: var(--font-mono) !important; font-size: 10px !important;
-  letter-spacing: 1px !important; text-transform: uppercase; color: var(--text-muted) !important;
+  font-family: var(--font-mono) !important; font-size: 10.5px !important;
+  letter-spacing: 0.06em !important; text-transform: uppercase; color: var(--fg-2) !important;
   margin: 0 !important; order: 1;
 }
 .rl-kv-table .act-stats-head { display: none !important; }
@@ -231,7 +290,7 @@
 .rl-row-primary { display: flex; align-items: baseline; gap: 5px; margin-top: 10px; }
 .rl-row-num  {
   font-family: var(--font-mono); font-variant-numeric: tabular-nums;
-  font-size: 52px; font-weight: 700; letter-spacing: -2.2px; line-height: 1; color: #ffffff;
+  font-size: 52px; font-weight: 700; letter-spacing: -2.2px; line-height: 1; color: var(--fg);
 }
 .rl-row-unit { font-family: var(--font-mono); font-size: 13px; color: var(--text-muted); align-self: flex-end; padding-bottom: 5px; }
 .rl-row-note { font-family: var(--font-mono); font-size: 11px; margin-top: 4px; color: var(--text-muted); }
@@ -439,12 +498,275 @@
 @media (max-width: 520px) {
   .rl-title { font-size: 20px; }
 }
+
+/* ══ FLIGHT DECK HERO ══════════════════════════════════════════
+   New activity hero: TSS ring · identity + stat strip · readings
+   Replaces old rl-header + #act-hero cockpit card grid.
+   All data still populated by buildFlightDeck() + rlPatch().
+   ─────────────────────────────────────────────────────────── */
+
+/* Breadcrumb nav row above hero */
+.fd-nav {
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 0 14px;
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--fg-3);
+  flex-wrap: wrap;
+}
+.fd-back {
+  display: inline-flex; align-items: center; gap: 5px;
+  color: var(--fg-3); text-decoration: none;
+  transition: color var(--d-fast) var(--ease-out);
+}
+.fd-back:hover { color: var(--accent); }
+.fd-back::before { content: '←'; }
+.fd-crumb-sep { color: var(--fg-4); }
+.fd-crumb-sport { color: var(--accent); text-transform: uppercase; letter-spacing: 0.1em; }
+.fd-crumb-id { color: var(--fg-4); }
+
+/* Prev / Next activity row */
+.fd-prevnext {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 0 10px;
+  font-family: var(--font-mono); font-size: 10px; color: var(--fg-4);
+}
+
+/* Hero card */
+.fd-hero {
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 26px 28px 22px;
+  margin-bottom: 14px;
+  position: relative;
+  overflow: hidden;
+}
+/* Soft radial accent glow in background */
+.fd-hero::before {
+  content: '';
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 55% at 95% 10%,
+      color-mix(in oklch, var(--accent) 10%, transparent),
+      transparent 70%),
+    radial-gradient(ellipse 50% 40% at 5% 90%,
+      color-mix(in oklch, oklch(0.80 0.16 230) 7%, transparent),
+      transparent 70%);
+}
+
+/* Three-column grid: ring · identity · readings */
+.fd-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr) auto;
+  gap: 34px;
+  align-items: center;
+}
+@media (max-width: 1180px) {
+  .fd-grid { grid-template-columns: auto minmax(0,1fr); }
+  .fd-readings { grid-column: 1 / -1; flex-direction: row !important; flex-wrap: wrap; }
+}
+@media (max-width: 720px) {
+  .fd-grid { grid-template-columns: 1fr; }
+}
+
+/* ── A. Ring ── */
+.fd-ring-wrap {
+  width: 158px; height: 158px;
+  position: relative;
+  display: grid; place-items: center;
+  flex-shrink: 0;
+}
+.fd-ring-svg { width: 100%; height: 100%; }
+.fd-ring-center {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  /* Inset slightly inside the 11px stroke so text never clips the arc */
+  padding: 22px;
+}
+.fd-ring-inner {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 3px;
+  width: 100%;
+}
+.fd-ring-num {
+  font-family: var(--font-mono);
+  font-size: 32px; font-weight: 600;
+  letter-spacing: -0.03em; line-height: 1;
+  color: var(--fg);
+  text-align: center;
+}
+.fd-ring-sub {
+  font-family: var(--font-mono);
+  font-size: 9px; font-weight: 500;
+  color: var(--fg-2);
+  text-transform: uppercase; letter-spacing: 0.10em;
+  text-align: center;
+  line-height: 1;
+}
+.fd-ring-if {
+  font-family: var(--font-mono);
+  font-size: 11px; font-weight: 700;
+  color: var(--fg);
+  letter-spacing: 0.04em;
+  text-align: center;
+  line-height: 1;
+  margin-top: 1px;
+}
+.fd-ring-arc {
+  transition: stroke-dasharray 1.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+              stroke 0.6s ease;
+  filter: drop-shadow(0 0 6px var(--fd-ring-color, var(--accent)));
+}
+
+/* ── B. Identity + stat strip ── */
+.fd-identity { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.fd-meta-row {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+  font-size: 11px;
+}
+.fd-glyph {
+  width: 26px; height: 26px; border-radius: 8px;
+  display: grid; place-items: center;
+  font-family: var(--font-mono); font-size: 13px;
+  background: color-mix(in oklch, var(--accent) 10%, transparent);
+  border: 1px solid color-mix(in oklch, var(--accent) 30%, transparent);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.fd-glyph.run {
+  background: color-mix(in oklch, oklch(0.76 0.19 30) 10%, transparent);
+  border-color: color-mix(in oklch, oklch(0.76 0.19 30) 30%, transparent);
+  color: oklch(0.76 0.19 30);
+}
+.fd-eyebrow {
+  font-family: var(--font-mono); font-size: 10.5px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--accent);
+}
+.fd-eyebrow.run { color: oklch(0.76 0.19 30); }
+.fd-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 7px; border-radius: 4px;
+  background: var(--bg-2); border: 1px solid var(--line);
+  color: var(--fg-3); font-size: 10.5px; font-family: var(--font-mono);
+}
+.fd-live {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--font-mono); font-size: 10.5px;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--accent);
+}
+.fd-live::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent);
+  animation: fd-pulse 1.4s ease-in-out infinite;
+  box-shadow: 0 0 8px var(--accent);
+}
+@keyframes fd-pulse {
+  0%,100% { opacity:1; transform:scale(1); }
+  50%     { opacity:.6; transform:scale(.85); }
+}
+
+.fd-title {
+  font-size: 33px; font-weight: 500;
+  letter-spacing: -0.03em; line-height: 1.02;
+  color: var(--fg); margin: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* Stat strip */
+.fd-statstrip {
+  display: flex; flex-wrap: wrap;
+  gap: 18px 26px; align-items: baseline;
+}
+.fd-bigstat { display: flex; flex-direction: column; gap: 5px; }
+.fd-bigstat .l {
+  font-size: 10px; color: var(--fg-2);
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
+.fd-bigstat .v {
+  font-family: var(--font-mono); font-size: 26px;
+  letter-spacing: -0.02em; line-height: 1; color: var(--fg);
+}
+.fd-bigstat .v.hl { color: var(--accent); }
+.fd-bigstat.run .v.hl { color: oklch(0.76 0.19 30); }
+.fd-bigstat .v .u {
+  font-size: 11px; color: var(--fg-3); margin-left: 3px; letter-spacing: 0;
+}
+
+/* Actions row */
+.fd-actions {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  margin-top: 4px;
+}
+.fd-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 10px; border-radius: var(--r-sm);
+  border: 1px solid var(--line-2);
+  background: var(--bg-2); color: var(--fg-2);
+  font-family: var(--font-mono); font-size: 11px;
+  text-decoration: none;
+  transition: all var(--d-fast) var(--ease-out);
+}
+.fd-btn:hover { background: var(--bg-3); color: var(--fg); border-color: var(--line-3); }
+.fd-btn.accent {
+  background: color-mix(in oklch, var(--accent) 12%, transparent);
+  border-color: color-mix(in oklch, var(--accent) 30%, transparent);
+  color: var(--accent);
+}
+
+/* ── C. Readings column ── */
+.fd-readings {
+  display: flex; flex-direction: column; gap: 10px; min-width: 224px;
+}
+.fd-reading {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; padding: 9px 13px; border-radius: 10px;
+  background: color-mix(in oklch, var(--fg) 3%, transparent);
+  border: 1px solid var(--line);
+  flex: 1;
+}
+.fd-reading-left { display: flex; flex-direction: column; gap: 2px; }
+.fd-reading-lbl {
+  font-size: 10.5px; color: var(--fg-4);
+  text-transform: uppercase; letter-spacing: 0.08em;
+}
+.fd-reading-val {
+  font-family: var(--font-mono); font-size: 22px;
+  letter-spacing: -0.02em; line-height: 1; color: var(--fg);
+}
+.fd-reading-badge {
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+  padding: 3px 7px; border-radius: 4px; white-space: nowrap;
+}
+.fd-reading-badge.lime {
+  background: color-mix(in oklch, var(--accent) 14%, transparent);
+  border: 1px solid color-mix(in oklch, var(--accent) 30%, transparent);
+  color: var(--accent);
+}
+.fd-reading-badge.coral {
+  background: color-mix(in oklch, oklch(0.76 0.19 30) 14%, transparent);
+  border: 1px solid color-mix(in oklch, oklch(0.76 0.19 30) 30%, transparent);
+  color: oklch(0.76 0.19 30);
+}
+.fd-reading-badge.ice {
+  background: color-mix(in oklch, oklch(0.80 0.16 230) 14%, transparent);
+  border: 1px solid color-mix(in oklch, oklch(0.80 0.16 230) 30%, transparent);
+  color: oklch(0.80 0.16 230);
+}
+
+.fd-divider { height: 1px; background: var(--line); margin: 2px 0 0; }
+
+/* Keep old act-hero hidden — JS still builds it but it's not shown */
+#act-hero { display: none !important; }
 </style>
 </head>
 <body>
 <div class="app">
 
-  <!-- SIDEBAR (unchanged) -->
+  <!-- SIDEBAR -->
   <nav class="sidebar">
     <div class="sidebar-brand">
       <span class="brand-initials">LH</span>
@@ -452,7 +774,7 @@
     </div>
     <ul class="nav-links">
       <li class="nav-item"><a href="index.html"><span class="nav-icon">◈</span><span>Overview</span></a></li>
-      <li class="nav-item"><a href="cycling.html"><span class="nav-icon">⬡</span><span>Cycling</span></a></li>
+      <li class="nav-item active"><a href="cycling.html"><span class="nav-icon">⬡</span><span>Cycling</span></a></li>
       <li class="nav-item"><a href="running.html"><span class="nav-icon">▷</span><span>Running</span></a></li>
       <li class="nav-item"><a href="rowing.html"><span class="nav-icon">⊕</span><span>Rowing</span></a></li>
       <li class="nav-item"><a href="cardio.html"><span class="nav-icon">◎</span><span>Cardio</span></a></li>
@@ -496,35 +818,71 @@
     <!-- ══ ACTIVITY CONTENT ═══════════════════════════════════ -->
     <div id="activity-content" class="hidden">
 
-      <!-- 1. HEADER ─────────────────────────────────────────── -->
-      <header class="rl-header">
-        <div class="rl-header-left">
-          <!-- Breadcrumb: sport-badge ID kept for JS to set sport text/class -->
-          <div class="rl-breadcrumb">
-            <span class="bc-sport" id="sport-badge">⬡ CYCLING</span>
-            <span class="bc-sep">·</span>ACTIVITY<span class="bc-sep">·</span>
-            <span class="bc-id" id="activity-id-crumb">—</span>
-          </div>
-          <h1 class="rl-title" id="activity-name">—</h1>
-          <div class="rl-meta" id="activity-date">—</div>
-        </div>
-        <div class="rl-header-right">
-          <!-- Zone + TSS chips (populated by post-render JS patch) -->
-          <span class="rl-chip chip-zone" id="hdr-zone-chip" style="display:none"></span>
-          <span class="rl-chip chip-tss"  id="hdr-tss-chip"  style="display:none"></span>
-          <!-- STRAVA ghost button (href set by JS) -->
-          <a class="rl-btn-ghost" id="strava-link-hdr" href="#" target="_blank" rel="noopener" style="display:none">STRAVA ↗</a>
-          <!-- INTERVALS ghost button (href set by JS) -->
-          <a class="rl-btn-ghost" id="intervals-link-hdr" href="#" target="_blank" rel="noopener" style="display:none">INTERVALS ↗</a>
-          <!-- KUDOS solid button -->
-          <button class="rl-btn-kudos">❤ KUDOS <span id="kudos-count">—</span></button>
-        </div>
-      </header>
+      <!-- ── BREADCRUMB NAV ─────────────────────────────────── -->
+      <div class="fd-nav">
+        <a class="fd-back" id="fd-back-link" href="cycling.html">Cycling</a>
+        <span class="fd-crumb-sep">/</span>
+        <span class="fd-crumb-sport" id="sport-badge">⬡ Cycling</span>
+        <span class="fd-crumb-sep">·</span>
+        <span class="fd-crumb-id" id="activity-id-crumb">—</span>
+      </div>
 
-      <!-- 2. HERO CARDS ─────────────────────────────────────
-           buildHero() renders Intervals-style cards into this div.
-           Each card: label · delta badge · big num + unit · subtitle · sparkline. -->
-      <div id="act-hero"></div>
+      <!-- ── FLIGHT DECK HERO ────────────────────────────────── -->
+      <div class="fd-hero" id="fd-hero">
+        <div class="fd-grid">
+
+          <!-- A. TSS Ring -->
+          <div class="fd-ring-wrap" id="fd-ring-wrap">
+            <svg class="fd-ring-svg" viewBox="0 0 158 158" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="79" cy="79" r="68" stroke="rgba(125,125,125,0.14)" stroke-width="11" fill="none"/>
+              <circle class="fd-ring-arc" id="fd-ring-arc"
+                cx="79" cy="79" r="68"
+                stroke="#4a9eff"
+                stroke-width="11"
+                stroke-linecap="round" fill="none"
+                transform="rotate(-90 79 79)"
+                stroke-dasharray="0 427"
+              />
+            </svg>
+            <div class="fd-ring-center">
+              <div class="fd-ring-inner">
+                <div class="fd-ring-num" id="fd-ring-num">—</div>
+                <div class="fd-ring-sub" id="fd-ring-sub">TSS</div>
+                <div class="fd-ring-if"  id="fd-ring-if"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- B. Identity + stat strip -->
+          <div class="fd-identity">
+            <div class="fd-meta-row">
+              <div class="fd-glyph" id="fd-glyph">⬡</div>
+              <span class="fd-eyebrow" id="fd-eyebrow">CYCLING</span>
+              <span class="fd-badge" id="fd-date-badge">—</span>
+              <span class="fd-live">SYNCED</span>
+            </div>
+            <h1 class="fd-title" id="activity-name">—</h1>
+            <div class="fd-statstrip" id="fd-statstrip"></div>
+            <div class="fd-actions">
+              <a class="fd-btn" id="strava-link-hdr" href="#" target="_blank" rel="noopener" style="display:none">↗ Strava</a>
+              <a class="fd-btn" id="intervals-link-hdr" href="#" target="_blank" rel="noopener" style="display:none">↗ intervals.icu</a>
+              <span class="fd-btn" id="fd-kudos" style="display:none">❤ <span id="kudos-count">—</span></span>
+            </div>
+          </div>
+
+          <!-- C. Readings (peak power / variability / HR) -->
+          <div class="fd-readings" id="fd-readings"></div>
+
+        </div><!-- /fd-grid -->
+      </div><!-- /fd-hero -->
+
+      <!-- Hidden elements for JS compat (rlPatch writes to these IDs) -->
+      <div id="act-hero" style="display:none"></div>
+      <div style="display:none">
+        <span id="hdr-zone-chip"></span>
+        <span id="hdr-tss-chip"></span>
+        <div id="activity-date"></div>
+      </div>
 
       <!-- 3. ELEVATION PROFILE (full width) ─────────────────── -->
       <div class="rl-elev-row" id="elevation-section">
@@ -772,16 +1130,36 @@
 <script>
 'use strict';
 
+/* ── DESIGN SYSTEM ACCENT (lime) ── */
+/* Resolved from --accent: oklch(0.86 0.20 130) */
+const DS_ACCENT      = '#a8d14f';        /* lime — main stroke / fill */
+const DS_ACCENT_DIM  = 'rgba(168,209,79,0.12)';
+const DS_ACCENT_LINE = 'rgba(168,209,79,0.35)';
+const DS_ACCENT_MID  = 'rgba(168,209,79,0.55)';
+
 /* ── CONSTANTS ── */
 const API_BASE = 'https://j2zxz92vd4.execute-api.eu-west-2.amazonaws.com/prod';
 const CF_BASE  = '';
 
-const POWER_ZONE_COLOURS = ['#9ca3af','#60a5fa','#34d399','#fbbf24','#f97316','#ef4444'];
-const HR_ZONE_COLOURS    = ['#9ca3af','#60a5fa','#34d399','#fbbf24','#ef4444'];
+const POWER_ZONE_COLOURS = [
+  'oklch(0.55 0.05 250)',   /* Z1 slate */
+  'oklch(0.68 0.10 200)',   /* Z2 teal */
+  'oklch(0.78 0.16 130)',   /* Z3 green */
+  'oklch(0.80 0.18 75)',    /* Z4 amber */
+  'oklch(0.72 0.22 25)',    /* Z5 coral */
+  'oklch(0.60 0.25 0)'      /* Z6 red */
+];
+const HR_ZONE_COLOURS = [
+  'oklch(0.55 0.05 250)',   /* Z1 slate */
+  'oklch(0.68 0.10 200)',   /* Z2 teal */
+  'oklch(0.78 0.16 130)',   /* Z3 green */
+  'oklch(0.80 0.18 75)',    /* Z4 amber */
+  'oklch(0.72 0.22 25)'     /* Z5 coral */
+];
 const POWER_ZONE_NAMES   = ['Z1 Active Recovery','Z2 Endurance','Z3 Tempo','Z4 Threshold','Z5 VO2 Max','Z6 Anaerobic'];
 const HR_ZONE_NAMES      = ['Z1 Recovery','Z2 Aerobic','Z3 Tempo','Z4 Threshold','Z5 Maximum'];
 
-Chart.defaults.color = '#b8c0d0';
+Chart.defaults.color = 'var(--fg-3)';
 Chart.defaults.font.family = "var(--font-mono)";
 Chart.defaults.font.size = 10;
 
@@ -933,7 +1311,7 @@ const hLinesPlugin = {
       ctx.setLineDash([]);
       if (line.label) {
         ctx.fillStyle = line.color || 'rgba(255,255,255,0.6)';
-        ctx.font = '700 9px "DM Mono", monospace';
+        ctx.font = '700 9px "Geist Mono", monospace';
         ctx.textAlign = 'right';
         ctx.textBaseline = 'bottom';
         ctx.fillText(line.label, chartArea.right - 4, y - 2);
@@ -973,7 +1351,7 @@ const vLinesPlugin = {
       ctx.setLineDash([]);
       if (line.label) {
         ctx.fillStyle = line.labelColor || 'rgba(200,204,216,0.7)';
-        ctx.font = '700 9px "DM Mono", monospace';
+        ctx.font = '700 9px "Geist Mono", monospace';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         ctx.fillText(line.label, x, chartArea.top + 2);
@@ -1241,7 +1619,7 @@ function initMap(latlng, powerArr, hrArr, sport, ftp, hrmax) {
   }
 
   _crosshairMarker = L.circleMarker(_decimatedLatlng[0],{
-    radius:6,color:'#fff',fillColor:'#00e5ff',fillOpacity:1,weight:2
+    radius:6,color:'#fff',fillColor:DS_ACCENT,fillOpacity:1,weight:2
   }).addTo(_leafletMap);
 
   const legendEl = document.getElementById('zone-legend');
@@ -1448,7 +1826,7 @@ function buildHero(data) {
 
   // Sparkline colour map (matches card colour class)
   const sparkColors = {
-    'c-accent': { stroke:'#00e5ff', fill:'rgba(0,229,255,0.12)'   },
+    'c-accent': { stroke:DS_ACCENT, fill:DS_ACCENT_DIM   },
     'c-green':  { stroke:'#00ff87', fill:'rgba(0,255,135,0.12)'   },
     'c-red':    { stroke:'#ef4444', fill:'rgba(239,68,68,0.10)'   },
     'c-yellow': { stroke:'#ffd600', fill:'rgba(255,214,0,0.10)'   },
@@ -1705,7 +2083,7 @@ function buildElevationChart(data, ftp, hrmax) {
 
   const METRICS = [
     {id:'elev', lbl:'Elevation', color:'rgba(34,197,94,0.7)', key:null,              yId:'yElev', fill:'rgba(34,197,94,0.12)', always:true},
-    {id:'power',lbl:'Power',     color:'#00e5ff',             key:'watts',           yId:'yR1',   show:isCyc||!!s.watts?.length},
+    {id:'power',lbl:'Power',     color:DS_ACCENT,             key:'watts',           yId:'yR1',   show:isCyc||!!s.watts?.length},
     {id:'pace', lbl:isCyc?'Speed':'Pace', color:'#fbbf24',   key:'velocity_smooth', yId:'yR4',   show:true, reverse:isRun},
     {id:'hr',   lbl:'HR',        color:'#ef4444',             key:'heartrate',       yId:'yR2',   show:true},
     {id:'cad',  lbl:isCyc?'Cadence':isRun?'Cadence':'S/Rate',color:'#a78bfa',      key:'cadence',yId:'yR3',  show:true},
@@ -1760,16 +2138,16 @@ function buildElevationChart(data, ftp, hrmax) {
         afterFit: axis => { axis.width = 56; }}
     };
     if(active['power']) sc.yR1={position:'right',grid:{display:false},border:{display:false},
-      ticks:{maxTicksLimit:4,color:'var(--accent)',callback:v=>Math.round(v)+'W'},
+      ticks:{maxTicksLimit:4,color:DS_ACCENT,callback:v=>Math.round(v)+'W'},
       afterFit: axis => { axis.width = 56; }};
     if(active['hr'])    sc.yR2={position:'right',grid:{display:false},border:{display:false},
-      ticks:{maxTicksLimit:4,color:'var(--red)',callback:v=>Math.round(v)},
+      ticks:{maxTicksLimit:4,color:'oklch(0.72 0.20 25)',callback:v=>Math.round(v)},
       afterFit: axis => { axis.width = 56; }};
     if(active['cad'])   sc.yR3={position:'right',grid:{display:false},border:{display:false},
-      ticks:{maxTicksLimit:4,color:'var(--purple)',callback:v=>Math.round(v)},
+      ticks:{maxTicksLimit:4,color:'oklch(0.72 0.18 290)',callback:v=>Math.round(v)},
       afterFit: axis => { axis.width = 56; }};
     if(active['pace'])  sc.yR4={position:'right',reverse:isRun,grid:{display:false},border:{display:false},
-      ticks:{maxTicksLimit:4,color:'var(--orange)',
+      ticks:{maxTicksLimit:4,color:'oklch(0.76 0.19 50)',
         callback:v=>isRun?`${Math.floor(v)}:${String(Math.round((v%1)*60)).padStart(2,'0')}`:v.toFixed(0)+' km/h'},
       afterFit: axis => { axis.width = 56; }};
     return sc;
@@ -1886,7 +2264,7 @@ async function buildPrimaryTrace(data, ftp, hrmax) {
         grid: { color: 'rgba(20,20,20,0.07)' },
         border: { color: 'rgba(20,20,20,0.1)' },
         ticks: {
-          maxTicksLimit: 5, color: '#0aa876',
+          maxTicksLimit: 5, color: 'oklch(0.82 0.18 150)',
           callback: v => `${Math.floor(v)}:${String(Math.round((v%1)*60)).padStart(2,'0')}`
         },
         afterFit: axis => { axis.width = 56; }
@@ -1925,13 +2303,13 @@ async function buildPrimaryTrace(data, ftp, hrmax) {
       hLines.push({ y: ftp, color: 'rgba(255,214,0,0.55)', label: `FTP ${Math.round(ftp)}W`, dash: [6, 4] });
     }
     if (data.icu_average_watts != null) {
-      hLines.push({ y: data.icu_average_watts, color: 'rgba(0,229,255,0.35)', label: 'AVG', dash: [4, 4] });
+      hLines.push({ y: data.icu_average_watts, color: DS_ACCENT_LINE, label: 'AVG', dash: [4, 4] });
     }
 
     const chart = makeChart('chart-primary', [{
       label: 'Power',
       data: dec.time.map((t, i) => ({ x: t, y: dec.data[i] ?? null })),
-      borderColor: zc ? 'transparent' : '#00e5ff',
+      borderColor: zc ? 'transparent' : DS_ACCENT,
       _zoneColors: zc,
       backgroundColor: 'transparent', fill: true,
       _gradientTop: 'rgba(0,255,135,0.35)',
@@ -1942,7 +2320,7 @@ async function buildPrimaryTrace(data, ftp, hrmax) {
         position: 'left',
         grid: { color: 'rgba(255,255,255,0.04)' },
         border: { color: 'rgba(255,255,255,0.08)' },
-        ticks: { maxTicksLimit: 5, color: '#00e5ff', callback: v => Math.round(v) + 'W' },
+        ticks: { maxTicksLimit: 5, color: DS_ACCENT, callback: v => Math.round(v) + 'W' },
         afterFit: axis => { axis.width = 56; }
       }
     }, time);
@@ -1952,7 +2330,7 @@ async function buildPrimaryTrace(data, ftp, hrmax) {
     }
 
     await buildDurationCurve('chart-curve', 'power', s.watts, ftp, 'W',
-      v => Math.round(v) + 'W', '#00e5ff');
+      v => Math.round(v) + 'W', DS_ACCENT);
   }
 }
 
@@ -2343,7 +2721,7 @@ function buildCadenceSpeed(data) {
       y: {
         grid: { color: 'rgba(255,255,255,0.04)' },
         border: { color: 'rgba(255,255,255,0.08)' },
-        ticks: { maxTicksLimit: 5, color: '#a78bfa', callback: v => Math.round(v) },
+        ticks: { maxTicksLimit: 5, color: 'oklch(0.72 0.18 290)', callback: v => Math.round(v) },
         afterFit: axis => { axis.width = 56; }
       }
     }, dec.time);
@@ -2382,7 +2760,7 @@ function buildCadenceSpeed(data) {
       borderWidth: 1.5, pointRadius: 0, tension: 0
     }], {
       y: {
-        ticks: { maxTicksLimit: 5, color: '#fbbf24', callback: v => v.toFixed(0) + ' km/h' },
+        ticks: { maxTicksLimit: 5, color: 'oklch(0.84 0.18 80)', callback: v => v.toFixed(0) + ' km/h' },
         grid: { color: 'rgba(255,255,255,0.04)' },
         border: { color: 'rgba(255,255,255,0.08)' },
         afterFit: axis => { axis.width = 56; }
@@ -2720,6 +3098,225 @@ function buildLaps(laps, sport, ftp, hrmax, totalWorkKj) {
   }).join('');
 }
 
+/* ═══════════════════════════════════════════════════════════
+   FLIGHT DECK HERO BUILDER
+   Populates the new hero: TSS ring arc, stat strip, readings.
+   All values from existing stream data — no new data fields.
+   Called once from init() after data is loaded.
+   ─────────────────────────────────────────────────────────── */
+function buildFlightDeck(data, ftp, hrmax) {
+  const sport  = data.sport_type || '';
+  const isCyc  = isCycling(sport);
+  const isRun  = isRunning(sport);
+  const s      = data.streams || {};
+
+  // ── Ring: TSS as centre number, IF/rIF drives arc fill ───
+  const tss = data.icu_training_load != null ? Math.round(data.icu_training_load) : null;
+  const ringNumEl = document.getElementById('fd-ring-num');
+  const ringSubEl = document.getElementById('fd-ring-sub');
+  const ringIfEl  = document.getElementById('fd-ring-if');
+  const ringArcEl = document.getElementById('fd-ring-arc');
+
+  if (ringNumEl) ringNumEl.textContent = tss != null ? tss : '—';
+  // Sub label is always "TSS"
+  if (ringSubEl) ringSubEl.textContent = 'TSS';
+
+  // TSS-based ring colour scale:
+  //  < 40  → vibrant blue     (easy / recovery)
+  //  < 60  → bright green     (moderate)
+  //  < 80  → bright yellow    (solid effort)
+  //  < 100 → bold red-orange  (hard)
+  //  100+  → coral/hot red    (high exertion)
+  const tssRingColor = (() => {
+    if (tss == null) return 'oklch(0.65 0.18 240)';
+    if (tss <  40)   return 'oklch(0.68 0.22 240)';
+    if (tss <  60)   return 'oklch(0.84 0.24 145)';
+    if (tss <  80)   return 'oklch(0.92 0.22 100)';
+    if (tss < 100)   return 'oklch(0.72 0.26 35)';
+    return               'oklch(0.68 0.28 20)';
+  })();
+
+  // Arc fill = intensity ratio (IF or rIF), clamped 0–1
+  // IF line shown below TSS in accent-matched colour
+  let arcFill = 0;
+  let ifText  = '';
+  if (isCyc && data.icu_intensity != null) {
+    const IF = data.icu_intensity / 100;
+    arcFill  = Math.min(1, Math.max(0, IF));
+    ifText   = `IF ${IF.toFixed(2)}`;
+  } else if (isRun && data.icu_intensity != null) {
+    const rIF = data.icu_intensity / 100;
+    arcFill   = Math.min(1, Math.max(0, rIF));
+    ifText    = `rIF ${rIF.toFixed(2)}`;
+  } else if (tss != null) {
+    arcFill = Math.min(1, tss / 150);
+  }
+
+  // IF line: same colour as the arc so they visually connect
+  if (ringIfEl) {
+    ringIfEl.textContent = ifText;
+    ringIfEl.style.color = ifText ? tssRingColor : 'transparent';
+  }
+
+  // Animate arc + apply TSS colour
+  if (ringArcEl) {
+    const circ = 2 * Math.PI * 68;
+    ringArcEl.setAttribute('stroke', tssRingColor);
+    ringArcEl.closest('.fd-ring-wrap')?.style.setProperty('--fd-ring-color', tssRingColor);
+    setTimeout(() => {
+      ringArcEl.style.strokeDasharray = `${arcFill * circ} ${circ}`;
+    }, 80);
+  }
+
+  // ── Meta row: glyph, eyebrow, date badge ─────────────────
+  const glyphEl    = document.getElementById('fd-glyph');
+  const eyebrowEl  = document.getElementById('fd-eyebrow');
+  const dateBadgeEl= document.getElementById('fd-date-badge');
+
+  if (glyphEl) {
+    glyphEl.textContent = sportIcon(sport);
+    if (isRun) glyphEl.classList.add('run');
+  }
+  if (eyebrowEl) {
+    const sportLabel = sport.replace(/([A-Z])/g, ' $1').trim().toUpperCase();
+    eyebrowEl.textContent = sportLabel;
+    if (isRun) eyebrowEl.classList.add('run');
+  }
+  if (dateBadgeEl && data.start_date_local) {
+    dateBadgeEl.textContent = fmtDate(data.start_date_local);
+  }
+
+  // ── Kudos (bind if data.kudos_count present) ──────────────
+  if (data.kudos_count != null) {
+    const kudosEl = document.getElementById('fd-kudos');
+    if (kudosEl) { kudosEl.style.display = ''; }
+  }
+
+  // ── Stat strip ────────────────────────────────────────────
+  const strip = document.getElementById('fd-statstrip');
+  if (!strip) return;
+
+  const stats = [];
+  const pushStat = (lbl, val, unit, hl=false) => {
+    if (val == null || val === '—') return;
+    stats.push({ lbl, val, unit, hl });
+  };
+
+  // Universal stats
+  if (data.distance != null && data.distance > 0) {
+    pushStat('Distance', (data.distance / 1000).toFixed(2), 'km');
+  }
+  if (data.moving_time != null) {
+    pushStat('Moving', fmtDuration(data.moving_time), '');
+  }
+  if (data.total_elevation_gain != null && data.total_elevation_gain > 0) {
+    pushStat('Elevation', Math.round(data.total_elevation_gain), 'm');
+  }
+
+  if (isCyc) {
+    if (data.average_speed != null) pushStat('Avg Speed', (data.average_speed * 3.6).toFixed(1), 'km/h');
+    if (data.icu_average_watts != null) pushStat('Avg Power', Math.round(data.icu_average_watts), 'W');
+    if (data.icu_weighted_avg_watts != null) pushStat('Norm Power', Math.round(data.icu_weighted_avg_watts), 'W', true);
+    if (data.icu_joules != null) pushStat('Work', Math.round(data.icu_joules / 1000), 'kJ');
+  } else if (isRun) {
+    if (data.average_speed > 0) pushStat('Avg Pace', fmtPace(data.average_speed).replace('/km',''), '/km', true);
+    if (data.average_heartrate != null) pushStat('Avg HR', Math.round(data.average_heartrate), 'bpm');
+    if (data.average_cadence != null)   pushStat('Cadence', Math.round(data.average_cadence), 'spm');
+  } else {
+    if (data.average_speed > 0)        pushStat('Avg Speed', (data.average_speed * 3.6).toFixed(1), 'km/h');
+    if (data.average_heartrate != null) pushStat('Avg HR', Math.round(data.average_heartrate), 'bpm');
+  }
+  if (tss != null) pushStat('TSS', tss, '');
+
+  strip.innerHTML = stats.map(st => `
+    <div class="fd-bigstat${isRun ? ' run' : ''}">
+      <div class="l">${st.lbl}</div>
+      <div class="v${st.hl ? ' hl' : ''}">${st.val}${st.unit ? `<span class="u">${st.unit}</span>` : ''}</div>
+    </div>
+  `).join('');
+
+  // ── Readings column ───────────────────────────────────────
+  const readingsEl = document.getElementById('fd-readings');
+  if (!readingsEl) return;
+  const readings = [];
+
+  if (isCyc) {
+    // Peak power (max of watts stream)
+    const peakW = s.watts?.length ? Math.round(Math.max(...s.watts.filter(Boolean))) : null;
+    if (peakW != null) {
+      readings.push({
+        lbl: 'Peak Power', val: peakW + 'W',
+        badge: '5 s burst', badgeCls: 'lime'
+      });
+    }
+    // Variability index = NP/AP
+    if (data.icu_weighted_avg_watts && data.icu_average_watts) {
+      const VI = (data.icu_weighted_avg_watts / data.icu_average_watts).toFixed(2);
+      readings.push({
+        lbl: 'Variability', val: VI,
+        badge: 'NP / AP', badgeCls: 'ice'
+      });
+    }
+    // Avg HR + max
+    if (data.average_heartrate != null) {
+      const maxStr = data.max_heartrate ? `max ${Math.round(data.max_heartrate)}` : '';
+      readings.push({
+        lbl: 'Heart Rate', val: Math.round(data.average_heartrate) + ' bpm',
+        badge: maxStr, badgeCls: 'coral'
+      });
+    }
+  } else if (isRun) {
+    // Best pace (max speed = min pace)
+    if (data.max_speed > 0) {
+      readings.push({
+        lbl: 'Best Pace', val: fmtPace(data.max_speed),
+        badge: 'fastest km', badgeCls: 'coral'
+      });
+    }
+    // rIF
+    if (data.icu_intensity != null) {
+      readings.push({
+        lbl: 'Intensity rIF', val: (data.icu_intensity / 100).toFixed(2),
+        badge: 'thr ÷ avg', badgeCls: 'ice'
+      });
+    }
+    // HR
+    if (data.average_heartrate != null) {
+      const maxStr = data.max_heartrate ? `max ${Math.round(data.max_heartrate)}` : '';
+      readings.push({
+        lbl: 'Heart Rate', val: Math.round(data.average_heartrate) + ' bpm',
+        badge: maxStr, badgeCls: 'coral'
+      });
+    }
+  } else {
+    // Fallback: avg HR + TSS
+    if (data.average_heartrate != null) {
+      readings.push({ lbl: 'Heart Rate', val: Math.round(data.average_heartrate) + ' bpm', badge: '', badgeCls: 'coral' });
+    }
+    if (tss != null) {
+      readings.push({ lbl: 'TSS', val: tss, badge: '', badgeCls: 'lime' });
+    }
+  }
+
+  readingsEl.innerHTML = readings.map(r => `
+    <div class="fd-reading">
+      <div class="fd-reading-left">
+        <div class="fd-reading-lbl">${r.lbl}</div>
+        <div class="fd-reading-val">${r.val}</div>
+      </div>
+      ${r.badge ? `<div class="fd-reading-badge ${r.badgeCls}">${r.badge}</div>` : ''}
+    </div>
+  `).join('');
+
+  // ── Back link: sport-aware ─────────────────────────────────
+  const backEl = document.getElementById('fd-back-link');
+  if (backEl) {
+    if (isRun)            { backEl.textContent = '← Running';  backEl.href = 'running.html'; }
+    else if (isCycling(sport)) { backEl.textContent = '← Cycling'; backEl.href = 'cycling.html'; }
+    else                  { backEl.textContent = '← Overview'; backEl.href = 'index.html'; }
+  }
+}
+
 /* ── MAIN INIT ── */
 async function init() {
   const params=new URLSearchParams(location.search);
@@ -2752,7 +3349,9 @@ async function init() {
   document.getElementById('kudos-count').textContent   = data.kudos_count??'0';
   document.title=`${data.name||'Activity'} — Training OS`;
 
-  // Layer 2a — Cockpit hero + Intervals-driven summary panel
+  // Flight deck hero (new design)
+  buildFlightDeck(data, ftp, hrmax);
+  // Layer 2a — Cockpit hero + Intervals-driven summary panel (hidden, for JS compat)
   buildHero(data);
   // Layer 2b — Intervals telemetry stats panel (was buildWorkoutStats)
   buildWorkoutStats(data, ftp);
@@ -2933,25 +3532,30 @@ function rlPatch(data) {
       const pcts = counts.map(c => total > 0 ? +(c/total*100).toFixed(1) : 0);
       const shortNames = ['Z1\nRecovery', 'Z2\nAerobic', 'Z3\nTempo', 'Z4\nThreshold', 'Z5\nMax'];
 
-      // Solid cyan for dominant zone, light tint for others
-      const solidColor = 'rgba(10,110,138,0.85)';
-      const tintColor  = 'rgba(10,110,138,0.18)';
-      const bgColors   = pcts.map((_, i) => i === dom ? solidColor : tintColor);
+      // Each bar uses its actual HR zone colour: dominant at full opacity, others dimmer
+      const bgColors = HR_ZONE_COLOURS.map((col, i) => {
+        // Parse oklch to rgba by using the colour directly with opacity
+        const opacity = i === dom ? '0.85' : '0.35';
+        // Return as CSS color-mix so we can apply opacity
+        return col.replace('oklch(', `oklch(`).replace(')', ` / ${opacity})`);
+      });
 
-      // Inline plugin: draw pct labels above each bar
+      // Inline plugin: draw pct labels above each bar — always bright enough to read
       const pctLabelPlugin = {
         id: 'pctLabels',
         afterDatasetDraw(chart) {
           const { ctx, data: d, scales: { x, y } } = chart;
           const ds = chart.getDatasetMeta(0);
           ctx.save();
-          ctx.font = "600 11px 'DM Mono', monospace";
+          ctx.font = `${i === dom ? '700' : '500'} 11px 'Geist Mono', monospace`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'bottom';
           ds.data.forEach((bar, i) => {
             const val = d.datasets[0].data[i];
             if (val <= 0) return;
-            ctx.fillStyle = i === dom ? 'rgba(10,110,138,0.9)' : 'rgba(80,95,110,0.6)';
+            // Dominant: bright white; others: fg-2 equivalent
+            ctx.font = `${i === dom ? '700' : '500'} 11px 'Geist Mono', monospace`;
+            ctx.fillStyle = i === dom ? 'rgba(236,237,239,0.95)' : 'rgba(181,184,189,0.80)';
             ctx.fillText(val + '%', bar.x, bar.y - 3);
           });
           ctx.restore();
@@ -2978,7 +3582,8 @@ function rlPatch(data) {
           plugins: {
             legend: { display: false },
             tooltip: {
-              backgroundColor: 'rgba(15,22,32,0.88)',
+              backgroundColor: 'rgba(15,22,32,0.92)',
+              borderColor: 'rgba(255,255,255,0.10)', borderWidth: 1,
               callbacks: {
                 title: items => shortNames[items[0].dataIndex].replace('\n', ' '),
                 label: item => {
@@ -2994,7 +3599,8 @@ function rlPatch(data) {
               grid: { display: false },
               border: { display: false },
               ticks: {
-                color: (ctx) => ctx.index === dom ? 'rgba(10,110,138,0.95)' : 'rgba(80,95,110,0.65)',
+                // Zone labels: dominant bright, others fg-2
+                color: (ctx) => ctx.index === dom ? 'rgba(236,237,239,0.95)' : 'rgba(181,184,189,0.70)',
                 font: { size: 9, family: "var(--font-mono)", weight: ctx => ctx.index === dom ? '700' : '400' },
                 padding: 4
               }

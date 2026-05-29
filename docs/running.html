@@ -1,31 +1,142 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark" data-accent="coral" data-density="regular">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Running — Fitness Dashboard</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<link rel="stylesheet" href="assets/css/main.css">
-<script src="assets/js/theme-toggle.js"></script>
-<style>
-  .metric-pb {
-    font-size: 9px;
-    color: var(--text-muted);
-    font-family: var(--font-mono);
-    margin-top: 2px;
-    opacity: 0.7;
-  }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Running — Training OS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Sans:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/design-tokens.css">
+  <link rel="stylesheet" href="assets/css/design-system.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <script src="assets/js/theme-toggle.js"></script>
+  <style>
+    /* Page sections */
+    .page-sections { display: flex; flex-direction: column; gap: 20px; }
+
+    /* Season status card */
+    .season-hero {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 32px;
+      align-items: stretch;
+    }
+    .season-ring { width: 164px; display: flex; align-items: center; justify-content: center; }
+    .season-ytd {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border-left: 1px solid var(--line);
+      border-right: 1px solid var(--line);
+    }
+    .season-ytd-col {
+      padding: 8px 20px;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .season-ytd-col:last-child { border-right: 0; }
+    .season-col-label { font-size: 10px; font-weight: 600; color: var(--fg-2); text-transform: uppercase; letter-spacing: 0.08em; }
+    .season-col-value { font-family: var(--font-mono); font-size: 36px; font-weight: 600; line-height: 1; letter-spacing: -0.03em; color: var(--fg); }
+    .season-col-meta  { font-family: var(--font-mono); font-size: 11px; color: var(--fg-3); }
+    .season-col-bar   { height: 4px; border-radius: 2px; background: var(--bg-3); overflow: hidden; margin-top: 4px; }
+    .season-col-bar-fill { height: 100%; border-radius: 2px; background: var(--accent); transition: width 0.8s cubic-bezier(.2,.8,.2,1); }
+    .season-metrics { display: flex; flex-direction: column; gap: 8px; min-width: 180px; justify-content: center; }
+    .season-metric { padding: 8px 12px; border-radius: var(--r); background: rgba(255,255,255,0.02); border: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .season-metric-label { font-size: 10px; color: var(--fg-3); text-transform: uppercase; letter-spacing: 0.08em; }
+    .season-metric-value { font-family: var(--font-mono); font-size: 18px; font-weight: 600; line-height: 1; }
+    .season-metric.ctl  .season-metric-value { color: var(--accent); }
+    .season-metric.atl  .season-metric-value { color: var(--accent-2); }
+    .season-metric.tsb  .season-metric-value { color: var(--accent-3); }
+    .season-metric.pace .season-metric-value { color: var(--fg); }
+
+    /* 7:3 split */
+    .split-73 { display: grid; grid-template-columns: minmax(0,7fr) minmax(0,3fr); gap: 16px; }
+
+    /* Stat tiles */
+    .stat-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat-tile { background: var(--bg-2); border-radius: var(--r); padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+    .stat-tile-value { font-family: var(--font-mono); font-size: 24px; font-weight: 600; line-height: 1; letter-spacing: -0.02em; color: var(--fg); }
+    .stat-tile-label { font-size: 10px; color: var(--fg-2); text-transform: uppercase; letter-spacing: 0.06em; }
+    .stat-tile-sub   { font-size: 10px; color: var(--fg-3); font-family: var(--font-mono); margin-top: 2px; }
+
+    /* PB tiles — 2×2 with accent highlight */
+    .pb-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .pb-tile { background: var(--bg-2); border-radius: var(--r); padding: 14px; display: flex; flex-direction: column; gap: 4px; border-left: 3px solid var(--accent); }
+    .pb-tile-dist  { font-size: 10px; font-weight: 600; color: var(--fg-2); text-transform: uppercase; letter-spacing: 0.08em; }
+    .pb-tile-time  { font-family: var(--font-mono); font-size: 22px; font-weight: 600; line-height: 1; letter-spacing: -0.02em; color: var(--fg); }
+    .pb-tile-pace  { font-size: 11px; color: var(--accent); font-family: var(--font-mono); }
+    .pb-tile-label { font-size: 10px; color: var(--fg-3); font-family: var(--font-mono); }
+
+    /* Fitness card */
+    .reading-row { display: flex; justify-content: space-between; align-items: baseline; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+    .reading-row:first-child { border-top: 1px solid var(--line); }
+    .reading-label { font-size: 10px; color: var(--fg-2); text-transform: uppercase; letter-spacing: 0.08em; }
+    .reading-value { font-family: var(--font-mono); font-size: 14px; font-weight: 500; color: var(--fg); }
+    .fitness-readings { display: flex; flex-direction: column; }
+
+    /* Best efforts strip */
+    .efforts-scroll { overflow-x: auto; padding-bottom: 4px; }
+    .efforts-scroll::-webkit-scrollbar { height: 4px; }
+    .efforts-scroll::-webkit-scrollbar-thumb { background: var(--line-3); border-radius: 2px; }
+    .efforts-row { display: flex; gap: 10px; min-width: max-content; }
+    .effort-tile { background: var(--bg-2); border-radius: var(--r); padding: 14px 18px; min-width: 108px; display: flex; flex-direction: column; gap: 4px; }
+    .effort-dist { font-size: 10px; font-family: var(--font-mono); color: var(--fg-3); text-transform: uppercase; letter-spacing: 0.08em; }
+    .effort-time { font-family: var(--font-mono); font-size: 18px; font-weight: 600; color: var(--accent); letter-spacing: -0.02em; line-height: 1; }
+    .effort-pace { font-size: 11px; color: var(--fg-3); font-family: var(--font-mono); }
+
+    /* Feed */
+    .run-feed { display: flex; flex-direction: column; }
+    .run-row { display: grid; grid-template-columns: 32px 1fr auto; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); align-items: center; text-decoration: none; color: inherit; }
+    .run-row:last-child { border-bottom: 0; }
+    .run-glyph { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; font-size: 14px; border: 1px solid; color: var(--accent); background: color-mix(in oklch,var(--accent) 10%,transparent); border-color: color-mix(in oklch,var(--accent) 30%,transparent); }
+    .run-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .run-meta { font-size: 11px; color: var(--fg-3); font-family: var(--font-mono); margin-top: 2px; }
+    .run-right { text-align: right; flex-shrink: 0; }
+    .run-dist { font-family: var(--font-mono); font-size: 13px; font-weight: 500; }
+    .run-pace { font-size: 10px; color: var(--fg-3); font-family: var(--font-mono); margin-top: 2px; }
+
+    /* Segment styles */
+    .segment-header { margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+    .segment-header h3 { margin: 0 0 2px; font-size: 12px; font-weight: 500; color: var(--fg); }
+    .segment-date { font-size: 11px; color: var(--fg-3); font-family: var(--font-mono); }
+    .segment-grid { display: flex; flex-direction: column; gap: 8px; }
+    .segment-card { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; }
+    .segment-card.achievement-gold   { border-left: 3px solid #FFD700; }
+    .segment-card.achievement-silver { border-left: 3px solid #C0C0C0; }
+    .segment-card.achievement-bronze { border-left: 3px solid #CD7F32; }
+    .segment-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 8px; }
+    .segment-name { font-size: 12px; font-weight: 500; color: var(--fg); flex: 1; }
+    .segment-badges { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; }
+    .achievement-badge { display: inline-flex; align-items: center; gap: 3px; padding: 1px 5px; border-radius: 3px; font-size: 10px; font-weight: 600; }
+    .badge-gold   { background: #FFD700; color: #000; }
+    .badge-silver { background: #C0C0C0; color: #000; }
+    .badge-bronze { background: #CD7F32; color: #fff; }
+    .climb-badge  { display: inline-flex; align-items: center; gap: 3px; padding: 1px 5px; border-radius: 3px; font-size: 10px; font-weight: 600; background: color-mix(in oklch,var(--accent) 20%,transparent); color: var(--accent); border: 1px solid color-mix(in oklch,var(--accent) 40%,transparent); }
+    .kom-badge    { display: inline-flex; padding: 1px 5px; border-radius: 3px; font-size: 10px; font-weight: 600; background: #FC4C02; color: white; }
+    .segment-stats { display: grid; grid-template-columns: repeat(2,1fr); gap: 6px 10px; margin-bottom: 6px; }
+    .stat-label { font-size: 10px; color: var(--fg-3); text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-value { font-size: 12px; font-weight: 600; font-family: var(--font-mono); color: var(--fg); }
+    .pr-comparison { padding: 6px 8px; border-radius: 5px; font-size: 11px; margin-top: 4px; display: flex; align-items: center; gap: 5px; font-family: var(--font-mono); }
+    .pr-slower { background: rgba(249,115,22,0.08); color: #ea580c; border: 1px solid rgba(249,115,22,0.2); }
+    .pr-faster { background: rgba(34,197,94,0.08); color: #16a34a; border: 1px solid rgba(34,197,94,0.2); }
+    .effort-count { font-size: 10px; color: var(--fg-4); margin-top: 4px; font-family: var(--font-mono); }
+    .no-data { font-size: 12px; color: var(--fg-4); padding: 16px 0; text-align: center; font-family: var(--font-mono); }
+
+    /* Animations */
+    @keyframes draw { from{stroke-dashoffset:var(--len,1000)} to{stroke-dashoffset:0} }
+    .draw-path { stroke-dasharray:var(--len,1000); animation:draw 1.4s cubic-bezier(.2,.8,.2,1) forwards; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+  </style>
 </head>
 <body>
 <div class="app">
 
   <nav class="sidebar">
     <div class="sidebar-brand">
-      <span class="brand-initials">LH</span>
-      <span class="brand-text">Training<br>OS</span>
+      <div class="brand-initials">LH</div>
+      <div class="brand-text">Training<br>OS</div>
     </div>
     <ul class="nav-links">
       <li class="nav-item"><a href="index.html"><span class="nav-icon">◈</span><span>Overview</span></a></li>
@@ -38,574 +149,503 @@
       <li class="nav-item"><a href="about.html"><span class="nav-icon">⚙</span><span>Architecture</span></a></li>
     </ul>
     <div class="sidebar-footer">
-      <div class="theme-toggle-nav" onclick="toggleTheme()" title="Toggle dark/light mode">
-        <span class="nav-icon theme-icon">☀️</span>
-        <span>Theme</span>
+      <div class="theme-toggle-nav" onclick="toggleTheme()">
+        <span class="nav-icon theme-icon">☀️</span><span>Theme</span>
       </div>
       <div class="sync-status">
-        <span class="sync-dot"></span>
-        <span class="sync-text">Synced 6:00 AM</span>
+        <div class="sync-dot"></div>
+        <span id="last-sync">—</span>
       </div>
     </div>
   </nav>
 
   <main class="main-content">
+    <div class="page-header">
+      <h1 class="page-title">Running</h1>
+      <p class="page-subtitle" id="page-subtitle">—</p>
+    </div>
 
-    <header class="page-header">
-      <div class="header-left">
-        <h1 class="page-title">Running</h1>
-        <span class="page-subtitle">Road · Trail · Treadmill</span>
+    <div id="loading-state" class="loading-overlay">
+      <div class="loading-spinner"></div>
+      <span>Loading…</span>
+    </div>
+
+    <div id="page-content" class="hidden page-sections">
+
+      <!-- 1. Hero fitness cards row -->
+      <div class="hero-cards-row">
+        <div class="hero-card">
+          <div class="hero-card-header">
+            <span class="hero-card-label">FITNESS · CTL</span>
+            <span class="hero-card-delta" id="ctl-delta">—</span>
+          </div>
+          <div class="hero-card-value" id="hero-ctl">—</div>
+          <div class="hero-card-sparkline" id="spark-ctl"></div>
+        </div>
+        <div class="hero-card">
+          <div class="hero-card-header">
+            <span class="hero-card-label">FATIGUE · ATL</span>
+            <span class="hero-card-delta" id="atl-delta">—</span>
+          </div>
+          <div class="hero-card-value" id="hero-atl">—</div>
+          <div class="hero-card-sparkline" id="spark-atl"></div>
+        </div>
+        <div class="hero-card">
+          <div class="hero-card-header">
+            <span class="hero-card-label">FORM · TSB</span>
+          </div>
+          <div class="hero-card-value" id="hero-tsb">—</div>
+          <div class="hero-card-sparkline" id="spark-tsb"></div>
+        </div>
+        <div class="hero-card">
+          <div class="hero-card-header">
+            <span class="hero-card-label">THRESHOLD PACE</span>
+          </div>
+          <div class="hero-card-value" id="hero-threshold">—</div>
+          <div style="font-size:11px;color:var(--fg-3);font-family:var(--font-mono);margin-top:4px">/km · Intervals.icu</div>
+        </div>
+        <div class="hero-card">
+          <div class="hero-card-header">
+            <span class="hero-card-label">5K BEST · 90d</span>
+          </div>
+          <div class="hero-card-value" id="hero-5k">—</div>
+          <div style="font-size:11px;color:var(--fg-3);font-family:var(--font-mono);margin-top:4px" id="hero-5k-pace">—/km</div>
+        </div>
+        <div class="hero-card">
+          <div class="hero-card-header">
+            <span class="hero-card-label">10K BEST · 90d</span>
+          </div>
+          <div class="hero-card-value" id="hero-10k">—</div>
+          <div style="font-size:11px;color:var(--fg-3);font-family:var(--font-mono);margin-top:4px" id="hero-10k-pace">—/km</div>
+        </div>
       </div>
-      <div class="header-right">
-        <div class="year-totals">
-          <div class="year-stat">
-            <span class="year-stat-value" id="ru-distance">—</span>
-            <span class="year-stat-label">km YTD</span>
+
+      <!-- 2. Season status -->
+      <div class="chart-card-new">
+        <div class="chart-card-header">
+          <span class="chart-card-title">Season Status</span>
+          <span class="ytd-badge">2026 YTD</span>
+        </div>
+        <div class="season-hero">
+          <div class="season-ring" id="ru-ring"></div>
+          <div class="season-ytd">
+            <div class="season-ytd-col">
+              <div class="season-col-label">Distance</div>
+              <div class="season-col-value" id="ru-distance">—</div>
+              <div class="season-col-meta">km this year</div>
+              <div class="season-col-bar"><div class="season-col-bar-fill" id="ru-dist-bar" style="width:0%"></div></div>
+            </div>
+            <div class="season-ytd-col">
+              <div class="season-col-label">Time</div>
+              <div class="season-col-value" id="ru-hours">—</div>
+              <div class="season-col-meta">hours this year</div>
+              <div class="season-col-bar"><div class="season-col-bar-fill" id="ru-hrs-bar" style="width:0%"></div></div>
+            </div>
+            <div class="season-ytd-col">
+              <div class="season-col-label">Training Load</div>
+              <div class="season-col-value" id="ru-tss">—</div>
+              <div class="season-col-meta">TSS this year</div>
+              <div class="season-col-bar"><div class="season-col-bar-fill" id="ru-tss-bar" style="width:0%"></div></div>
+            </div>
           </div>
-          <div class="year-stat">
-            <span class="year-stat-value" id="ru-runs">—</span>
-            <span class="year-stat-label">runs YTD</span>
-          </div>
-          <div class="year-stat">
-            <span class="year-stat-value" id="ru-elevation">—</span>
-            <span class="year-stat-label">m climb YTD</span>
+          <div class="season-metrics">
+            <div class="season-metric ctl">
+              <span class="season-metric-label">CTL · Fitness</span>
+              <span class="season-metric-value" id="ru-ctl">—</span>
+            </div>
+            <div class="season-metric atl">
+              <span class="season-metric-label">ATL · Fatigue</span>
+              <span class="season-metric-value" id="ru-atl">—</span>
+            </div>
+            <div class="season-metric tsb">
+              <span class="season-metric-label">TSB · Form</span>
+              <span class="season-metric-value" id="ru-tsb">—</span>
+            </div>
+            <div class="season-metric pace">
+              <span class="season-metric-label">Threshold pace</span>
+              <span class="season-metric-value" id="ru-threshold-tile">—</span>
+            </div>
           </div>
         </div>
       </div>
-    </header>
 
-    <!-- Metric cards -->
-    <section class="metrics-row" style="grid-template-columns: repeat(4,1fr)">
-      <div class="metric-card form">
-        <div class="metric-label">90-DAY BEST</div>
-        <div class="metric-value" style="color:var(--green)" id="best-5k-time">—</div>
-        <div class="metric-delta neutral" id="best-5k-pace">—</div>
-        <div class="metric-bar"><div class="metric-bar-fill" style="width:72%;background:var(--green)"></div></div>
-        <div class="metric-sub">5K best</div>
-        <div class="metric-pb" id="pb-5k">PB: —</div>
-      </div>
-      <div class="metric-card fitness">
-        <div class="metric-label">90-DAY BEST</div>
-        <div class="metric-value" style="color:var(--accent)" id="best-10k-time">—</div>
-        <div class="metric-delta neutral" id="best-10k-pace">—</div>
-        <div class="metric-bar"><div class="metric-bar-fill" style="width:65%"></div></div>
-        <div class="metric-sub">10K best</div>
-        <div class="metric-pb" id="pb-10k">PB: —</div>
-      </div>
-      <div class="metric-card hrv">
-        <div class="metric-label">THRESHOLD PACE</div>
-        <div class="metric-value" style="color:var(--purple)" id="threshold-pace-value">—</div>
-        <div class="metric-delta neutral">per km</div>
-        <div class="metric-bar"><div class="metric-bar-fill" id="threshold-pace-bar" style="width:0%;background:var(--purple)"></div></div>
-        <div class="metric-sub" id="threshold-pace-sub">From Intervals.icu settings</div>
-      </div>
-      <div class="metric-card sleep">
-        <div class="metric-label">THIS WEEK</div>
-        <div class="metric-value" style="color:var(--yellow)" id="week-runs">—</div>
-        <div class="metric-delta neutral" id="week-stats">—</div>
-        <div class="metric-bar"><div class="metric-bar-fill" style="width:38%;background:var(--yellow)"></div></div>
-        <div class="metric-sub" id="week-hours">—</div>
-      </div>
-    </section>
-
-    <!-- Pace curve + Trend -->
-    <section class="charts-row" style="grid-template-columns: 2fr 1fr">
-      <div class="chart-card">
-        <div class="chart-header">
-          <h3>Pace Curve · 90 Days</h3>
-          <div class="chart-legend">
-            <span class="legend-item run">Pace</span>
-            <span style="font-size:10px;color:var(--red);font-family:var(--font-mono)">HR</span>
+      <!-- 3. 7:3 — Training overview | Personal bests -->
+      <div class="split-73">
+        <div class="chart-card-new">
+          <div class="chart-card-header">
+            <span class="chart-card-title">Training Overview</span>
+            <span class="ytd-badge">90 days</span>
+          </div>
+          <div class="stat-tiles">
+            <div class="stat-tile"><div class="stat-tile-value" id="ru-runs-90d">—</div><div class="stat-tile-label">Runs</div></div>
+            <div class="stat-tile"><div class="stat-tile-value" id="ru-avg-pace">—</div><div class="stat-tile-label">Avg Pace</div></div>
+            <div class="stat-tile"><div class="stat-tile-value" id="ru-avg-tss">—</div><div class="stat-tile-label">Avg TSS / run</div></div>
+            <div class="stat-tile"><div class="stat-tile-value" id="ru-avg-dist">—</div><div class="stat-tile-label">Avg Distance</div></div>
           </div>
         </div>
-        <div class="cp-chart-wrap"><canvas id="paceCurveChart"></canvas></div>
+        <div class="chart-card-new">
+          <div class="chart-card-header">
+            <span class="chart-card-title">Personal Bests</span>
+            <span class="ytd-badge">all time</span>
+          </div>
+          <div class="pb-tiles">
+            <div class="pb-tile">
+              <div class="pb-tile-dist">5K</div>
+              <div class="pb-tile-time" id="pb-5k">—</div>
+              <div class="pb-tile-pace" id="pb-5k-pace">—</div>
+              <div class="pb-tile-label">all time</div>
+            </div>
+            <div class="pb-tile">
+              <div class="pb-tile-dist">10K</div>
+              <div class="pb-tile-time" id="pb-10k">—</div>
+              <div class="pb-tile-pace" id="pb-10k-pace">—</div>
+              <div class="pb-tile-label">all time</div>
+            </div>
+            <div class="pb-tile">
+              <div class="pb-tile-dist">Half</div>
+              <div class="pb-tile-time" id="pb-hm">—</div>
+              <div class="pb-tile-pace" id="pb-hm-pace">—</div>
+              <div class="pb-tile-label">all time</div>
+            </div>
+            <div class="pb-tile">
+              <div class="pb-tile-dist">Marathon</div>
+              <div class="pb-tile-time" id="pb-mar">—</div>
+              <div class="pb-tile-pace" id="pb-mar-pace">—</div>
+              <div class="pb-tile-label">all time</div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="chart-card">
-        <div class="chart-header"><h3>Weekly Volume · 12 Weeks</h3></div>
-        <div class="chart-wrap"><canvas id="weeklyVolumeChart"></canvas></div>
-      </div>
-    </section>
 
-    <!-- Recent runs -->
-    <section class="section">
-      <div class="section-header">
-        <h2>Last 14 Days</h2>
-        <span class="section-meta" id="ru-week-meta">Loading...</span>
+      <!-- 4. Pace curve (full width) -->
+      <div class="chart-card-new">
+        <div class="chart-card-header">
+          <span class="chart-card-title">Pace Curve</span>
+          <span class="ytd-badge" style="background:color-mix(in oklch,var(--accent) 14%,transparent);border-color:color-mix(in oklch,var(--accent) 30%,transparent);color:color-mix(in oklch,var(--accent) 90%,var(--fg))">90 days</span>
+        </div>
+        <div id="ru-pace-curve" style="min-height:260px"></div>
       </div>
-      <div class="activity-cards" id="ru-activity-cards"></div>
-    </section>
 
-    <!-- Strava segments -->
-    <section class="section">
-      <div class="section-header">
-        <h2>Strava Segments</h2>
-        <span class="section-meta">PR & top-3 performances from your last run</span>
+      <!-- 5. 7:3 — Weekly volume | Fitness -->
+      <div class="split-73">
+        <div class="chart-card-new">
+          <div class="chart-card-header">
+            <span class="chart-card-title">Weekly Volume</span>
+            <span class="ytd-badge">km · 12 weeks</span>
+          </div>
+          <div id="ru-weekly-bars" style="min-height:200px"></div>
+        </div>
+        <div class="chart-card-new">
+          <div class="chart-card-header"><span class="chart-card-title">Fitness</span></div>
+          <div class="fitness-readings">
+            <div class="reading-row"><span class="reading-label">CTL</span><span class="reading-value" id="ru-fit-ctl">—</span></div>
+            <div class="reading-row"><span class="reading-label">ATL</span><span class="reading-value" id="ru-fit-atl">—</span></div>
+            <div class="reading-row"><span class="reading-label">TSB</span><span class="reading-value" id="ru-fit-tsb">—</span></div>
+            <div class="reading-row"><span class="reading-label">Threshold</span><span class="reading-value" id="ru-fit-threshold">—</span></div>
+          </div>
+        </div>
       </div>
-      <div class="segment-list" id="ru-segments"></div>
-    </section>
 
+      <!-- 6. Best efforts strip -->
+      <div class="chart-card-new">
+        <div class="chart-card-header">
+          <span class="chart-card-title">Best Efforts · 90 days</span>
+          <span class="ytd-badge" style="background:color-mix(in oklch,var(--accent) 14%,transparent);border-color:color-mix(in oklch,var(--accent) 30%,transparent);color:color-mix(in oklch,var(--accent) 90%,var(--fg))">from Intervals.icu</span>
+        </div>
+        <div class="efforts-scroll"><div class="efforts-row" id="ru-efforts"></div></div>
+      </div>
+
+      <!-- 7. 7:3 — Recent runs | Segments -->
+      <div class="split-73">
+        <div class="chart-card-new">
+          <div class="chart-card-header">
+            <span class="chart-card-title">Recent Runs</span>
+            <span class="ytd-badge">Last 8</span>
+          </div>
+          <div class="run-feed" id="ru-feed"></div>
+        </div>
+        <div class="chart-card-new">
+          <div class="chart-card-header"><span class="chart-card-title">Segments</span></div>
+          <div id="ru-segments"></div>
+        </div>
+      </div>
+
+      <div style="padding-top:16px;border-top:1px solid var(--line);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <span style="font-size:10.5px;color:var(--fg-4);font-family:var(--font-mono)">Data: Intervals.icu · Strava</span>
+        <span style="font-size:10.5px;color:var(--fg-4);font-family:var(--font-mono)" id="footer-sync">—</span>
+      </div>
+
+    </div>
   </main>
 </div>
 
-
-
-<script src="assets/js/charts.js"></script>
+<!-- formatDuration must be global for segments.js -->
+<script>
+  function formatDuration(s) {
+    if (!s) return '—';
+    const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+    if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+    return `${m}:${String(sec).padStart(2,'0')}`;
+  }
+</script>
 <script src="assets/js/data-loader.js"></script>
 <script src="assets/js/segments.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', async () => {
-  try {
-    const { activities, wellness, weeklyTSS, ytd, meta, athlete } = await DATA.loadAll({ activityDays: 400 });
-    // Load 90-day pace curves from Intervals.icu
-    let paceCurves90d = null;
+<script type="module">
+  import { renderRing, renderBarChart, renderPaceCurve, renderSparkline } from './assets/js/charts-new.js';
+
+  function setEl(id, val) { const el = document.getElementById(id); if (el) el.textContent = val ?? '—'; }
+
+  function fmtTime(s) {
+    if (!s) return '—';
+    const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = Math.round(s%60);
+    if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+    return `${m}:${String(sec).padStart(2,'0')}`;
+  }
+  function fmtPace(secPerKm) {
+    if (!secPerKm) return '—';
+    return `${Math.floor(secPerKm/60)}:${String(Math.floor(secPerKm%60)).padStart(2,'0')}/km`;
+  }
+  function paceFromTotal(totalSec, distM) {
+    if (!totalSec || !distM) return null;
+    return (totalSec / distM) * 1000; // sec/km
+  }
+  function fmtDur(s) {
+    if (!s) return '—';
+    const h = Math.floor(s/3600), m = Math.floor((s%3600)/60);
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  }
+  function timeAt(curve, distM) {
+    if (!curve?.distance) return null;
+    const idx = curve.distance.findIndex(d => Math.abs(d - distM) < 50);
+    return idx >= 0 ? curve.values[idx] : null;
+  }
+
+  const PACE_TARGETS = [
+    { m: 1000,  label: '1K'       },
+    { m: 1609,  label: '1 mile'   },
+    { m: 5000,  label: '5K'       },
+    { m: 10000, label: '10K'      },
+    { m: 21097, label: 'Half'     },
+    { m: 42195, label: 'Marathon' },
+  ];
+
+  document.addEventListener('DOMContentLoaded', async () => {
     try {
-      const response = await fetch('data/pace_curves_90d.json');
-      if (response.ok) {
-        paceCurves90d = await response.json();
-        console.log('Loaded 90-day pace curves from Intervals:', paceCurves90d);
-      }
-    } catch(e) {
-      console.log('90-day pace curves not available');
-    }
+      /* ── Same call as running.html ── */
+      const { activities, wellness, meta, athlete, ytd } = await DATA.loadAll({ activityDays: 400 });
+      const latest = DATA.latestWellness(wellness);
 
-    // Load 90-day HR curves from Intervals.icu
-    let hrCurves90d = null;
-    try {
-      const response = await fetch('data/hr_curves_90d.json');
-      if (response.ok) {
-        hrCurves90d = await response.json();
-        console.log('Loaded 90-day HR curves from Intervals:', hrCurves90d);
-      }
-    } catch(e) {
-      console.log('90-day HR curves not available');
-    }
+      /* ── Pace curves — same fetch as running.html ── */
+      let paceCurves90d = null;
+      try {
+        const r = await fetch('data/pace_curves_90d.json');
+        if (r.ok) paceCurves90d = await r.json();
+      } catch(e) {}
 
-    const year = new Date().getFullYear().toString();
-    const runs = activities.filter(a => a.type === 'Run' || a.type === 'VirtualRun');
-    const ytdRuns = runs.filter(a => a.date.startsWith(year));
-    const recent = runs.filter(a => {
-      const cutoff = new Date(Date.now() - 14 * 864e5).toISOString().split('T')[0];
-      return a.date >= cutoff;
-    });
+      /* ── Filter runs — same as running.html ── */
+      const allRuns = activities.filter(a => a.type === 'Run' || a.type === 'VirtualRun' || a.type === 'TrailRun');
+      const cutoff90 = new Date(Date.now() - 90*864e5).toISOString().split('T')[0];
+      const runs90   = allRuns.filter(a => a.date >= cutoff90);
 
-    // YTD stats
-    const ytdDist = ytdRuns.reduce((s,a) => s+(a.distance||0),0)/1000;
-    const ytdElev = ytdRuns.reduce((s,a) => s+(a.elevation||0),0);
-    document.getElementById('ru-distance').textContent  = ytdDist.toFixed(0);
-    document.getElementById('ru-runs').textContent      = ytdRuns.length;
-    document.getElementById('ru-elevation').textContent = Math.round(ytdElev).toLocaleString();
+      /* ── YTD — use pre-aggregated /ytd endpoint (accurate, full year) ── */
+      const ru = ytd?.running ?? {};
+      const distKm  = ru.distance ?? 0;
+      const hrsYtd  = ru.hours    ?? 0;
+      const tssYtd  = ru.tss      ?? 0;
 
-    // This week
-    const weekCutoff = new Date(Date.now() - 7*864e5).toISOString().split('T')[0];
-    const weekRuns = runs.filter(a => a.date >= weekCutoff);
-    const weekDist = weekRuns.reduce((s,a) => s+(a.distance||0),0)/1000;
-    const weekHrs  = weekRuns.reduce((s,a) => s+(a.duration||0),0)/3600;
-    
-    document.getElementById('week-runs').textContent = weekRuns.length;
-    document.getElementById('week-stats').textContent = `runs · ${weekDist.toFixed(1)} km`;
-    document.getElementById('week-hours').textContent = `${weekHrs.toFixed(1)} hrs running`;
+      setEl('ru-distance', Number(distKm).toFixed(0));
+      setEl('ru-hours',    Number(hrsYtd).toFixed(1));
+      setEl('ru-tss',      Math.round(tssYtd).toLocaleString());
 
-    // Use 90-day pace curves from Intervals if available
-    let best5k = null;
-    let best10k = null;
-    
-    if (paceCurves90d && paceCurves90d.list && paceCurves90d.list.length > 0) {
-      const curve = paceCurves90d.list[0]; // 90-day curve
-      console.log('Processing pace curve:', curve.label);
-      
-      // API Schema: distance array has meters, values array has times in seconds
-      const distances = curve.distance || [];
-      const times = curve.values || [];
-      
-      console.log('Distances available:', distances.length);
-      console.log('Times available:', times.length);
-      console.log('Sample distances:', distances.slice(0, 10));
-      console.log('Sample times:', times.slice(0, 10));
-      
-      // Find 5000m and 10000m in distance array
-      const idx5k = distances.findIndex(d => Math.abs(d - 5000) < 10);
-      const idx10k = distances.findIndex(d => Math.abs(d - 10000) < 10);
-      
-      console.log('5K index:', idx5k, '→ distance:', distances[idx5k], '→ time:', times[idx5k]);
-      console.log('10K index:', idx10k, '→ distance:', distances[idx10k], '→ time:', times[idx10k]);
-      
-      if (idx5k >= 0 && times[idx5k]) {
-        best5k = times[idx5k];
-        console.log('✓ 5K best:', best5k, 'seconds');
-      }
-      
-      if (idx10k >= 0 && times[idx10k]) {
-        best10k = times[idx10k];
-        console.log('✓ 10K best:', best10k, 'seconds');
-      }
-    }
-    
-    // Display the bests
-    if (best5k) {
-      document.getElementById('best-5k-time').textContent = fmtTime(best5k);
-      document.getElementById('best-5k-pace').textContent = fmtPaceKm(best5k, 5);
-    }
-    if (best10k) {
-      document.getElementById('best-10k-time').textContent = fmtTime(best10k);
-      document.getElementById('best-10k-pace').textContent = fmtPaceKm(best10k, 10);
-    }
+      setTimeout(() => {
+        const db = document.getElementById('ru-dist-bar');
+        const hb = document.getElementById('ru-hrs-bar');
+        const tb = document.getElementById('ru-tss-bar');
+        if (db) db.style.width = Math.min(100, (distKm  / 1500)  * 100).toFixed(1) + '%';
+        if (hb) hb.style.width = Math.min(100, (hrsYtd  / 120)   * 100).toFixed(1) + '%';
+        if (tb) tb.style.width = Math.min(100, (tssYtd  / 5000)  * 100).toFixed(1) + '%';
+      }, 200);
 
-    // Load all-time PBs from athlete data
-    if (athlete) {
-      if (athlete.pb_5k) {
-        document.getElementById('pb-5k').textContent = `PB: ${fmtTime(athlete.pb_5k)}`;
-      }
-      if (athlete.pb_10k) {
-        document.getElementById('pb-10k').textContent = `PB: ${fmtTime(athlete.pb_10k)}`;
-      }
+      /* ── Threshold pace — same as running.html ── */
+      const tp = (athlete?.threshold_pace != null && athlete.threshold_pace > 0)
+        ? Math.round(athlete.threshold_pace) : null;
+      const tpFmt = tp ? fmtPace(tp) : '—';
 
-      // Threshold pace — sourced from Intervals.icu Run sport settings.
-      // data-loader converts raw m/s → seconds per km. Bar: 3:00/km (fast)=100%, 7:00/km=0%.
-      if (athlete.threshold_pace != null && athlete.threshold_pace > 0) {
-        const tpSec = Math.round(athlete.threshold_pace);
-        const tpMin = Math.floor(tpSec / 60);
-        const tpS   = String(tpSec % 60).padStart(2, '0');
-        document.getElementById('threshold-pace-value').textContent = `${tpMin}:${tpS}`;
-        // Bar fill: 0% = 7:00/km (420s), 100% = 3:00/km (180s); clamp to 5–95%
-        const pct = Math.min(95, Math.max(5, Math.round(((420 - tpSec) / (420 - 180)) * 100)));
-        document.getElementById('threshold-pace-bar').style.width = `${pct}%`;
-        document.getElementById('threshold-pace-sub').textContent = 'Intervals.icu Run settings';
-      }
-    }
+      setEl('hero-threshold',    tp ? `${Math.floor(tp/60)}:${String(tp%60).padStart(2,'0')}` : '—');
+      setEl('ru-threshold-tile', tp ? `${Math.floor(tp/60)}:${String(tp%60).padStart(2,'0')}` : '—');
+      setEl('ru-fit-threshold',  tp ? tpFmt : '—');
 
-    // Pace curve - Use actual Intervals.icu 90-day pace curves if available
-    if (paceCurves90d && paceCurves90d.list && paceCurves90d.list.length > 0) {
-      const curve = paceCurves90d.list[0]; // 90-day curve
-      const distances = curve.distance || [];
-      const times = curve.values || [];
-      
-      // Get HR curve data if available
-      let hrSecs = [];
-      let hrValues = [];
-      if (hrCurves90d && hrCurves90d.list && hrCurves90d.list.length > 0) {
-        const hrCurve = hrCurves90d.list[0]; // 90-day HR curve
-        hrSecs = hrCurve.secs || [];
-        hrValues = hrCurve.values || [];
-        console.log('HR curve available with', hrSecs.length, 'data points');
-      }
-      
-      console.log('Building pace curve with', distances.length, 'data points');
-      
-      // Build array of pace data for chart
-      const paceCurveData = [];
-      
-      // Select specific distances to display
-      const targetDistances = [400, 800, 1000, 1609, 3000, 5000, 8000, 10000, 16100, 21098, 42195];
-      const distanceLabels = {
-        400: '400m',
-        800: '800m',
-        1000: '1km',
-        1609: '1 mile',
-        3000: '3km',
-        5000: '5km',
-        8000: '8km',
-        10000: '10km',
-        16100: '10 mile',
-        21098: 'Half',
-        42195: 'Marathon'
-      };
-      
-      // Helper function to find closest HR value for a given duration
-      const findHRForDuration = (durationSeconds) => {
-        if (hrSecs.length === 0) return 170; // Fallback if no HR data
-        
-        // Find the closest time in HR curves
-        let closestIdx = 0;
-        let minDiff = Math.abs(hrSecs[0] - durationSeconds);
-        
-        for (let i = 1; i < hrSecs.length; i++) {
-          const diff = Math.abs(hrSecs[i] - durationSeconds);
-          if (diff < minDiff) {
-            minDiff = diff;
-            closestIdx = i;
+      /* ── CTL / ATL / TSB ── */
+      const ctl = latest?.ctl != null ? Math.round(latest.ctl) : null;
+      const atl = latest?.atl != null ? Math.round(latest.atl) : null;
+      const tsb = latest?.tsb != null ? Math.round(latest.tsb) : (ctl != null && atl != null ? ctl - atl : null);
+
+      setEl('hero-ctl',    ctl ?? '—');
+      setEl('hero-atl',    atl ?? '—');
+      setEl('hero-tsb',    tsb != null ? (tsb > 0 ? '+' : '') + tsb : '—');
+      setEl('ru-ctl',      ctl ?? '—');
+      setEl('ru-atl',      atl ?? '—');
+      setEl('ru-tsb',      tsb != null ? (tsb > 0 ? '+' : '') + tsb : '—');
+      setEl('ru-fit-ctl',  ctl ?? '—');
+      setEl('ru-fit-atl',  atl ?? '—');
+      setEl('ru-fit-tsb',  tsb != null ? (tsb > 0 ? '+' : '') + tsb : '—');
+
+      /* ── Sparklines ── */
+      const last30 = wellness.slice(-30);
+      if (last30.length) {
+        renderSparkline(document.getElementById('spark-ctl'), { data: last30.map(w=>w.ctl??0),  color:'var(--accent)',   height:36 });
+        renderSparkline(document.getElementById('spark-atl'), { data: last30.map(w=>w.atl??0),  color:'var(--accent-2)', height:36 });
+        renderSparkline(document.getElementById('spark-tsb'), { data: last30.map(w=>(w.tsb??((w.ctl||0)-(w.atl||0)))), color:'var(--accent-3)', height:36 });
+        if (last30.length >= 8) {
+          const p7ctl = last30[last30.length-8]?.ctl;
+          const p7atl = last30[last30.length-8]?.atl;
+          if (p7ctl != null && ctl != null) {
+            const d = (ctl - Math.round(p7ctl)).toFixed(1);
+            const el = document.getElementById('ctl-delta');
+            if (el) { el.textContent = (d>0?'+':'')+d+' · 7d'; el.className='hero-card-delta '+(d>0?'positive':'negative'); }
+          }
+          if (p7atl != null && atl != null) {
+            const d = (atl - Math.round(p7atl)).toFixed(1);
+            const el = document.getElementById('atl-delta');
+            if (el) { el.textContent = (d>0?'+':'')+d+' · 7d'; el.className='hero-card-delta '+(d>0?'negative':'positive'); }
           }
         }
-        
-        return hrValues[closestIdx] || 170;
-      };
-      
-      for (const targetDist of targetDistances) {
-        const idx = distances.findIndex(d => Math.abs(d - targetDist) < 50);
-        if (idx >= 0 && times[idx]) {
-          const timeSeconds = times[idx];
-          const paceSecKm = Math.round((timeSeconds / distances[idx]) * 1000);
-          const hr = findHRForDuration(timeSeconds);
-          
-          paceCurveData.push({
-            label: distanceLabels[targetDist],
-            distM: distances[idx],
-            totalSec: timeSeconds,
-            paceSecKm: paceSecKm,
-            hr: hr
-          });
-        }
       }
-      
-      console.log('Pace curve data points:', paceCurveData.length);
-      
-      if (paceCurveData.length > 0) {
-        buildPaceBestsChart('paceCurveChart', paceCurveData);
-      }
-    } else {
-      // Fallback to calculated data if Intervals.icu data not available
-      console.log('Using fallback calculated pace curve');
-      const paceBests = DATA.paceBests ? DATA.paceBests(runs) : [];
-      if (paceBests.length) buildPaceBestsChart('paceCurveChart', paceBests);
-    }
 
-    // Weekly Volume Chart - aggregate running activities by week
-    const weeklyData = [];
-    const weeksToShow = 12;
-    const msPerWeek = 7 * 24 * 60 * 60 * 1000;
-    
-    // Calculate start of current week (Sunday)
-    const now = new Date();
-    const currentWeekStart = new Date(now);
-    currentWeekStart.setDate(now.getDate() - now.getDay());
-    currentWeekStart.setHours(0, 0, 0, 0);
-    
-    // Build array of week start dates going back 12 weeks
-    for (let i = weeksToShow - 1; i >= 0; i--) {
-      const weekStart = new Date(currentWeekStart.getTime() - (i * msPerWeek));
-      const weekEnd = new Date(weekStart.getTime() + msPerWeek);
-      
-      const weekStartStr = weekStart.toISOString().split('T')[0];
-      const weekEndStr = weekEnd.toISOString().split('T')[0];
-      
-      // Filter runs for this week
-      const weekRuns = runs.filter(a => 
-        a.date >= weekStartStr && a.date < weekEndStr
-      );
-      
-      // Calculate totals
-      const totalKm = weekRuns.reduce((sum, a) => sum + (a.distance || 0), 0) / 1000;
-      const totalHours = weekRuns.reduce((sum, a) => sum + (a.duration || 0), 0) / 3600;
-      
-      // Format week label (e.g., "Jan 5")
-      const weekLabel = weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      
-      weeklyData.push({
-        label: weekLabel,
-        distance: totalKm,
-        time: totalHours,
-        runs: weekRuns.length
+      /* ── Ring — threshold pace as label ── */
+      renderRing(document.getElementById('ru-ring'), {
+        value: 65, max: 100, size: 164, stroke: 10,
+        color: 'var(--accent)',
+        track: 'var(--line-3)',
+        label: tp ? `${Math.floor(tp/60)}:${String(tp%60).padStart(2,'0')}` : '—',
+        sub:   tp ? 'threshold /km' : '—',
       });
-    }
-    
-    // Build the weekly volume chart
-    if (weeklyData.length) {
-      const ctx = document.getElementById('weeklyVolumeChart');
-      if (ctx) {
-        new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels: weeklyData.map(w => w.label),
-            datasets: [
-              {
-                label: 'Distance (km)',
-                data: weeklyData.map(w => w.distance),
-                backgroundColor: 'rgba(46, 213, 115, 0.3)',
-                borderColor: 'rgba(46, 213, 115, 0.8)',
-                borderWidth: 1,
-                yAxisID: 'yDistance'
-              },
-              {
-                label: 'Time (hrs)',
-                data: weeklyData.map(w => w.time),
-                type: 'line',
-                borderColor: 'rgba(255, 195, 0, 1)',
-                backgroundColor: 'rgba(255, 195, 0, 0.1)',
-                borderWidth: 2,
-                tension: 0.4,
-                pointRadius: 3,
-                pointHoverRadius: 5,
-                pointBackgroundColor: 'rgba(255, 195, 0, 1)',
-                yAxisID: 'yTime',
-                fill: false
-              }
-            ]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: {
-              mode: 'index',
-              intersect: false
-            },
-            plugins: {
-              legend: {
-                display: true,
-                position: 'top',
-                labels: {
-                  color: 'rgba(255, 255, 255, 0.7)',
-                  font: { size: 11, family: 'DM Mono' },
-                  padding: 12,
-                  usePointStyle: true,
-                  pointStyle: 'circle'
-                }
-              },
-              tooltip: {
-                backgroundColor: 'rgba(0, 0, 0, 0.9)',
-                titleColor: 'rgba(255, 255, 255, 0.9)',
-                bodyColor: 'rgba(255, 255, 255, 0.8)',
-                borderColor: 'rgba(46, 213, 115, 0.3)',
-                borderWidth: 1,
-                padding: 12,
-                displayColors: true,
-                callbacks: {
-                  title: (items) => {
-                    const idx = items[0].dataIndex;
-                    return `Week of ${weeklyData[idx].label} · ${weeklyData[idx].runs} runs`;
-                  },
-                  label: (context) => {
-                    const label = context.dataset.label || '';
-                    const value = context.parsed.y;
-                    if (label.includes('Distance')) {
-                      return ` ${label}: ${value.toFixed(1)} km`;
-                    } else {
-                      return ` ${label}: ${value.toFixed(1)} hrs`;
-                    }
-                  }
-                }
-              }
-            },
-            scales: {
-              x: {
-                grid: {
-                  color: 'rgba(255, 255, 255, 0.04)'
-                },
-                ticks: {
-                  color: 'rgba(255, 255, 255, 0.6)',
-                  font: { size: 10, family: 'DM Mono' }
-                }
-              },
-              yDistance: {
-                type: 'linear',
-                position: 'left',
-                grid: {
-                  color: 'rgba(255, 255, 255, 0.04)'
-                },
-                ticks: {
-                  color: 'rgba(46, 213, 115, 0.8)',
-                  font: { size: 10, family: 'DM Mono' },
-                  callback: (value) => value.toFixed(0) + ' km'
-                },
-                title: {
-                  display: false
-                }
-              },
-              yTime: {
-                type: 'linear',
-                position: 'right',
-                grid: {
-                  display: false
-                },
-                ticks: {
-                  color: 'rgba(255, 195, 0, 1)',
-                  font: { size: 10, family: 'DM Mono' },
-                  callback: (value) => value.toFixed(1) + ' hrs'
-                },
-                title: {
-                  display: false
-                }
-              }
-            }
-          }
+
+      /* ── Sync timestamp ── */
+      const lastDate = wellness[wellness.length - 1]?.date;
+      if (lastDate) {
+        setEl('last-sync',    lastDate);
+        setEl('footer-sync',  'Last sync: ' + lastDate);
+        setEl('page-subtitle', lastDate);
+      }
+
+      /* ── Pace curve data ── */
+      const curve90 = paceCurves90d?.list?.[0] ?? null;
+
+      /* ── 90d bests from pace curve — same logic as running.html ── */
+      if (curve90) {
+        const t5k  = timeAt(curve90, 5000);
+        const t10k = timeAt(curve90, 10000);
+        if (t5k)  { setEl('hero-5k',  fmtTime(t5k));  setEl('hero-5k-pace',  fmtPace(paceFromTotal(t5k,  5000))); }
+        if (t10k) { setEl('hero-10k', fmtTime(t10k)); setEl('hero-10k-pace', fmtPace(paceFromTotal(t10k, 10000))); }
+      }
+
+      /* ── All-time PBs from athlete — same as running.html ── */
+      const pbMap = [
+        { field:'pb_5k',           km:5,      id:'pb-5k',  pId:'pb-5k-pace'  },
+        { field:'pb_10k',          km:10,     id:'pb-10k', pId:'pb-10k-pace' },
+        { field:'pb_half_marathon',km:21.097, id:'pb-hm',  pId:'pb-hm-pace'  },
+        { field:'pb_marathon',     km:42.195, id:'pb-mar', pId:'pb-mar-pace' },
+      ];
+      pbMap.forEach(({ field, km, id, pId }) => {
+        const t = athlete?.[field];
+        if (t) {
+          setEl(id,  fmtTime(t));
+          setEl(pId, fmtPace(paceFromTotal(t, km * 1000)));
+        }
+      });
+
+      /* ── Training overview (90d) ── */
+      setEl('ru-runs-90d', runs90.length || '—');
+      const paceRuns = runs90.filter(r => r.duration && r.distance);
+      if (paceRuns.length) {
+        const totalSec  = paceRuns.reduce((s,r)=>s+r.duration,0);
+        const totalDist = paceRuns.reduce((s,r)=>s+r.distance,0);
+        setEl('ru-avg-pace', fmtPace(paceFromTotal(totalSec, totalDist)));
+      }
+      const tssdRuns = runs90.filter(r => r.tss);
+      setEl('ru-avg-tss', tssdRuns.length ? Math.round(tssdRuns.reduce((s,r)=>s+r.tss,0)/tssdRuns.length) : '—');
+      const distRuns = runs90.filter(r => r.distance);
+      setEl('ru-avg-dist', distRuns.length ? (distRuns.reduce((s,r)=>s+r.distance,0)/distRuns.length/1000).toFixed(1)+' km' : '—');
+
+      /* ── Pace curve chart — same build as renderPaceCurve expects ── */
+      if (curve90?.distance?.length) {
+        const pcData = curve90.distance.map((d, i) => {
+          if (!curve90.values[i] || d < 500) return null;
+          return { d, p: Math.round((curve90.values[i] / d) * 1000) };
+        }).filter(Boolean);
+        if (pcData.length) renderPaceCurve(document.getElementById('ru-pace-curve'), { data: pcData, height: 260 });
+      }
+
+      /* ── Weekly volume — same approach as running.html ── */
+      const msPerWeek = 7*864e5;
+      const now = new Date();
+      const ws0 = new Date(now); ws0.setDate(now.getDate()-now.getDay()); ws0.setHours(0,0,0,0);
+      const weeklyData = [];
+      for (let i = 11; i >= 0; i--) {
+        const ws = new Date(ws0.getTime() - i*msPerWeek);
+        const we = new Date(ws.getTime() + msPerWeek);
+        const wsStr = ws.toISOString().split('T')[0], weStr = we.toISOString().split('T')[0];
+        const wRuns = allRuns.filter(a => a.date >= wsStr && a.date < weStr);
+        weeklyData.push({
+          label: ws.toLocaleDateString('en-GB', { day:'numeric', month:'short' }),
+          km: wRuns.reduce((s,a)=>s+(a.distance||0),0)/1000,
         });
       }
+      renderBarChart(document.getElementById('ru-weekly-bars'), {
+        data: weeklyData.map(w => ({ label: w.label, km: w.km })),
+        keys: ['km'], colors: ['var(--accent)'], height: 200,
+        xLabel: d => d.label, formatY: v => Math.round(v),
+      });
+
+      /* ── Best efforts strip ── */
+      const effortEl = document.getElementById('ru-efforts');
+      PACE_TARGETS.forEach(({ m, label }) => {
+        const t = timeAt(curve90, m);
+        const tile = document.createElement('div');
+        tile.className = 'effort-tile';
+        tile.innerHTML = `
+          <div class="effort-dist">${label}</div>
+          <div class="effort-time">${fmtTime(t)}</div>
+          <div class="effort-pace">${t ? fmtPace(paceFromTotal(t, m)) : ''}</div>`;
+        effortEl.appendChild(tile);
+      });
+
+      /* ── Recent runs feed ── */
+      const feedEl = document.getElementById('ru-feed');
+      allRuns.sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8).forEach(run => {
+        const km   = run.distance ? (run.distance/1000).toFixed(1) : null;
+        const dur  = fmtDur(run.duration);
+        const pace = (run.duration && run.distance) ? fmtPace(paceFromTotal(run.duration, run.distance)) : null;
+        const id   = String(run.id).startsWith('i') ? run.id : `i${run.id}`;
+        const a = document.createElement('a');
+        a.className = 'run-row';
+        a.href = `activity.html?id=${id}`;
+        a.innerHTML = `
+          <div class="run-glyph">▷</div>
+          <div style="min-width:0">
+            <div class="run-name">${run.name || 'Run'}</div>
+            <div class="run-meta">${[run.date, dur].filter(Boolean).join(' · ')}</div>
+          </div>
+          <div class="run-right">
+            <div class="run-dist">${km ? km+' km' : '—'}</div>
+            <div class="run-pace">${pace ?? ''}</div>
+          </div>`;
+        feedEl.appendChild(a);
+      });
+
+      /* ── Segments ── */
+      if (typeof renderSegments === 'function') renderSegments('running');
+
+      /* ── Reveal ── */
+      document.getElementById('loading-state').classList.add('hidden');
+      document.getElementById('page-content').classList.remove('hidden');
+
+    } catch(err) {
+      document.getElementById('loading-state').innerHTML = `<div class="error-state">${err.message}</div>`;
+      console.error(err);
     }
-
-    // Activity cards
-    const meta2 = document.getElementById('ru-week-meta');
-    if (meta2) meta2.textContent = recent.length + ' runs · ' + (recent.reduce((s,a)=>s+(a.distance||0),0)/1000).toFixed(1) + ' km';
-    const container = document.getElementById('ru-activity-cards');
-    if (container) {
-      container.innerHTML = recent.length ? recent.map(a => {
-        const paceSecKm = a.avg_speed ? Math.round(1000/a.avg_speed) : null;
-        return '<div class="activity-card">' +
-          '<div class="activity-card-type type-run"><span class="type-dot dot-run"></span>Running</div>' +
-          '<div class="activity-card-name">'+a.name+'</div>' +
-          '<div class="activity-card-stats">' +
-            '<div class="activity-stat"><span class="activity-stat-value">'+formatDuration(a.duration)+'</span><span class="activity-stat-label">Duration</span></div>' +
-            '<div class="activity-stat"><span class="activity-stat-value">'+(a.distance?(a.distance/1000).toFixed(1):'—')+'</span><span class="activity-stat-label">km</span></div>' +
-            '<div class="activity-stat"><span class="activity-stat-value">'+(paceSecKm?formatPace(paceSecKm):'—')+'</span><span class="activity-stat-label">Pace/km</span></div>' +
-            '<div class="activity-stat"><span class="activity-stat-value">'+(a.avg_hr||'—')+'</span><span class="activity-stat-label">Avg HR</span></div>' +
-          '</div>' +
-          '<div class="activity-card-footer"><span>'+a.date+'</span><span class="tss-val">TSS '+a.tss+(a.if_val?' · IF '+a.if_val.toFixed(1):'')+'</span></div>' +
-          '</div>';
-      }).join('') : '<div style="color:var(--text-muted);font-family:var(--font-mono);font-size:12px;padding:20px">No runs in last 14 days</div>';
-    }
-
-    document.getElementById('loading-state')?.classList.add('hidden');
-    document.getElementById('dashboard-content')?.classList.remove('hidden');
-
-  } catch(err) {
-    document.getElementById('loading-state')?.classList.add('hidden');
-    document.getElementById('error-state')?.classList.remove('hidden');
-    document.getElementById('error-msg') && (document.getElementById('error-msg').textContent = err.message);
-    console.error('Running page error:', err);
-  }
-});
-
-function best90(runs, distTarget) {
-  // Find best time for activities close to target distance
-  const margin = distTarget * 0.15;
-  const candidates = runs.filter(a => a.distance && Math.abs(a.distance - distTarget) < margin && a.duration);
-  
-  console.log(`Looking for ${distTarget}m runs (±${margin}m tolerance)`);
-  console.log('Candidates found:', candidates.map(a => ({
-    name: a.name,
-    date: a.date,
-    distance: a.distance,
-    duration: a.duration,
-    pace: a.avg_speed ? (1000/a.avg_speed).toFixed(0) + ' sec/km' : 'N/A'
-  })));
-  
-  if (!candidates.length) return null;
-  
-  // Use actual duration, scaled to exact target distance
-  return candidates.reduce((best, a) => {
-    if (!a.duration || !a.distance) return best;
-    // Scale the actual duration to the target distance
-    const scaledTime = (a.duration / a.distance) * distTarget;
-    console.log(`  ${a.name}: ${a.distance}m in ${a.duration}s → scaled to ${distTarget}m = ${scaledTime.toFixed(1)}s (${Math.floor(scaledTime/60)}:${Math.round(scaledTime%60).toString().padStart(2,'0')})`);
-    return (!best || scaledTime < best) ? scaledTime : best;
-  }, null);
-}
-
-function fmtTime(secs) {
-  const m = Math.floor(secs/60), s = Math.round(secs%60);
-  return m + ':' + String(s).padStart(2,'0');
-}
-
-function fmtPaceKm(totalSecs, km) {
-  const secPer = totalSecs / km;
-  return Math.floor(secPer/60) + ':' + String(Math.floor(secPer%60)).padStart(2,'0') + '/km';
-}
-
-function formatDuration(seconds) {
-  if (!seconds) return '—';
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = Math.floor(seconds % 60);
-  if (h > 0) return `${h}h ${m}m`;
-  if (m > 0) return `${m}:${String(s).padStart(2, '0')}`;
-  return `${s}s`;
-}
-
-function formatPace(secPerKm) {
-  const min = Math.floor(secPerKm / 60);
-  const sec = Math.floor(secPerKm % 60);
-  return `${min}:${String(sec).padStart(2, '0')}`;
-}
-
-// Load and render segments
-renderSegments('running');
+  });
 </script>
 </body>
 </html>

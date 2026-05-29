@@ -188,15 +188,15 @@
       <div class="brand-text">Training<br>OS</div>
     </div>
     <ul class="nav-links">
-      <li class="nav-item"><a href="new_index.html"><span class="nav-icon">◈</span><span>Overview</span></a></li>
+      <li class="nav-item"><a href="index.html"><span class="nav-icon">◈</span><span>Overview</span></a></li>
       <li class="nav-item"><a href="cycling.html"><span class="nav-icon">⬡</span><span>Cycling</span></a></li>
       <li class="nav-item"><a href="running.html"><span class="nav-icon">▷</span><span>Running</span></a></li>
       <li class="nav-item"><a href="rowing.html"><span class="nav-icon">⊕</span><span>Rowing</span></a></li>
       <li class="nav-item"><a href="cardio.html"><span class="nav-icon">◎</span><span>Cardio</span></a></li>
       <li class="nav-item"><a href="other.html"><span class="nav-icon">○</span><span>Other</span></a></li>
       <li class="nav-item"><a href="race-stream.html"><span class="nav-icon">📺</span><span>Race Stream</span></a></li>
-      <li class="nav-item active"><a href="new_cycling.html"><span class="nav-icon">⬡</span><span>Cycling ✦</span></a></li>
-      <li class="nav-item"><a href="new_running.html"><span class="nav-icon">▷</span><span>Running ✦</span></a></li>
+      <li class="nav-item active"><a href="cycling.html"><span class="nav-icon">⬡</span><span>Cycling</span></a></li>
+      <li class="nav-item"><a href="running.html"><span class="nav-icon">▷</span><span>Running</span></a></li>
       <li class="nav-item"><a href="about.html"><span class="nav-icon">⚙</span><span>Architecture</span></a></li>
     </ul>
     <div class="sidebar-footer">
@@ -648,7 +648,7 @@
         const id  = String(ride.id).startsWith('i') ? ride.id : `i${ride.id}`;
         const a = document.createElement('a');
         a.className = 'ride-row';
-        a.href = `new_activity.html?id=${id}`;
+        a.href = `activity.html?id=${id}`;
         a.innerHTML = `
           <div class="ride-glyph">⬡</div>
           <div style="min-width:0">

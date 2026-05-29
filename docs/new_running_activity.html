@@ -772,15 +772,15 @@
       <span class="brand-text">Training<br>OS</span>
     </div>
     <ul class="nav-links">
-      <li class="nav-item"><a href="new_index.html"><span class="nav-icon">◈</span><span>Overview</span></a></li>
+      <li class="nav-item"><a href="index.html"><span class="nav-icon">◈</span><span>Overview</span></a></li>
       <li class="nav-item"><a href="cycling.html"><span class="nav-icon">⬡</span><span>Cycling</span></a></li>
       <li class="nav-item"><a href="running.html"><span class="nav-icon">▷</span><span>Running</span></a></li>
       <li class="nav-item"><a href="rowing.html"><span class="nav-icon">⊕</span><span>Rowing</span></a></li>
       <li class="nav-item"><a href="cardio.html"><span class="nav-icon">◎</span><span>Cardio</span></a></li>
       <li class="nav-item"><a href="other.html"><span class="nav-icon">○</span><span>Other</span></a></li>
       <li class="nav-item"><a href="race-stream.html"><span class="nav-icon">📺</span><span>Race Stream</span></a></li>
-      <li class="nav-item active"><a href="new_running.html"><span class="nav-icon">▷</span><span>Running ✦</span></a></li>
-      <li class="nav-item"><a href="new_cycling.html"><span class="nav-icon">⬡</span><span>Cycling ✦</span></a></li>
+      <li class="nav-item active"><a href="running.html"><span class="nav-icon">▷</span><span>Running</span></a></li>
+      <li class="nav-item"><a href="cycling.html"><span class="nav-icon">⬡</span><span>Cycling</span></a></li>
       <li class="nav-item"><a href="about.html"><span class="nav-icon">⚙</span><span>Architecture</span></a></li>
     </ul>
     <div class="sidebar-footer">
@@ -821,7 +821,7 @@
 
       <!-- ── BREADCRUMB NAV ─────────────────────────────────── -->
       <div class="fd-nav">
-        <a class="fd-back" id="fd-back-link" href="new_running.html">Running</a>
+        <a class="fd-back" id="fd-back-link" href="running.html">Running</a>
         <span class="fd-crumb-sep">/</span>
         <span class="fd-crumb-sport" id="sport-badge">▷ Running</span>
         <span class="fd-crumb-sep">·</span>
@@ -3311,9 +3311,9 @@ function buildFlightDeck(data, ftp, hrmax) {
   // ── Back link: sport-aware ─────────────────────────────────
   const backEl = document.getElementById('fd-back-link');
   if (backEl) {
-    if (isRun)            { backEl.textContent = '← Running';  backEl.href = 'new_running.html'; }
-    else if (isCycling(sport)) { backEl.textContent = '← Cycling'; backEl.href = 'new_cycling.html'; }
-    else                  { backEl.textContent = '← Overview'; backEl.href = 'new_index.html'; }
+    if (isRun)            { backEl.textContent = '← Running';  backEl.href = 'running.html'; }
+    else if (isCycling(sport)) { backEl.textContent = '← Cycling'; backEl.href = 'cycling.html'; }
+    else                  { backEl.textContent = '← Overview'; backEl.href = 'index.html'; }
   }
 }
 

@@ -1,6 +1,51 @@
 # V2 Dashboard Changelog
 
-## Session: 2026-04-04 — Bug Fix Sprint
+## Session: 2026-05-29 — Activity Page Flight Deck Redesign
+
+### Changes Delivered
+
+---
+
+#### Activity Page — Flight Deck Hero Redesign
+
+**Scope:** Visual reskin of `new_activity.html` (cycling) and creation of `new_running_activity.html` (running). Pages `activity.html` and `run-activity.html` are **untouched** — they remain the rollback baseline.
+
+**Rollback tag:** `pre-activity-redesign` (commit `8b4725c`)
+
+**Files Changed:**
+- `docs/new_activity.html` — updated
+- `docs/new_running_activity.html` — new file
+
+**What changed (new_activity.html):**
+- Added `data-theme="dark" data-accent="lime"` to `<html>` tag
+- Added `design-system.css` and `layout.css` to `<head>` — matching `new_cycling.html` shell
+- Replaced old `rl-header` + cockpit card grid hero with **Flight Deck hero**: 3-column layout (TSS ring · identity+stat strip · readings column)
+- TSS ring: arc fill driven by IF (cycling) or rIF (running) — animates on load via CSS transition; no new data field
+- Stat strip: Distance / Moving / Elevation / Avg Speed / Avg Power / Norm Power / Work — all from existing stream JSON fields
+- Readings column: Peak Power (max of `streams.watts`) / Variability (NP÷AP) / Avg+Max HR (cycling); Best Pace / rIF / HR (running) — all derived from existing fields, no new API fields
+- Updated nav: added `new_cycling ✦` and `new_running ✦` links; `new_cycling.html` marked active
+- Added `buildFlightDeck(data, ftp, hrmax)` function wired in `init()` alongside existing `buildHero()`
+- All existing build functions (`buildHero`, `buildWorkoutStats`, `buildPrimaryTrace`, `buildHrSection`, `buildCadenceSpeed`, `buildSegments`, `buildLaps`, `buildDurationCurve`, `rlPatch`) completely untouched
+
+**What changed (new_running_activity.html):**
+- New file, copy of `new_activity.html`
+- `data-accent="coral"`, title "Run Activity — Training OS"
+- Coral accent CSS override (`oklch(0.76 0.19 30)`)
+- `DS_ACCENT` constant set to coral hex `#e8714a`
+- Running nav active; breadcrumb defaults to Running / ▷
+
+**What was NOT changed (per handoff rules):**
+- No new API endpoints or response fields
+- No mock values rendered (location, weather, kudos count, aerobic decoupling, auto-analysis → not displayed)
+- Tweaks panel not shipped
+- `activity.html` and `run-activity.html` untouched
+- All data stream functions identical to pre-change state
+
+**Deployment:** Run `bash scripts/deploy_frontend.sh` from CloudShell after `git pull`.
+
+---
+
+
 
 ### Issues Identified & Resolved
 

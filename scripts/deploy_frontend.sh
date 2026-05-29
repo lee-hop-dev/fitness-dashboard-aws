@@ -21,14 +21,37 @@ DOCS_DIR="$(dirname "$SCRIPT_DIR")/docs"
 
 echo "Syncing frontend to s3://$BUCKET/ ..."
 
+# Step 1: HTML files — no-cache so CloudFront always revalidates
+# (browser/CDN must check for a new version on every request)
 aws s3 sync "$DOCS_DIR/" "s3://$BUCKET/" \
   --delete \
+  --exclude "*" \
+  --include "*.html" \
+  --cache-control "no-cache, no-store, must-revalidate" \
+  --metadata-directive REPLACE
+
+# Step 2: JS and CSS — 1 year cache (filenames are stable; invalidation handles updates)
+aws s3 sync "$DOCS_DIR/" "s3://$BUCKET/" \
+  --exclude "*" \
+  --include "assets/js/*.js" \
+  --include "assets/css/*.css" \
+  --cache-control "public, max-age=31536000" \
+  --metadata-directive REPLACE
+
+# Step 3: Everything else (JSON data, images, fonts, etc.) — 5 min cache
+# Lambda-managed files are excluded so they are never overwritten
+aws s3 sync "$DOCS_DIR/" "s3://$BUCKET/" \
+  --delete \
+  --exclude "*.html" \
+  --exclude "assets/js/*.js" \
+  --exclude "assets/css/*.css" \
   --exclude "data/segments.json" \
   --exclude "data/power_curves_90d.json" \
   --exclude "data/pace_curves_90d.json" \
   --exclude "data/hr_curves_90d.json" \
   --exclude "data/upcoming_events.json" \
-  --exclude "data/streams/*"
+  --exclude "data/streams/*" \
+  --cache-control "public, max-age=300"
 
 echo "Invalidating CloudFront cache ..."
 aws cloudfront create-invalidation \

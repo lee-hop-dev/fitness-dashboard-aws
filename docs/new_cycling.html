@@ -27,11 +27,11 @@
     .season-ytd-row { display: flex; gap: 32px; }
     .ytd-stat { display: flex; flex-direction: column; gap: 4px; }
     .ytd-stat-value { font-family: var(--font-mono); font-size: 32px; font-weight: 600; line-height: 1; letter-spacing: -0.03em; color: var(--fg); }
-    .ytd-stat-label { font-size: 10px; color: var(--fg-3); text-transform: uppercase; letter-spacing: 0.08em; }
+    .ytd-stat-label { font-size: 10px; color: var(--fg-2); text-transform: uppercase; letter-spacing: 0.08em; }
     .season-readings { display: flex; flex-direction: column; gap: 0; min-width: 160px; }
     .reading-row { display: flex; justify-content: space-between; align-items: baseline; padding: 9px 12px; border-bottom: 1px solid var(--line); border-radius: 0; }
     .reading-row:first-child { border-top: 1px solid var(--line); }
-    .reading-label { font-size: 10px; color: var(--fg-3); text-transform: uppercase; letter-spacing: 0.08em; }
+    .reading-label { font-size: 10px; color: var(--fg-2); text-transform: uppercase; letter-spacing: 0.08em; }
     .reading-value { font-family: var(--font-mono); font-size: 14px; font-weight: 500; color: var(--fg); }
 
     /* 7:3 split */
@@ -41,7 +41,7 @@
     .stat-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .stat-tile { background: var(--bg-2); border-radius: var(--r); padding: 16px; display: flex; flex-direction: column; gap: 6px; }
     .stat-tile-value { font-family: var(--font-mono); font-size: 24px; font-weight: 600; line-height: 1; letter-spacing: -0.02em; color: var(--fg); }
-    .stat-tile-label { font-size: 10px; color: var(--fg-3); text-transform: uppercase; letter-spacing: 0.06em; }
+    .stat-tile-label { font-size: 10px; color: var(--fg-2); text-transform: uppercase; letter-spacing: 0.06em; }
 
     /* Fitness card readings */
     .fitness-readings { display: flex; flex-direction: column; }
@@ -433,6 +433,7 @@
       renderRing(document.getElementById('cy-ring'), {
         value: 75, max: 100, size: 164, stroke: 10,
         color: 'var(--accent)',
+        track: 'var(--line-3)',
         label: cp ?? '—',
         sub:   wkg ? wkg + ' W/kg' : '—',
       });

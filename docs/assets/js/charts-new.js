@@ -136,7 +136,7 @@ export function renderRing(element, opts) {
   center.style.cssText = "position:absolute;inset:0;display:grid;place-items:center;text-align:center";
   center.innerHTML = `<div>
     <div class="num" style="font-size:36px;letter-spacing:-0.02em;line-height:1;color:var(--fg)">${label}</div>
-    <div style="font-size:10.5px;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.1em;margin-top:4px">${sub ?? ""}</div>
+    <div style="font-size:10.5px;color:var(--fg-2);text-transform:uppercase;letter-spacing:0.1em;margin-top:4px">${sub ?? ""}</div>
   </div>`;
   element.appendChild(center);
 }

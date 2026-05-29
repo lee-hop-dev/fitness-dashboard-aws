@@ -20,19 +20,94 @@
       display: grid;
       grid-template-columns: auto 1fr auto;
       gap: 32px;
-      align-items: center;
+      align-items: stretch;
     }
-    .season-ring { width: 164px; height: 164px; }
-    .season-ytd { display: flex; flex-direction: column; gap: 20px; }
-    .season-ytd-row { display: flex; gap: 32px; }
-    .ytd-stat { display: flex; flex-direction: column; gap: 4px; }
-    .ytd-stat-value { font-family: var(--font-mono); font-size: 32px; font-weight: 600; line-height: 1; letter-spacing: -0.03em; color: var(--fg); }
-    .ytd-stat-label { font-size: 10px; color: var(--fg-2); text-transform: uppercase; letter-spacing: 0.08em; }
-    .season-readings { display: flex; flex-direction: column; gap: 0; min-width: 160px; }
-    .reading-row { display: flex; justify-content: space-between; align-items: baseline; padding: 9px 12px; border-bottom: 1px solid var(--line); border-radius: 0; }
-    .reading-row:first-child { border-top: 1px solid var(--line); }
-    .reading-label { font-size: 10px; color: var(--fg-2); text-transform: uppercase; letter-spacing: 0.08em; }
-    .reading-value { font-family: var(--font-mono); font-size: 14px; font-weight: 500; color: var(--fg); }
+    .season-ring { width: 164px; display: flex; align-items: center; justify-content: center; }
+
+    /* YTD columns — mirrors index ytd-sport pattern */
+    .season-ytd {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+      border-left: 1px solid var(--line);
+      border-right: 1px solid var(--line);
+    }
+    .season-ytd-col {
+      padding: 8px 20px;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .season-ytd-col:last-child { border-right: 0; }
+    .season-col-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--fg-2);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .season-col-value {
+      font-family: var(--font-mono);
+      font-size: 36px;
+      font-weight: 600;
+      line-height: 1;
+      letter-spacing: -0.03em;
+      color: var(--fg);
+    }
+    .season-col-meta {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--fg-3);
+    }
+    .season-col-bar {
+      height: 4px;
+      border-radius: 2px;
+      background: var(--bg-3);
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .season-col-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      background: var(--accent);
+      transition: width 0.8s cubic-bezier(.2,.8,.2,1);
+    }
+
+    /* Right metrics — coloured tiles like index current-metric */
+    .season-metrics {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 180px;
+      justify-content: center;
+    }
+    .season-metric {
+      padding: 8px 12px;
+      border-radius: var(--r);
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .season-metric-label {
+      font-size: 10px;
+      color: var(--fg-3);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .season-metric-value {
+      font-family: var(--font-mono);
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 1;
+    }
+    .season-metric.ctl .season-metric-value { color: var(--accent); }
+    .season-metric.atl .season-metric-value { color: var(--accent-2); }
+    .season-metric.tsb .season-metric-value { color: var(--accent-3); }
+    .season-metric.p20 .season-metric-value { color: var(--fg); }
 
     /* 7:3 split */
     .split-73 { display: grid; grid-template-columns: minmax(0,7fr) minmax(0,3fr); gap: 16px; }
@@ -43,7 +118,11 @@
     .stat-tile-value { font-family: var(--font-mono); font-size: 24px; font-weight: 600; line-height: 1; letter-spacing: -0.02em; color: var(--fg); }
     .stat-tile-label { font-size: 10px; color: var(--fg-2); text-transform: uppercase; letter-spacing: 0.06em; }
 
-    /* Fitness card readings */
+    /* Fitness card readings — used in weekly/fitness card only */
+    .reading-row { display: flex; justify-content: space-between; align-items: baseline; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+    .reading-row:first-child { border-top: 1px solid var(--line); }
+    .reading-label { font-size: 10px; color: var(--fg-2); text-transform: uppercase; letter-spacing: 0.08em; }
+    .reading-value { font-family: var(--font-mono); font-size: 14px; font-weight: 500; color: var(--fg); }
     .fitness-readings { display: flex; flex-direction: column; }
 
     /* Best efforts strip */
@@ -194,35 +273,59 @@
         </div>
       </div>
 
-      <!-- 2. Season status — ring + YTD stats -->
+      <!-- 2. Season status — ring + YTD columns + fitness metrics -->
       <div class="chart-card-new">
         <div class="chart-card-header">
           <span class="chart-card-title">Season Status</span>
+          <span class="ytd-badge" id="season-year-badge">2026 YTD</span>
         </div>
         <div class="season-hero">
+
+          <!-- Ring -->
           <div class="season-ring" id="cy-ring"></div>
+
+          <!-- YTD columns -->
           <div class="season-ytd">
-            <div class="season-ytd-row">
-              <div class="ytd-stat">
-                <div class="ytd-stat-value" id="cy-distance">—</div>
-                <div class="ytd-stat-label">km YTD</div>
-              </div>
-              <div class="ytd-stat">
-                <div class="ytd-stat-value" id="cy-hours">—</div>
-                <div class="ytd-stat-label">hrs YTD</div>
-              </div>
-              <div class="ytd-stat">
-                <div class="ytd-stat-value" id="cy-tss">—</div>
-                <div class="ytd-stat-label">TSS YTD</div>
-              </div>
+            <div class="season-ytd-col">
+              <div class="season-col-label">Distance</div>
+              <div class="season-col-value" id="cy-distance">—</div>
+              <div class="season-col-meta">km this year</div>
+              <div class="season-col-bar"><div class="season-col-bar-fill" id="cy-dist-bar" style="width:0%"></div></div>
+            </div>
+            <div class="season-ytd-col">
+              <div class="season-col-label">Time</div>
+              <div class="season-col-value" id="cy-hours">—</div>
+              <div class="season-col-meta">hours this year</div>
+              <div class="season-col-bar"><div class="season-col-bar-fill" id="cy-hrs-bar" style="width:0%"></div></div>
+            </div>
+            <div class="season-ytd-col">
+              <div class="season-col-label">Training Load</div>
+              <div class="season-col-value" id="cy-tss">—</div>
+              <div class="season-col-meta">TSS this year</div>
+              <div class="season-col-bar"><div class="season-col-bar-fill" id="cy-tss-bar" style="width:0%"></div></div>
             </div>
           </div>
-          <div class="season-readings">
-            <div class="reading-row"><span class="reading-label">CTL</span><span class="reading-value" id="cy-ctl">—</span></div>
-            <div class="reading-row"><span class="reading-label">ATL</span><span class="reading-value" id="cy-atl">—</span></div>
-            <div class="reading-row"><span class="reading-label">TSB</span><span class="reading-value" id="cy-tsb">—</span></div>
-            <div class="reading-row"><span class="reading-label">20 min</span><span class="reading-value" id="cy-20min">—</span></div>
+
+          <!-- Right metrics -->
+          <div class="season-metrics">
+            <div class="season-metric ctl">
+              <span class="season-metric-label">CTL · Fitness</span>
+              <span class="season-metric-value" id="cy-ctl">—</span>
+            </div>
+            <div class="season-metric atl">
+              <span class="season-metric-label">ATL · Fatigue</span>
+              <span class="season-metric-value" id="cy-atl">—</span>
+            </div>
+            <div class="season-metric tsb">
+              <span class="season-metric-label">TSB · Form</span>
+              <span class="season-metric-value" id="cy-tsb">—</span>
+            </div>
+            <div class="season-metric p20">
+              <span class="season-metric-label">20 min power</span>
+              <span class="season-metric-value" id="cy-20min">—</span>
+            </div>
           </div>
+
         </div>
       </div>
 
@@ -365,9 +468,23 @@
       /* ── YTD ── */
       const year = String(new Date().getFullYear());
       const ytdRides = allRides.filter(a => a.date?.startsWith(year));
-      setEl('cy-distance', Math.round(ytdRides.reduce((s,a)=>s+(a.distance||0),0)/1000).toLocaleString());
-      setEl('cy-hours',    (ytdRides.reduce((s,a)=>s+(a.duration||0),0)/3600).toFixed(1));
-      setEl('cy-tss',      Math.round(ytdRides.reduce((s,a)=>s+(a.tss||0),0)).toLocaleString());
+      const distKm = Math.round(ytdRides.reduce((s,a)=>s+(a.distance||0),0)/1000);
+      const hrsYtd = (ytdRides.reduce((s,a)=>s+(a.duration||0),0)/3600);
+      const tssYtd = Math.round(ytdRides.reduce((s,a)=>s+(a.tss||0),0));
+
+      setEl('cy-distance', distKm.toLocaleString());
+      setEl('cy-hours',    hrsYtd.toFixed(1));
+      setEl('cy-tss',      tssYtd.toLocaleString());
+
+      // Animate progress bars — targets: 5000km / 250h / 12000 TSS cycling YTD
+      setTimeout(() => {
+        const distBar = document.getElementById('cy-dist-bar');
+        const hrsBar  = document.getElementById('cy-hrs-bar');
+        const tssBar  = document.getElementById('cy-tss-bar');
+        if (distBar) distBar.style.width = Math.min(100, (distKm  / 5000)  * 100).toFixed(1) + '%';
+        if (hrsBar)  hrsBar.style.width  = Math.min(100, (hrsYtd  / 250)   * 100).toFixed(1) + '%';
+        if (tssBar)  tssBar.style.width  = Math.min(100, (tssYtd  / 12000) * 100).toFixed(1) + '%';
+      }, 200);
 
       /* ── FTP/CP — same as cycling.html ── */
       let cp = null;

@@ -21,14 +21,16 @@ DOCS_DIR="$(dirname "$SCRIPT_DIR")/docs"
 
 echo "Syncing frontend to s3://$BUCKET/ ..."
 
-# Step 1: HTML files — no-cache so CloudFront always revalidates
-# (browser/CDN must check for a new version on every request)
-aws s3 sync "$DOCS_DIR/" "s3://$BUCKET/" \
-  --delete \
-  --exclude "*" \
-  --include "*.html" \
-  --cache-control "no-cache, no-store, must-revalidate" \
-  --metadata-directive REPLACE
+# Step 1: HTML files — force-upload every file with cp (never skipped by ETag)
+# no-cache ensures CloudFront and browsers always revalidate
+echo "Uploading HTML files..."
+find "$DOCS_DIR" -maxdepth 1 -name "*.html" | while read -r f; do
+  key=$(basename "$f")
+  aws s3 cp "$f" "s3://$BUCKET/$key" \
+    --cache-control "no-cache, no-store, must-revalidate" \
+    --metadata-directive REPLACE
+  echo "  uploaded: $key"
+done
 
 # Step 2: JS and CSS — 1 year cache (filenames are stable; invalidation handles updates)
 aws s3 sync "$DOCS_DIR/" "s3://$BUCKET/" \

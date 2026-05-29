@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark" data-accent="lime" data-density="regular">
+<html lang="en" data-theme="dark" data-accent="coral" data-density="regular">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Activity — Training OS</title>
+<title>Run Activity — Training OS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -15,10 +15,9 @@
 <link rel="stylesheet" href="assets/css/layout.css">
 <link rel="stylesheet" href="assets/css/main.css?v=20260320-5">
 <style>
-/* ── NEW ACTIVITY — Design System Theme Override ──────────────────────────
-   Maps main.css legacy variables → design-tokens.css values.
-   Applies lime accent, Geist typography, darker surfaces.
-   Zero structural changes — pure variable remapping.
+/* ── NEW RUNNING ACTIVITY — Design System Theme Override ──────────────────
+   Coral accent for running sport. All other tokens inherited from
+   design-tokens.css / design-system.css / layout.css.
    ─────────────────────────────────────────────────────────────────────── */
 
 :root {
@@ -42,13 +41,13 @@
   --text-secondary: var(--fg-2);
   --text-muted:     var(--fg-3);
 
-  /* Accent: lime replaces cyan */
-  --accent:        oklch(0.86 0.20 130);
-  --accent-dim:    oklch(0.86 0.20 130 / 0.10);
-  --accent-border: oklch(0.86 0.20 130 / 0.30);
-  --accent-glow:   0 0 24px oklch(0.86 0.20 130 / 0.35);
+  /* Accent: coral for running */
+  --accent:        oklch(0.76 0.19 30);
+  --accent-dim:    oklch(0.76 0.19 30 / 0.10);
+  --accent-border: oklch(0.76 0.19 30 / 0.30);
+  --accent-glow:   0 0 24px oklch(0.76 0.19 30 / 0.35);
 
-  /* Sport colours: unchanged (green/red/orange/purple/yellow) */
+  /* Sport colours: unchanged */
   --green:    oklch(0.82 0.18 150);
   --green-dim: oklch(0.82 0.18 150 / 0.10);
   --red:      oklch(0.72 0.20 25);
@@ -756,8 +755,8 @@
       <li class="nav-item"><a href="cardio.html"><span class="nav-icon">◎</span><span>Cardio</span></a></li>
       <li class="nav-item"><a href="other.html"><span class="nav-icon">○</span><span>Other</span></a></li>
       <li class="nav-item"><a href="race-stream.html"><span class="nav-icon">📺</span><span>Race Stream</span></a></li>
-      <li class="nav-item active"><a href="new_cycling.html"><span class="nav-icon">⬡</span><span>Cycling ✦</span></a></li>
-      <li class="nav-item"><a href="new_running.html"><span class="nav-icon">▷</span><span>Running ✦</span></a></li>
+      <li class="nav-item active"><a href="new_running.html"><span class="nav-icon">▷</span><span>Running ✦</span></a></li>
+      <li class="nav-item"><a href="new_cycling.html"><span class="nav-icon">⬡</span><span>Cycling ✦</span></a></li>
       <li class="nav-item"><a href="about.html"><span class="nav-icon">⚙</span><span>Architecture</span></a></li>
     </ul>
     <div class="sidebar-footer">
@@ -798,9 +797,9 @@
 
       <!-- ── BREADCRUMB NAV ─────────────────────────────────── -->
       <div class="fd-nav">
-        <a class="fd-back" id="fd-back-link" href="new_cycling.html">Cycling</a>
+        <a class="fd-back" id="fd-back-link" href="new_running.html">Running</a>
         <span class="fd-crumb-sep">/</span>
-        <span class="fd-crumb-sport" id="sport-badge">⬡ Cycling</span>
+        <span class="fd-crumb-sport" id="sport-badge">▷ Running</span>
         <span class="fd-crumb-sep">·</span>
         <span class="fd-crumb-id" id="activity-id-crumb">—</span>
       </div>
@@ -830,8 +829,8 @@
           <!-- B. Identity + stat strip -->
           <div class="fd-identity">
             <div class="fd-meta-row">
-              <div class="fd-glyph" id="fd-glyph">⬡</div>
-              <span class="fd-eyebrow" id="fd-eyebrow">CYCLING</span>
+              <div class="fd-glyph run" id="fd-glyph">▷</div>
+              <span class="fd-eyebrow run" id="fd-eyebrow">RUNNING</span>
               <span class="fd-badge" id="fd-date-badge">—</span>
               <span class="fd-live">SYNCED</span>
             </div>
@@ -1104,12 +1103,11 @@
 <script>
 'use strict';
 
-/* ── DESIGN SYSTEM ACCENT (lime) ── */
-/* Resolved from --accent: oklch(0.86 0.20 130) */
-const DS_ACCENT      = '#a8d14f';        /* lime — main stroke / fill */
-const DS_ACCENT_DIM  = 'rgba(168,209,79,0.12)';
-const DS_ACCENT_LINE = 'rgba(168,209,79,0.35)';
-const DS_ACCENT_MID  = 'rgba(168,209,79,0.55)';
+/* ── DESIGN SYSTEM ACCENT (coral — running) ── */
+const DS_ACCENT      = '#e8714a';        /* coral — main stroke / fill */
+const DS_ACCENT_DIM  = 'rgba(232,113,74,0.12)';
+const DS_ACCENT_LINE = 'rgba(232,113,74,0.35)';
+const DS_ACCENT_MID  = 'rgba(232,113,74,0.55)';
 
 /* ── CONSTANTS ── */
 const API_BASE = 'https://j2zxz92vd4.execute-api.eu-west-2.amazonaws.com/prod';

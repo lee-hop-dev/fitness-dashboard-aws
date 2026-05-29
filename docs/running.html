@@ -16,40 +16,29 @@
     .page-sections { display: flex; flex-direction: column; gap: 20px; }
 
     /* Season status card */
-    .season-hero {
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      gap: 32px;
-      align-items: stretch;
-    }
-    .season-ring { width: 164px; display: flex; align-items: center; justify-content: center; }
-    .season-ytd {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      border-left: 1px solid var(--line);
-      border-right: 1px solid var(--line);
-    }
-    .season-ytd-col {
-      padding: 8px 20px;
-      border-right: 1px solid var(--line);
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
+    /* ── SEASON STATUS — matches index.html ytd-strip-new style ── */
+    .season-card { padding: 0; overflow: hidden; }
+    .season-hero { display: grid; grid-template-columns: auto 1fr auto; align-items: stretch; }
+    .season-ring { width: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 22px; border-right: 1px solid var(--line); }
+    .season-ring-label { font-size: 10px; font-weight: 600; color: var(--fg-3); text-transform: uppercase; letter-spacing: 0.1em; }
+    .season-ytd { display: grid; grid-template-columns: repeat(3, 1fr); }
+    .season-ytd-col { padding: 22px; border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
     .season-ytd-col:last-child { border-right: 0; }
-    .season-col-label { font-size: 10px; font-weight: 600; color: var(--fg-2); text-transform: uppercase; letter-spacing: 0.08em; }
-    .season-col-value { font-family: var(--font-mono); font-size: 36px; font-weight: 600; line-height: 1; letter-spacing: -0.03em; color: var(--fg); }
-    .season-col-meta  { font-family: var(--font-mono); font-size: 11px; color: var(--fg-3); }
-    .season-col-bar   { height: 4px; border-radius: 2px; background: var(--bg-3); overflow: hidden; margin-top: 4px; }
+    .season-col-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--fg-3); }
+    .season-col-value { font-family: var(--font-mono); font-size: 38px; font-weight: 600; line-height: 1; letter-spacing: -0.03em; color: var(--fg); margin-top: 6px; }
+    .season-col-meta  { font-family: var(--font-mono); font-size: 11px; color: var(--fg-3); margin-top: 2px; }
+    .season-col-bar   { height: 4px; border-radius: 2px; background: var(--bg-3); overflow: hidden; margin-top: 10px; }
     .season-col-bar-fill { height: 100%; border-radius: 2px; background: var(--accent); transition: width 0.8s cubic-bezier(.2,.8,.2,1); }
-    .season-metrics { display: flex; flex-direction: column; gap: 8px; min-width: 180px; justify-content: center; }
-    .season-metric { padding: 8px 12px; border-radius: var(--r); background: rgba(255,255,255,0.02); border: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .season-metrics { display: flex; flex-direction: column; justify-content: center; gap: 0; min-width: 190px; border-left: 1px solid var(--line); }
+    .season-metric { padding: 12px 20px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .season-metric:last-child { border-bottom: none; }
     .season-metric-label { font-size: 10px; color: var(--fg-3); text-transform: uppercase; letter-spacing: 0.08em; }
-    .season-metric-value { font-family: var(--font-mono); font-size: 18px; font-weight: 600; line-height: 1; }
+    .season-metric-value { font-family: var(--font-mono); font-size: 20px; font-weight: 600; line-height: 1; }
     .season-metric.ctl  .season-metric-value { color: var(--accent); }
     .season-metric.atl  .season-metric-value { color: var(--accent-2); }
     .season-metric.tsb  .season-metric-value { color: var(--accent-3); }
     .season-metric.pace .season-metric-value { color: var(--fg); }
+
 
     /* 7:3 split */
     .split-73 { display: grid; grid-template-columns: minmax(0,7fr) minmax(0,3fr); gap: 16px; }
@@ -227,7 +216,7 @@
           <span class="ytd-badge">2026 YTD</span>
         </div>
         <div class="season-hero">
-          <div class="season-ring" id="ru-ring"></div>
+          <div class="season-ring" id="ru-ring-wrap"><div id="ru-ring"></div><span class="season-ring-label">SEASON STATUS</span></div>
           <div class="season-ytd">
             <div class="season-ytd-col">
               <div class="season-col-label">Distance</div>

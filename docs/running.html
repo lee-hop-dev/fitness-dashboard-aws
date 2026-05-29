@@ -210,49 +210,79 @@
       </div>
 
       <!-- 2. Season status -->
-      <div class="chart-card-new season-card">
-        <div class="season-hero">
-          <div class="season-ring" id="ru-ring-wrap"><div id="ru-ring"></div><span class="season-ring-label">SEASON STATUS</span></div>
-          <div class="season-ytd">
-            <div class="season-ytd-col">
-              <div class="season-col-label">Distance</div>
-              <div class="season-col-value" id="ru-distance">—</div>
-              <div class="season-col-meta">km this year</div>
-              <div class="season-col-bar"><div class="season-col-bar-fill" id="ru-dist-bar" style="width:0%"></div></div>
+      <!-- 2. Season status -->
+      <section class="ytd-strip-new">
+        <div class="ds-card ytd-card">
+          <div class="ytd-grid" style="grid-template-columns: 180px 1fr 1fr 1fr 190px;">
+
+            <!-- Ring -->
+            <div class="ytd-col" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;">
+              <div id="ru-ring"></div>
+              <span style="font-size:10px;font-weight:600;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.1em;">Season Status</span>
             </div>
-            <div class="season-ytd-col">
-              <div class="season-col-label">Time</div>
-              <div class="season-col-value" id="ru-hours">—</div>
-              <div class="season-col-meta">hours this year</div>
-              <div class="season-col-bar"><div class="season-col-bar-fill" id="ru-hrs-bar" style="width:0%"></div></div>
+
+            <!-- Distance -->
+            <div class="ytd-col ytd-sport">
+              <div class="ytd-sport-header">
+                <span class="ytd-sport-name">DISTANCE</span>
+              </div>
+              <div class="ytd-sport-value" id="ru-distance">—</div>
+              <div class="ytd-sport-meta">km this year</div>
+              <div class="ytd-progress-container">
+                <div class="ytd-progress-bar" id="ru-dist-bar" style="background:var(--accent-2);"></div>
+                <div class="ytd-progress-label">km</div>
+              </div>
             </div>
-            <div class="season-ytd-col">
-              <div class="season-col-label">Training Load</div>
-              <div class="season-col-value" id="ru-tss">—</div>
-              <div class="season-col-meta">TSS this year</div>
-              <div class="season-col-bar"><div class="season-col-bar-fill" id="ru-tss-bar" style="width:0%"></div></div>
+
+            <!-- Time -->
+            <div class="ytd-col ytd-sport">
+              <div class="ytd-sport-header">
+                <span class="ytd-sport-name">TIME</span>
+              </div>
+              <div class="ytd-sport-value" id="ru-hours">—</div>
+              <div class="ytd-sport-meta">hours this year</div>
+              <div class="ytd-progress-container">
+                <div class="ytd-progress-bar" id="ru-hrs-bar" style="background:var(--accent-2);"></div>
+                <div class="ytd-progress-label">hrs</div>
+              </div>
             </div>
-          </div>
-          <div class="season-metrics">
-            <div class="season-metric ctl">
-              <span class="season-metric-label">CTL · Fitness</span>
-              <span class="season-metric-value" id="ru-ctl">—</span>
+
+            <!-- Training Load -->
+            <div class="ytd-col ytd-sport">
+              <div class="ytd-sport-header">
+                <span class="ytd-sport-name">TRAINING LOAD</span>
+              </div>
+              <div class="ytd-sport-value" id="ru-tss">—</div>
+              <div class="ytd-sport-meta">TSS this year</div>
+              <div class="ytd-progress-container">
+                <div class="ytd-progress-bar" id="ru-tss-bar" style="background:var(--accent-2);"></div>
+                <div class="ytd-progress-label">TSS</div>
+              </div>
             </div>
-            <div class="season-metric atl">
-              <span class="season-metric-label">ATL · Fatigue</span>
-              <span class="season-metric-value" id="ru-atl">—</span>
+
+            <!-- Fitness metrics -->
+            <div class="ytd-col" style="display:flex;flex-direction:column;justify-content:center;gap:0;padding:0;border-right:none;">
+              <div style="padding:12px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:10px;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.08em;">CTL · Fitness</span>
+                <span style="font-family:var(--font-mono);font-size:20px;font-weight:600;color:var(--accent);" id="ru-ctl">—</span>
+              </div>
+              <div style="padding:12px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:10px;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.08em;">ATL · Fatigue</span>
+                <span style="font-family:var(--font-mono);font-size:20px;font-weight:600;color:var(--accent-2);" id="ru-atl">—</span>
+              </div>
+              <div style="padding:12px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:10px;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.08em;">TSB · Form</span>
+                <span style="font-family:var(--font-mono);font-size:20px;font-weight:600;color:var(--accent-3);" id="ru-tsb">—</span>
+              </div>
+              <div style="padding:12px 20px;display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:10px;color:var(--fg-3);text-transform:uppercase;letter-spacing:0.08em;">Threshold Pace</span>
+                <span style="font-family:var(--font-mono);font-size:20px;font-weight:600;color:var(--fg);" id="ru-threshold-tile">—</span>
+              </div>
             </div>
-            <div class="season-metric tsb">
-              <span class="season-metric-label">TSB · Form</span>
-              <span class="season-metric-value" id="ru-tsb">—</span>
-            </div>
-            <div class="season-metric pace">
-              <span class="season-metric-label">Threshold pace</span>
-              <span class="season-metric-value" id="ru-threshold-tile">—</span>
-            </div>
+
           </div>
         </div>
-      </div>
+      </section>
 
       <!-- 3. 7:3 — Training overview | Personal bests -->
       <div class="split-73">

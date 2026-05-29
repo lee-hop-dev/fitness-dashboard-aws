@@ -19,9 +19,9 @@
 
   /* ─── Color: foreground ─── */
   --fg:    #ecedef;   /* primary text */
-  --fg-2:  #b5b8bd;   /* secondary text */
-  --fg-3:  #797d84;   /* tertiary, helper, captions */
-  --fg-4:  #4e525a;   /* axes, hint */
+  --fg-2:  #c8ccd2;   /* secondary text — was #b5b8bd, increased for readability */
+  --fg-3:  #9ea2a9;   /* tertiary, helper, captions — was #797d84 */
+  --fg-4:  #6b6f78;   /* axes, hint — was #4e525a */
 
   /* ─── Color: accents (use --accent for sport-/state-aware UI) ─── */
   --accent:   oklch(0.86 0.20 130);   /* default: lime */

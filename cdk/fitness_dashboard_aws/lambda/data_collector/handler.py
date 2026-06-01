@@ -625,28 +625,16 @@ def _fetch_stream_data(activity_id: str, api_key: str) -> dict:
     return {}
 
 
-def _fetch_kudos_count(strava_id: str, access_token: str) -> int:
-    """
-    Fetch kudos count from Strava for a single activity.
-    Stores count only — not the athlete list (PII consideration).
-    Returns 0 on any error so a failed kudos fetch never blocks stream writing.
-    """
-    try:
-        result = strava_get(f"activities/{strava_id}/kudos", access_token)
-        if isinstance(result, list):
-            return len(result)
-    except Exception as e:
-        logger.warning(f"Kudos fetch failed for strava_id={strava_id}: {e}")
-    return 0
-
 
 def _fetch_strava_activity_data(strava_id: str, access_token: str) -> tuple:
     """
-    Fetch Strava activity — extracts both qualifying segment efforts and GPS polyline
-    from a single API call. Returns (segments, latlng_pairs).
+    Fetch Strava activity — extracts qualifying segment efforts, GPS polyline,
+    and kudos count from a single API call.
+    Returns (segments, latlng_pairs, kudos_count).
 
     segments: list of qualifying segment dicts (PR top-3 / overall top-10 / AG top-10)
     latlng_pairs: list of [lat, lng] pairs decoded from map.polyline, or [] if unavailable
+    kudos_count: int from activity kudos_count field (no separate API call needed)
 
     Replaces _fetch_qualifying_segments — combines into one Strava call for efficiency.
     """
@@ -656,7 +644,7 @@ def _fetch_strava_activity_data(strava_id: str, access_token: str) -> tuple:
         params={"include_all_efforts": "true"},
     )
     if not data:
-        return [], []
+        return [], [], 0
 
     # Decode GPS polyline — Strava map.polyline is the full-resolution track
     latlng_pairs = []
@@ -684,11 +672,13 @@ def _fetch_strava_activity_data(strava_id: str, access_token: str) -> tuple:
             "qom_rank":       effort.get("qom_rank"),
             "segment_id":     str(seg.get("id", "")),
         })
+    kudos_count = int(data.get("kudos_count", 0))
     logger.info(
         f"Strava {strava_id}: {len(efforts)} total segment efforts, "
-        f"{len(segments)} qualifying (PR top-3 / overall top-10 / AG top-10)"
+        f"{len(segments)} qualifying (PR top-3 / overall top-10 / AG top-10), "
+        f"{kudos_count} kudos"
     )
-    return segments, latlng_pairs
+    return segments, latlng_pairs, kudos_count
 
 
 def _fetch_laps(activity_id: str, api_key: str) -> tuple:
@@ -905,16 +895,12 @@ def sync_streams_14d(api_key: str, access_token: str) -> dict:
                 results["skipped"] += 1
                 continue
 
-            # 2. Kudos from Strava (count only, graceful on missing strava_id)
-            kudos_count = 0
-            if strava_id:
-                kudos_count = _fetch_kudos_count(str(strava_id), access_token)
-
-            # 3. Qualifying segments + GPS polyline from Strava (single API call)
+            # 2. Qualifying segments + GPS polyline + kudos from Strava (single API call)
             segments = []
             strava_latlng = []
+            kudos_count = 0
             if strava_id:
-                segments, strava_latlng = _fetch_strava_activity_data(
+                segments, strava_latlng, kudos_count = _fetch_strava_activity_data(
                     str(strava_id), access_token
                 )
 

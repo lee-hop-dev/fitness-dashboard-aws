@@ -165,6 +165,7 @@ class ApiStack(Stack):
                 throttling_burst_limit=50,
                 throttling_rate_limit=20,
                 caching_enabled=False,
+                cache_cluster_enabled=False,
             ),
         )
 

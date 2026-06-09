@@ -970,17 +970,17 @@ def sync_streams_14d(api_key: str, access_token: str) -> dict:
 def sync_upcoming_events(api_key: str) -> dict:
     """
     Fetch upcoming calendar events from Intervals.icu and write to S3.
-    Fetches events from today to 14 days ahead.
+    Fetches events from today to 21 days ahead.
     Includes workouts, races, notes — anything on the athlete's calendar.
     
     Returns: {"count": N, "date_range": "YYYY-MM-DD to YYYY-MM-DD"}
     """
     logger.info("=== Syncing Upcoming Calendar Events ===")
     
-    # Date range: today to 14 days ahead
+    # Date range: today to 21 days ahead
     today = datetime.now(timezone.utc)
     oldest = today.strftime('%Y-%m-%d')
-    newest = (today + timedelta(days=14)).strftime('%Y-%m-%d')
+    newest = (today + timedelta(days=21)).strftime('%Y-%m-%d')
     
     logger.info(f"Fetching events from {oldest} to {newest}")
     

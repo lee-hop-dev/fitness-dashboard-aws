@@ -2786,39 +2786,28 @@ document.addEventListener('DOMContentLoaded', async () => {
       const now = new Date();
       
       // Filter for:
-      // 1. Events marked as notes (show_as_note === true)
-      // 2. RACE category events with A/B priority indicated in description
-      // Exclude: C races (description contains "C-RACE" or "C RACE")
+      // 1. NOTE category events (race weeks, annotations — anything marked as a note in Intervals)
+      // 2. RACE category events — A/B only (exclude C races)
+      // WORKOUTs are intentionally excluded to preserve their full data in Intervals
       let upcomingEvents = events
         .filter(e => {
           if (!e.start_date_local && !e.date) return false;
           const eventDate = new Date(e.start_date_local || e.date);
           if (eventDate <= now) return false;
-          
-          // Include if it's marked as a note
-          if (e.show_as_note === true) return true;
-          
-          // Include if it's a RACE category
+
+          // Include any NOTE category event
+          if (e.category === 'NOTE') return true;
+
+          // Include RACE category — exclude C races
           if (e.category === 'RACE') {
             const desc = (e.description || '').toLowerCase();
-            const name = (e.name || '').toLowerCase();
-            
-            // Exclude C races
             if (desc.includes('c-race') || desc.includes('c race')) {
               console.log('  Excluding C-race:', e.name);
               return false;
             }
-            
-            // Include A/B races or races without explicit priority
             return true;
           }
-          
-          // Include ECRO event note entries (e.g., "ECRO: Chasing Pink - Week 1")
-          const name = (e.name || '').toLowerCase();
-          if (name.includes('ecro:') && name.includes('week')) {
-            return true;
-          }
-          
+
           return false;
         })
         .sort((a, b) => {

@@ -48,7 +48,8 @@ Total page-load API payload (index): ~726KB uncompressed across 8 calls; slowest
 - Manual sync run: `dashboard.json {"bytes": 1878195, "activities": 325, "wellness": 181}` — no errors.
 - **Shape verification vs live API (sandbox, 16 July):** `/wellness?days=180` — 181/181 entries byte-identical, envelope keys identical. `/ytd` — deep-equal. Activities: all normalisation fields present (`start_date`, `type`, `icu_training_load`, `icu_average_watts`, `moving_time`, `average_speed`, `icu_intensity`). `power_curve` raw item preserved (`list` key / "90 days" labels untouched).
 - **Transfer:** 1,878,195 bytes raw → **328,657 bytes compressed** through CloudFront (`compress=True`), replacing ~726KB uncompressed across 8 API calls; slowest previous call was 3.14s.
-- Remaining: browser verification (incognito — console reports static path, Network tab zero `j2zxz92vd4` calls, CTL/ATL/TSB identical to API-driven values).
+- **Browser verification complete (16 July):** index loads via static path (console confirms), heatmap served from the file (313 activities, no API call), all charts render. `weekly_tss` deep-equal to live API (51/51 weeks). A twelve-zero Rowing series in the weekly load chart was investigated and is true data — no Rowing/VirtualRow activity in the last 12 weeks. **WP2 closed.**
+- Deferred item noted (pre-existing, not WP2): index pace-curve filter `Filtered running curves: 0` never matches typed running curves and always falls through to `list[0]` — works via fallback, log for later.
 
 ### Batch B prepared (commits af7c2be, f859b03) — awaiting CDK deploy
 

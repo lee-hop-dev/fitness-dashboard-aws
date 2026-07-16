@@ -24,6 +24,7 @@ circular CDK dependencies.
 from aws_cdk import (
     Stack,
     Duration,
+    Size,
     CfnOutput,
     aws_lambda as lambda_,
     aws_iam as iam,
@@ -137,6 +138,8 @@ class ApiStack(Stack):
             "FitnessDashboardApi",
             rest_api_name="fitness-dashboard-api",
             description="Fitness Dashboard REST API — Phase 3 + Phase 7",
+            # WP3: compress responses >1KB (activities: 313KB -> ~35KB over the wire)
+            min_compression_size=Size.kibibytes(1),
             default_cors_preflight_options=apigw.CorsOptions(
                 allow_origins=apigw.Cors.ALL_ORIGINS,
                 allow_methods=["GET", "POST", "OPTIONS"],

@@ -303,6 +303,7 @@ def sync_curve(api_key: str, endpoint: str, sport_type: str, curve_key: str) -> 
             Key=s3_key,
             Body=json.dumps(data),
             ContentType="application/json",
+            CacheControl="public, max-age=300",
         )
         logger.info(f"Wrote {s3_key} to s3://{FRONTEND_BUCKET}/{s3_key}")
 
@@ -576,6 +577,7 @@ def sync_segments(activities: list, access_token: str) -> dict:
             Key="data/segments.json",
             Body=json.dumps(segments),
             ContentType="application/json",
+            CacheControl="public, max-age=300",
         )
         logger.info(f"Wrote segments.json to s3://{FRONTEND_BUCKET}/data/segments.json")
     else:
@@ -1011,6 +1013,10 @@ def sync_streams_14d(api_key: str, access_token: str) -> dict:
                 Key=f"data/streams/{activity_id}.json",
                 Body=json.dumps(payload),
                 ContentType="application/json",
+                # Without this, CloudFront holds rewritten stream files under the
+                # distribution default TTL — new activity IDs were unaffected,
+                # but refreshed files could serve stale (found 2026-07-16).
+                CacheControl="public, max-age=300",
             )
             logger.info(
                 f"Wrote data/streams/{activity_id}.json — "
@@ -1069,6 +1075,7 @@ def sync_upcoming_events(api_key: str) -> dict:
                 Bucket=FRONTEND_BUCKET,
                 Key="data/upcoming_events.json",
                 Body=json.dumps(events, indent=2),
+                CacheControl="public, max-age=300",
                 ContentType="application/json"
             )
             logger.info(f"Wrote {len(events)} events to S3: data/upcoming_events.json")

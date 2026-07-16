@@ -1,5 +1,36 @@
 # V2 Dashboard Changelog
 
+## Session: 2026-07-16 — Performance Improvement Programme (branch: perf-improvements)
+
+**Rollback tag:** `pre-perf-work-20260716` (commit `5015ccb`)
+**Plan of record:** PERFORMANCE_IMPROVEMENT_HANDOVER.md (14 July 2026)
+
+### Baseline measurements (before any change) — 16 July 2026, curl via CloudFront/API Gateway, Accept-Encoding: gzip
+
+**Frontend (CloudFront, compressed transfer size):**
+| Page | Status | Time | Transfer |
+|---|---|---|---|
+| index.html | 200 | 1.24s | 25.2KB |
+| activity.html | 200 | 0.88s | 37.7KB |
+| cycling.html | 200 | 2.31s (cold) | 8.0KB |
+| running.html | 200 | 0.66s | 8.1KB |
+| cardio.html | 200 | 0.59s | 2.8KB |
+
+**API Gateway (gzip requested — responses returned UNCOMPRESSED, confirming WP3):**
+| Endpoint | Status | Time | Transfer |
+|---|---|---|---|
+| /activities?days=90&limit=1000 | 200 | 3.14s | 312.9KB |
+| /wellness?days=180 | 200 | 1.74s | 209.0KB |
+| /weekly-tss?weeks=52 | 200 | 0.63s | 4.9KB |
+| /ytd | 200 | 0.55s | 0.9KB |
+| /athlete | 200 | 1.46s | 114.0KB |
+| /power-curve | 200 | 0.95s | 45.9KB |
+| /pace-curve | 200 | 0.79s | 21.7KB |
+| /hr-curve | 200 | 0.73s | 17.5KB |
+
+Total page-load API payload (index): ~726KB uncompressed across 8 calls; slowest call 3.14s.
+
+
 ## Session: 2026-05-29 — Activity Page Flight Deck Redesign
 
 ### Changes Delivered

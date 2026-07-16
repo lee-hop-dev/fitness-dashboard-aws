@@ -1095,6 +1095,207 @@ def sync_upcoming_events(api_key: str) -> dict:
         raise
 
 
+# ── WP2: Aggregated static dashboard.json ─────────────────────────────────────
+
+class _DashboardDecimalEncoder(json.JSONEncoder):
+    """DynamoDB returns Decimal; JSON doesn't support it.
+    Mirrors the query Lambda's DecimalEncoder exactly so dashboard.json
+    payloads are byte-shape-identical to the API responses."""
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return int(obj) if obj % 1 == 0 else float(obj)
+        return super().default(obj)
+
+
+def _dash_days_ago(n: int) -> str:
+    return (datetime.now(timezone.utc) - timedelta(days=n)).strftime("%Y-%m-%d")
+
+
+def _dash_paginate_query(table, **kwargs) -> list:
+    """Exhaust DynamoDB pagination — mirrors query Lambda's paginate_query."""
+    items = []
+    while True:
+        resp = table.query(**kwargs)
+        items.extend(resp.get("Items", []))
+        last = resp.get("LastEvaluatedKey")
+        if not last:
+            break
+        kwargs["ExclusiveStartKey"] = last
+    return items
+
+
+def write_dashboard_json() -> dict:
+    """
+    WP2: Write one aggregated data/dashboard.json to S3 at the end of each run.
+
+    Each top-level key holds the SAME payload shape the corresponding API
+    Gateway endpoint returns today, sourced by replicating the query Lambda's
+    DynamoDB queries (never table.scan, never the public API URL, never
+    re-derived from Intervals). The frontend loads this single static file
+    instead of making 8 API calls per page view; the API endpoints remain
+    live as the fallback path.
+
+    activities window is 400 days (NOT the API default of 90) because
+    running.html and rowing.html call DATA.loadAll({activityDays: 400});
+    the frontend filters the list down to the window each page requests.
+    """
+    if not FRONTEND_BUCKET:
+        logger.warning("FRONTEND_BUCKET not set — dashboard.json not written")
+        return {"error": "FRONTEND_BUCKET not set"}
+
+    activities_table = dynamodb.Table(ACTIVITIES_TABLE)
+    wellness_table = dynamodb.Table(WELLNESS_TABLE)
+    curves_table = dynamodb.Table(CURVES_TABLE)
+    now = datetime.now(timezone.utc)
+    today = now.strftime("%Y-%m-%d")
+
+    # /activities — 400 days, newest first (see docstring re: window size)
+    act_since = _dash_days_ago(400)
+    act_items = _dash_paginate_query(
+        activities_table,
+        IndexName="athlete_id-start_date-index",
+        KeyConditionExpression=(
+            Key("athlete_id").eq(ATHLETE_ID) & Key("start_date").gte(act_since)
+        ),
+        ScanIndexForward=False,  # newest first
+    )
+    activities = {"activities": act_items, "count": len(act_items), "since": act_since}
+
+    # /wellness — 180 days, chronological (matches loadAll's days=180)
+    well_from = _dash_days_ago(180)
+    well_items = _dash_paginate_query(
+        wellness_table,
+        KeyConditionExpression=(
+            Key("athlete_id").eq(ATHLETE_ID) & Key("date").between(well_from, today)
+        ),
+        ScanIndexForward=True,
+    )
+    wellness = {"wellness": well_items, "count": len(well_items),
+                "from": well_from, "to": today}
+
+    # /weekly-tss — 52 weeks (matches loadAll's weeks=52)
+    tss_since = _dash_days_ago(52 * 7)
+    tss_items = _dash_paginate_query(
+        activities_table,
+        IndexName="athlete_id-start_date-index",
+        KeyConditionExpression=(
+            Key("athlete_id").eq(ATHLETE_ID) & Key("start_date").gte(tss_since)
+        ),
+        ScanIndexForward=True,
+        ProjectionExpression="start_date, #sport_type, icu_training_load",
+        ExpressionAttributeNames={"#sport_type": "type"},
+    )
+    buckets = {}
+    for item in tss_items:
+        date_str = item.get("start_date", "")[:10]
+        if not date_str:
+            continue
+        try:
+            d = datetime.strptime(date_str, "%Y-%m-%d")
+        except ValueError:
+            continue
+        week_start = (d - timedelta(days=d.weekday())).strftime("%Y-%m-%d")
+        sport = item.get("type", "Other")
+        tss = float(item.get("icu_training_load") or 0)
+        if week_start not in buckets:
+            buckets[week_start] = {}
+        buckets[week_start][sport] = buckets[week_start].get(sport, 0) + tss
+    weekly_tss = {
+        "weekly_tss": [
+            {"week": k, "sports": v, "total": sum(v.values())}
+            for k, v in sorted(buckets.items())
+        ],
+        "since": tss_since,
+    }
+
+    # /ytd — current year, aggregated by sport
+    year = str(now.year)
+    ytd_items = _dash_paginate_query(
+        activities_table,
+        IndexName="athlete_id-start_date-index",
+        KeyConditionExpression=(
+            Key("athlete_id").eq(ATHLETE_ID) &
+            Key("start_date").between(f"{year}-01-01", f"{year}-12-31")
+        ),
+        ScanIndexForward=True,
+        ProjectionExpression=(
+            "start_date, #sport_type, icu_training_load, moving_time, distance, total_elevation_gain"
+        ),
+        ExpressionAttributeNames={"#sport_type": "type"},
+    )
+    totals = {}
+    for item in ytd_items:
+        sport = item.get("type", "Other")
+        if sport not in totals:
+            totals[sport] = {"count": 0, "tss": 0.0, "moving_time_s": 0,
+                             "distance_m": 0.0, "elevation_m": 0.0}
+        totals[sport]["count"] += 1
+        totals[sport]["tss"] += float(item.get("icu_training_load") or 0)
+        totals[sport]["moving_time_s"] += int(item.get("moving_time") or 0)
+        totals[sport]["distance_m"] += float(item.get("distance") or 0)
+        totals[sport]["elevation_m"] += float(item.get("total_elevation_gain") or 0)
+    ytd = {"ytd": totals, "year": year, "activity_count": len(ytd_items)}
+
+    # /athlete — static profile record + last 7 days wellness trend
+    profile_resp = wellness_table.get_item(
+        Key={"athlete_id": ATHLETE_ID, "date": "athlete_profile"}
+    )
+    profile = profile_resp.get("Item")
+    if not profile:
+        raise RuntimeError("Athlete profile not found in wellness table")
+    recent = _dash_paginate_query(
+        wellness_table,
+        KeyConditionExpression=(
+            Key("athlete_id").eq(ATHLETE_ID) & Key("date").gte(_dash_days_ago(7))
+        ),
+        ScanIndexForward=False,
+    )
+    recent = [w for w in recent if w.get("date") != "athlete_profile"]
+    athlete = {"athlete_id": ATHLETE_ID, "profile": profile, "recent_wellness": recent}
+
+    # /power-curve, /pace-curve, /hr-curve — latest item of each type,
+    # raw item as the payload (the API's ok(items[0]) makes the body the item)
+    def latest_curve(curve_type: str):
+        resp = curves_table.query(
+            KeyConditionExpression=(
+                Key("athlete_id").eq(ATHLETE_ID) &
+                Key("curve_type_date").begins_with(f"{curve_type}#")
+            ),
+            ScanIndexForward=False,
+            Limit=1,
+        )
+        items = resp.get("Items", [])
+        if not items:
+            raise RuntimeError(f"No {curve_type} curve data found")
+        return items[0]
+
+    payload = {
+        "generated_at": now.isoformat(),
+        "activities": activities,
+        "wellness": wellness,
+        "weekly_tss": weekly_tss,
+        "ytd": ytd,
+        "athlete": athlete,
+        "power_curve": latest_curve("power"),
+        "pace_curve": latest_curve("pace"),
+        "hr_curve": latest_curve("hr"),
+    }
+
+    body = json.dumps(payload, cls=_DashboardDecimalEncoder)
+    s3_client.put_object(
+        Bucket=FRONTEND_BUCKET,
+        Key="data/dashboard.json",
+        Body=body,
+        ContentType="application/json",
+        CacheControl="public, max-age=300",
+    )
+    logger.info(
+        f"Wrote data/dashboard.json to s3://{FRONTEND_BUCKET} "
+        f"({len(body)} bytes, {len(act_items)} activities, {len(well_items)} wellness)"
+    )
+    return {"bytes": len(body), "activities": len(act_items), "wellness": len(well_items)}
+
+
 def handler(event, context):
     """
     Main Lambda handler.
@@ -1217,6 +1418,13 @@ def handler(event, context):
     except Exception as e:
         logger.error(f"Upcoming events sync failed: {e}")
         results["upcoming_events_error"] = str(e)
+
+    # ── WP2: Aggregated static dashboard.json (must run LAST) ─────────────────
+    try:
+        results["dashboard_json"] = write_dashboard_json()
+    except Exception as e:
+        logger.error(f"dashboard.json write failed: {e}")
+        results["dashboard_json_error"] = str(e)
 
     logger.info(f"Sync complete: {json.dumps(results)}")
     return {"statusCode": 200, "body": json.dumps(results)}

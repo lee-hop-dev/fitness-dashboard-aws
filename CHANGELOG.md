@@ -30,6 +30,21 @@
 
 Total page-load API payload (index): ~726KB uncompressed across 8 calls; slowest call 3.14s.
 
+### Batch A delivered (commits 708afdf, 8e7c339, be5612e, 0059764) — awaiting deploy approval
+
+- **WP1** `perf(frontend)`: inline scripts extracted — `index.html` 129KB→50KB (module → `assets/js/index-page.js`, 79KB), `activity.html` 157KB→51KB (plain script → `assets/js/activity-page.js`, 104KB). Extracted JS proven byte-identical to original inline blocks via git diff. Both files auto-covered by deploy script's `assets/js/*.js` 1-year cache rule. Versioned `?v=20260716-1`.
+- **WP4** `perf(frontend)`: index.html moved from jsdelivr chart.js@4.4.0 to cdnjs Chart.js/4.4.1 (matching activity/cardio/rowing); `preconnect` to cdnjs added. cycling/running load no CDN Chart.js — no change needed.
+- **WP5** `perf(frontend)`: `upcoming_events.json` fetch memoised in index-page.js — 3 fetches → 1 per load (verified in headless browser: exactly 1 request).
+- **WP6a** `fix(frontend)`: content-type guards on all 6 JSON fetch sites (data-loader `_fetch`, upcoming_events helper, 2× curve fetches in index-page, stream + 2× curve fetches in activity-page). Missing stream files now show the friendly "kept for 14 days" message instead of a JSON parse error. `data-loader.js` gained `?v=20260716-1` on cardio/cycling/rowing/running (previously unversioned under a 1-year cache — latent stale-cache risk now fixed).
+
+**Verification (headless Chromium against local serve + live API/data):**
+- index.html: 0 page errors, 0 console errors, 7/7 charts painted, upcoming_events fetched once
+- activity.html (i164158909): 13/13 charts painted, no visible errors
+- cardio/cycling/running/rowing (modified data-loader path): 0 errors, content rendered
+- Pre-existing bug found (NOT introduced, confirmed identical on pre-change page): `activity.html` throws `i is not defined` page error without visible impact — logged for the activity-page data-issues task
+
+**Deferred from WP6:** infrastructure-level 404 handling (layer b) — per plan, not changing `error_responses` without explicit approval. `youtube_videos.json` reconciliation — nothing in repo reads/writes it; confirm with Lee before removing from Lambda-managed list.
+
 
 ## Session: 2026-05-29 — Activity Page Flight Deck Redesign
 

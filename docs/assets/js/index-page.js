@@ -2,6 +2,17 @@ import { renderRing, renderLineChart, renderSparkline } from '/assets/js/charts-
 import { calculateReadiness, getReadinessMessage, getReadinessColor } from '/assets/js/readiness.js';
 import { getSportGlyph, getSportColor, formatDuration, formatDistance, formatPower, formatHeartRate, formatRelativeTime } from '/assets/js/sport-helpers.js';
 
+// WP5: single memoised fetch for upcoming_events.json (previously fetched 3x per load)
+let _upcomingEventsPromise = null;
+function getUpcomingEvents() {
+  if (!_upcomingEventsPromise) {
+    _upcomingEventsPromise = fetch('data/upcoming_events.json', { cache: 'no-cache' })
+      .then(r => { if (!r.ok) throw new Error(`upcoming_events ${r.status}`); return r.json(); })
+      .catch(err => { _upcomingEventsPromise = null; throw err; });
+  }
+  return _upcomingEventsPromise;
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     console.log('🎨 New design system loading...');
@@ -226,8 +237,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('ytd-day').textContent = dayOfYear;
       
       // Today's planned workout - load from upcoming_events.json
-      fetch('data/upcoming_events.json', { cache: 'no-cache' })
-        .then(r => { if (!r.ok) throw new Error('no events'); return r.json(); })
+      getUpcomingEvents()
         .then(events => {
           if (!events || events.length === 0) {
             return;
@@ -688,8 +698,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('📅 Rendering upcoming events from Intervals.icu API...');
     
     // Use static file for now since direct API calls are blocked by CORS
-    fetch('data/upcoming_events.json', { cache: 'no-cache' })
-      .then(r => r.json())
+    getUpcomingEvents()
       .then(events => {
         console.log('  Loaded events from static file:', events.length);
         renderWeekPlan(events, data.activities);
@@ -1287,8 +1296,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Load upcoming events from Intervals.icu
       const eventsByDate = {};
-      fetch('data/upcoming_events.json', { cache: 'no-cache' })
-        .then(r => { if (!r.ok) throw new Error('no upcoming events'); return r.json(); })
+      getUpcomingEvents()
         .then(events => {
           events.forEach(e => {
             const date = e.start_date_local ? e.start_date_local.split('T')[0] : e.date;

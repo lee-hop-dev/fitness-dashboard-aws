@@ -30,7 +30,17 @@
 
 Total page-load API payload (index): ~726KB uncompressed across 8 calls; slowest call 3.14s.
 
-### Batch A delivered (commits 708afdf, 8e7c339, be5612e, 0059764) — awaiting deploy approval
+### Batch A — DEPLOYED 16 July 2026, verified live
+
+**After-measurements (compressed transfer via CloudFront):**
+| Page | Before | After | Change |
+|---|---|---|---|
+| index.html | 25.2KB | 7.9KB | −68% |
+| activity.html | 37.7KB | 10.2KB | −73% |
+
+All extracted JS (`index-page.js`, `activity-page.js`, `data-loader.js`) confirmed serving with `cache-control: public, max-age=31536000`. Live index on cdnjs Chart.js 4.4.1, zero jsdelivr references. Browser verification by Lee: index, calendar, activity pages all good.
+
+### Batch A contents (commits 708afdf, 8e7c339, be5612e, 0059764)
 
 - **WP1** `perf(frontend)`: inline scripts extracted — `index.html` 129KB→50KB (module → `assets/js/index-page.js`, 79KB), `activity.html` 157KB→51KB (plain script → `assets/js/activity-page.js`, 104KB). Extracted JS proven byte-identical to original inline blocks via git diff. Both files auto-covered by deploy script's `assets/js/*.js` 1-year cache rule. Versioned `?v=20260716-1`.
 - **WP4** `perf(frontend)`: index.html moved from jsdelivr chart.js@4.4.0 to cdnjs Chart.js/4.4.1 (matching activity/cardio/rowing); `preconnect` to cdnjs added. cycling/running load no CDN Chart.js — no change needed.

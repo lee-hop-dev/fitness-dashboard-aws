@@ -168,26 +168,81 @@ const DATA = {
     });
   },
 
+  // WP2: fetch the pre-aggregated static dashboard.json written by the
+  // collector Lambda at 06:00 UTC daily. Throws on ANY problem (non-200,
+  // wrong content type, parse failure, missing key, generated_at older
+  // than 48h) so loadAll falls back to the API path. Memoised so repeat
+  // calls share one fetch; the memo is cleared on failure.
+  _dashboardStaticPromise: null,
+
+  _fetchDashboardStatic() {
+    if (this._dashboardStaticPromise) return this._dashboardStaticPromise;
+    this._dashboardStaticPromise = (async () => {
+      const res = await fetch('data/dashboard.json');
+      if (!res.ok) throw new Error(`dashboard.json returned ${res.status}`);
+      const ct = res.headers.get('content-type') || '';
+      if (!ct.includes('json')) throw new Error(`Expected JSON, got ${ct || 'no content-type'} for dashboard.json`);
+      const dash = await res.json();
+      const required = ['generated_at','activities','wellness','weekly_tss','ytd','athlete','power_curve','pace_curve','hr_curve'];
+      for (const k of required) {
+        if (!(k in dash)) throw new Error(`dashboard.json missing key: ${k}`);
+      }
+      const ageHours = (Date.now() - new Date(dash.generated_at).getTime()) / 3600000;
+      if (!(ageHours >= 0 && ageHours < 48)) {
+        throw new Error(`dashboard.json stale (generated_at ${dash.generated_at})`);
+      }
+      return dash;
+    })().catch(err => {
+      this._dashboardStaticPromise = null;
+      throw err;
+    });
+    return this._dashboardStaticPromise;
+  },
+
   async loadAll({ activityDays = 90 } = {}) {
-    const [
-      activitiesResp,
-      wellnessResp,
-      weeklyTSSResp,
-      ytdResp,
-      athleteResp,
-      powerCurveResp,
-      paceCurveResp,
-      hrCurveResp,
-    ] = await Promise.all([
-      this._fetch('/activities',  { days: activityDays, limit: 1000 }),
-      this._fetch('/wellness',    { days: 180 }),
-      this._fetch('/weekly-tss',  { weeks: 52  }),
-      this._fetch('/ytd'),
-      this._fetch('/athlete'),
-      this._fetch('/power-curve'),
-      this._fetch('/pace-curve'),
-      this._fetch('/hr-curve'),
-    ]);
+    let activitiesResp, wellnessResp, weeklyTSSResp, ytdResp,
+        athleteResp, powerCurveResp, paceCurveResp, hrCurveResp;
+
+    try {
+      // Static path: one CloudFront-cached file, zero Lambda in the hot path.
+      // The file holds 400 days of activities; filter down to the window this
+      // page asked for, replicating the API's `start_date >= since` behaviour.
+      const dash = await this._fetchDashboardStatic();
+      const since = localDateOffset(activityDays);
+      const filtered = (dash.activities.activities || [])
+        .filter(a => (a.start_date || '') >= since);
+      activitiesResp = { ...dash.activities, activities: filtered, count: filtered.length, since };
+      wellnessResp   = dash.wellness;
+      weeklyTSSResp  = dash.weekly_tss;
+      ytdResp        = dash.ytd;
+      athleteResp    = dash.athlete;
+      powerCurveResp = dash.power_curve;
+      paceCurveResp  = dash.pace_curve;
+      hrCurveResp    = dash.hr_curve;
+      console.info(`DATA.loadAll: static path (dashboard.json generated ${dash.generated_at})`);
+    } catch (staticErr) {
+      // Fallback: the original 8-call API path, unchanged.
+      console.info(`DATA.loadAll: API fallback path — ${staticErr.message}`);
+      [
+        activitiesResp,
+        wellnessResp,
+        weeklyTSSResp,
+        ytdResp,
+        athleteResp,
+        powerCurveResp,
+        paceCurveResp,
+        hrCurveResp,
+      ] = await Promise.all([
+        this._fetch('/activities',  { days: activityDays, limit: 1000 }),
+        this._fetch('/wellness',    { days: 180 }),
+        this._fetch('/weekly-tss',  { weeks: 52  }),
+        this._fetch('/ytd'),
+        this._fetch('/athlete'),
+        this._fetch('/power-curve'),
+        this._fetch('/pace-curve'),
+        this._fetch('/hr-curve'),
+      ]);
+    }
 
     const activities = (activitiesResp.activities || []).map(a => this._normaliseActivity(a));
     const wellness = (wellnessResp.wellness || []).map(w => this._normaliseWellness(w));

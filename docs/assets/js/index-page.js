@@ -71,13 +71,65 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
     
     // Load data from API Gateway (same as original page)
-    console.log('📡 Fetching data from API...');
-    const [activitiesResp, wellnessResp, ytdResp, weeklyTssResp] = await Promise.all([
-      fetch(`${API_BASE}/activities?days=90&limit=1000`, { headers: { 'x-api-key': API_KEY } }).then(r => { if (!r.ok) throw new Error(`Activities: ${r.status}`); return r.json(); }),
-      fetch(`${API_BASE}/wellness?days=180`, { headers: { 'x-api-key': API_KEY } }).then(r => { if (!r.ok) throw new Error(`Wellness: ${r.status}`); return r.json(); }),
-      fetch(`${API_BASE}/ytd`, { headers: { 'x-api-key': API_KEY } }).then(r => { if (!r.ok) throw new Error(`YTD: ${r.status}`); return r.json(); }),
-      fetch(`${API_BASE}/weekly-tss?weeks=52`, { headers: { 'x-api-key': API_KEY } }).then(r => { if (!r.ok) throw new Error(`Weekly TSS: ${r.status}`); return r.json(); })
-    ]);
+    // WP2: prefer the pre-aggregated static dashboard.json (written daily by
+    // the collector Lambda, served via CloudFront with zero Lambda in the hot
+    // path). Any problem — non-200, wrong content type, missing key, or
+    // generated_at older than 48h — throws, and we fall back to the API path.
+    let _dashPromise = null;
+    const fetchDashboardStatic = () => {
+      if (_dashPromise) return _dashPromise;
+      _dashPromise = (async () => {
+        const res = await fetch('data/dashboard.json');
+        if (!res.ok) throw new Error(`dashboard.json returned ${res.status}`);
+        const ct = res.headers.get('content-type') || '';
+        if (!ct.includes('json')) throw new Error(`Expected JSON, got ${ct || 'no content-type'} for dashboard.json`);
+        const dash = await res.json();
+        const required = ['generated_at','activities','wellness','weekly_tss','ytd','athlete','power_curve','pace_curve','hr_curve'];
+        for (const k of required) {
+          if (!(k in dash)) throw new Error(`dashboard.json missing key: ${k}`);
+        }
+        const ageHours = (Date.now() - new Date(dash.generated_at).getTime()) / 3600000;
+        if (!(ageHours >= 0 && ageHours < 48)) {
+          throw new Error(`dashboard.json stale (generated_at ${dash.generated_at})`);
+        }
+        return dash;
+      })().catch(err => { _dashPromise = null; throw err; });
+      return _dashPromise;
+    };
+
+    // Local-calendar cutoff date. NEVER toISOString() — it returns UTC and in
+    // BST produces yesterday's date, silently cutting off today's activities.
+    const localSince = (days) => {
+      const d = new Date();
+      d.setDate(d.getDate() - days);
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    };
+
+    // Replicates the API's `start_date >= since` window on the 400-day static list
+    const sliceActivities = (dashActivities, days) => {
+      const since = localSince(days);
+      const filtered = (dashActivities.activities || []).filter(a => (a.start_date || '') >= since);
+      return { ...dashActivities, activities: filtered, count: filtered.length, since };
+    };
+
+    console.log('📡 Fetching data...');
+    let activitiesResp, wellnessResp, ytdResp, weeklyTssResp;
+    try {
+      const dash = await fetchDashboardStatic();
+      activitiesResp = sliceActivities(dash.activities, 90);
+      wellnessResp   = dash.wellness;
+      ytdResp        = dash.ytd;
+      weeklyTssResp  = dash.weekly_tss;
+      console.log(`✅ Static path: dashboard.json (generated ${dash.generated_at})`);
+    } catch (staticErr) {
+      console.log(`📡 API fallback path — ${staticErr.message}`);
+      [activitiesResp, wellnessResp, ytdResp, weeklyTssResp] = await Promise.all([
+        fetch(`${API_BASE}/activities?days=90&limit=1000`, { headers: { 'x-api-key': API_KEY } }).then(r => { if (!r.ok) throw new Error(`Activities: ${r.status}`); return r.json(); }),
+        fetch(`${API_BASE}/wellness?days=180`, { headers: { 'x-api-key': API_KEY } }).then(r => { if (!r.ok) throw new Error(`Wellness: ${r.status}`); return r.json(); }),
+        fetch(`${API_BASE}/ytd`, { headers: { 'x-api-key': API_KEY } }).then(r => { if (!r.ok) throw new Error(`YTD: ${r.status}`); return r.json(); }),
+        fetch(`${API_BASE}/weekly-tss?weeks=52`, { headers: { 'x-api-key': API_KEY } }).then(r => { if (!r.ok) throw new Error(`Weekly TSS: ${r.status}`); return r.json(); })
+      ]);
+    }
     
     console.log('✅ Data fetched successfully');
     console.log('  Activities:', activitiesResp?.activities?.length || 0);
@@ -620,13 +672,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     // 6. Render Training Heatmap (deferred 365-day fetch like original page)
+    // WP2: the static file holds 400 days, so serve the heatmap from it too;
+    // the memoised promise is already resolved by now, so this costs nothing.
     console.log('📅 Loading calendar data (365 days)...');
-    fetch(`${API_BASE}/activities?days=365&limit=1000`, { 
-      headers: { 'x-api-key': API_KEY } 
-    })
-      .then(r => r.json())
-      .then(resp => {
-        const activities365 = resp.activities || [];
+    fetchDashboardStatic()
+      .then(dash => sliceActivities(dash.activities, 365).activities)
+      .catch(() =>
+        fetch(`${API_BASE}/activities?days=365&limit=1000`, {
+          headers: { 'x-api-key': API_KEY }
+        })
+          .then(r => r.json())
+          .then(resp => resp.activities || [])
+      )
+      .then(activities365 => {
         console.log('  Calendar activities loaded:', activities365.length);
         renderHeatmap(activities365);
       })

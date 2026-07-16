@@ -33,6 +33,8 @@ const DATA = {
       headers: { 'x-api-key': API_KEY }
     });
     if (!res.ok) throw new Error(`API ${endpoint} returned ${res.status}`);
+    const ct = res.headers.get('content-type') || '';
+    if (!ct.includes('json')) throw new Error(`Expected JSON, got ${ct || 'no content-type'} for ${endpoint}`);
     const data = await res.json();
     this._cache[cacheKey] = data;
     return data;

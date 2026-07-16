@@ -7,7 +7,12 @@ let _upcomingEventsPromise = null;
 function getUpcomingEvents() {
   if (!_upcomingEventsPromise) {
     _upcomingEventsPromise = fetch('data/upcoming_events.json', { cache: 'no-cache' })
-      .then(r => { if (!r.ok) throw new Error(`upcoming_events ${r.status}`); return r.json(); })
+      .then(r => {
+        if (!r.ok) throw new Error(`upcoming_events ${r.status}`);
+        const ct = r.headers.get('content-type') || '';
+        if (!ct.includes('json')) throw new Error(`Expected JSON, got ${ct} for upcoming_events.json`);
+        return r.json();
+      })
       .catch(err => { _upcomingEventsPromise = null; throw err; });
   }
   return _upcomingEventsPromise;
@@ -1435,8 +1440,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Load both power and pace curves
     Promise.all([
-      fetch('data/power_curves_90d.json').then(r => r.json()).catch(() => null),
-      fetch('data/pace_curves_90d.json').then(r => r.json()).catch(() => null)
+      fetch('data/power_curves_90d.json').then(r => { if (!r.ok || !(r.headers.get('content-type')||'').includes('json')) throw new Error('power_curves_90d not JSON'); return r.json(); }).catch(() => null),
+      fetch('data/pace_curves_90d.json').then(r => { if (!r.ok || !(r.headers.get('content-type')||'').includes('json')) throw new Error('pace_curves_90d not JSON'); return r.json(); }).catch(() => null)
     ]).then(([powerCurves90d, paceCurves90d]) => {
       
       // Helper function for duration labels (from original)

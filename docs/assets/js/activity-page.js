@@ -1264,7 +1264,7 @@ async function buildDurationCurve(canvasId, type, rawStream, ref, unit, tickFmt,
   try {
     const filename = isPace ? 'pace_curves_90d.json' : 'power_curves_90d.json';
     const r = await fetch(`${CF_BASE}data/${filename}`);
-    if (r.ok) {
+    if (r.ok && (r.headers.get('content-type') || '').includes('json')) {
       const cd = await r.json();
       const curve = cd?.list?.[0];
       if (curve?.values?.length) {
@@ -2197,7 +2197,8 @@ async function init() {
   let data;
   try {
     const r=await fetch(`${CF_BASE}data/streams/${actId}.json`);
-    if(!r.ok) { showError('Activity not available.','Stream data is only kept for 14 days.'); return; }
+    const ct=(r.headers.get('content-type')||'');
+    if(!r.ok || !ct.includes('json')) { showError('Activity not available.','Stream data is only kept for 14 days.'); return; }
     data=await r.json();
   } catch(e) { showError('Failed to load.', e.message); return; }
 
@@ -2358,7 +2359,7 @@ function rlPatch(data) {
       // KVs from 90d curves if available
       try {
         const r = await fetch('data/power_curves_90d.json');
-        if (r.ok) {
+        if (r.ok && (r.headers.get('content-type') || '').includes('json')) {
           const c = await r.json();
           const secs  = c?.list?.[0]?.secs  || [];
           const vals  = c?.list?.[0]?.values || [];

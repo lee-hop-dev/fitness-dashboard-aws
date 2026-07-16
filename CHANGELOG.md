@@ -30,7 +30,15 @@
 
 Total page-load API payload (index): ~726KB uncompressed across 8 calls; slowest call 3.14s.
 
-### Batch B prepared (commits af7c2be, f859b03) — awaiting CDK deploy
+### Batch B — DEPLOYED 16 July 2026, verified live
+
+**WP3 after-measurements (over the wire, gzip):** activities 312.9KB → 44.6KB (−86%), wellness 209.0KB → 17.8KB (−91%), athlete 114.0KB → 21.2KB (−81%). Content-Encoding: gzip confirmed on live responses.
+
+**WP9 verification:** collector hotswapped, `{"refresh_streams": true}` invoke → written 9 / errors 0. All 9 regenerated stream files diffed against pre-deploy copies after CloudFront invalidation: shape- and value-identical (56 fields each, laps and streams intact). Batch-path CloudWatch confirmation: see log line "Batch activity fetch: requested 9, received 9".
+
+**Follow-up found during verification (commit 7ae94b6):** all four Lambda `put_object` S3 writes (streams, curves, segments, upcoming_events) set no CacheControl header, so CloudFront held REWRITTEN files under the distribution default TTL — masked historically by frequent `/*` invalidations during dev. Fixed with `CacheControl="public, max-age=300"` on all four writes; deployed via collector hotswap; effective from next collector run.
+
+### Batch B contents (commits af7c2be, f859b03, 7ae94b6)
 
 - **WP3** `perf(api)`: `min_compression_size=Size.kibibytes(1)` on the RestApi. Validated by full local `cdk synth` — template renders `MinimumCompressionSize: 1024`. Requires FULL deploy of FitnessDashboardApi (not hotswap).
 - **WP9** `perf(collector)`: `sync_streams_14d` now fetches meta+laps for the entire window in ONE batched call (`athlete/{id}/activities/{ids}?intervals=true`) instead of one `activity/{id}?intervals=true` call per activity. Per-activity Intervals calls: 2N → N+1 (~47% fewer; 20-activity window: 40→21).

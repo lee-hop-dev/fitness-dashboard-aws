@@ -9,6 +9,7 @@
 #   - data/pace_curves_90d.json
 #   - data/hr_curves_90d.json
 #   - data/upcoming_events.json
+#   - data/dashboard.json
 #   - data/streams/*
 
 set -e
@@ -52,6 +53,7 @@ aws s3 sync "$DOCS_DIR/" "s3://$BUCKET/" \
   --exclude "data/pace_curves_90d.json" \
   --exclude "data/hr_curves_90d.json" \
   --exclude "data/upcoming_events.json" \
+  --exclude "data/dashboard.json" \
   --exclude "data/streams/*" \
   --cache-control "public, max-age=300"
 

@@ -42,6 +42,14 @@ Total page-load API payload (index): ~726KB uncompressed across 8 calls; slowest
 
 **Deploy order (per handover):** (1) `deploy_frontend.sh` — exclusion + frontend land together; frontend safely uses API fallback until the file exists; (2) CloudShell `git pull` + full CDK deploy of FitnessDashboardCollector; (3) trigger sync, verify `curl -s .../data/dashboard.json | python3 -m json.tool | head` shows current `generated_at`; (4) reload index in incognito — console should report the static path, Network tab zero `j2zxz92vd4` calls.
 
+### WP2 deployed and verified — 16 July 2026, ~16:45 UTC
+
+- Frontend deployed (invalidation `I76PSQSFN3GJT7UG6VUQXMDNFQ`); collector deployed via full CDK deploy (two passes — first surfaced a missing IAM grant, fixed in `1f99a84`: wellness + curves tables needed `grant_read_data`; activities already had it from segment sync).
+- Manual sync run: `dashboard.json {"bytes": 1878195, "activities": 325, "wellness": 181}` — no errors.
+- **Shape verification vs live API (sandbox, 16 July):** `/wellness?days=180` — 181/181 entries byte-identical, envelope keys identical. `/ytd` — deep-equal. Activities: all normalisation fields present (`start_date`, `type`, `icu_training_load`, `icu_average_watts`, `moving_time`, `average_speed`, `icu_intensity`). `power_curve` raw item preserved (`list` key / "90 days" labels untouched).
+- **Transfer:** 1,878,195 bytes raw → **328,657 bytes compressed** through CloudFront (`compress=True`), replacing ~726KB uncompressed across 8 API calls; slowest previous call was 3.14s.
+- Remaining: browser verification (incognito — console reports static path, Network tab zero `j2zxz92vd4` calls, CTL/ATL/TSB identical to API-driven values).
+
 ### Batch B prepared (commits af7c2be, f859b03) — awaiting CDK deploy
 
 - **WP3** `perf(api)`: `min_compression_size=Size.kibibytes(1)` on the RestApi. Validated by full local `cdk synth` — template renders `MinimumCompressionSize: 1024`. Requires FULL deploy of FitnessDashboardApi (not hotswap).

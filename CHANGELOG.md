@@ -30,6 +30,18 @@
 
 Total page-load API payload (index): ~726KB uncompressed across 8 calls; slowest call 3.14s.
 
+### WP2 prepared (commits 494d05b, fb1dfe4, f3f2018) — awaiting deploy sequence
+
+**Rollback tag:** `pre-wp2-20260716`
+
+- **WP2** `feat(collector)`: `write_dashboard_json()` runs LAST in the daily handler and writes `data/dashboard.json` to S3 (ContentType application/json, CacheControl max-age=300). Payloads are sourced by replicating the query Lambda's DynamoDB queries verbatim (paginated `table.query` on the GSI, never scan, never the public API, never re-derived from Intervals), wrapped under the exact API response shapes: `activities`, `wellness` (180d), `weekly_tss` (52w), `ytd`, `athlete`, `power_curve`, `pace_curve`, `hr_curve`, plus `generated_at`.
+  - **Design deviation from handover (justified):** handover specified 90-day activities, but `running.html`/`rowing.html` call `loadAll({activityDays: 400})` — a 90-day file cannot serve them. The file holds **400 days** (already in DynamoDB); the frontend filters to each page's window client-side, replicating the API's `start_date >= since` behaviour. CloudFront `compress=True` keeps the transfer manageable.
+  - **Second deviation:** handover said index uses `DATA.loadAll()`; in reality post-WP1 `index-page.js` has its own fetch block (4 calls + a deferred 365-day heatmap call). Both `data-loader.js` (4 sport pages) and `index-page.js` (index main block + heatmap) were converted — heatmap now also serves from the static file, so a normal index load makes zero API Gateway calls.
+- **WP2** `chore(deploy)`: `data/dashboard.json` added to the Lambda-managed exclusion list in `deploy_frontend.sh` and `deploy_frontend.ps1`. Also fixed: the `.ps1` was missing the `data/upcoming_events.json` exclusion entirely (latent wipe risk on any PowerShell deploy).
+- **WP2** `perf(frontend)`: static-first load in `data-loader.js` and `index-page.js` with hard API fallback on ANY failure (non-200, non-JSON content type, missing top-level key, or `generated_at` older than 48h). Path used is logged to console. API code paths fully preserved. Cache-bust bumps: `data-loader.js?v=20260716-2` (4 sport pages), `index-page.js?v=20260716-2` (index).
+
+**Deploy order (per handover):** (1) `deploy_frontend.sh` — exclusion + frontend land together; frontend safely uses API fallback until the file exists; (2) CloudShell `git pull` + full CDK deploy of FitnessDashboardCollector; (3) trigger sync, verify `curl -s .../data/dashboard.json | python3 -m json.tool | head` shows current `generated_at`; (4) reload index in incognito — console should report the static path, Network tab zero `j2zxz92vd4` calls.
+
 ### Batch B prepared (commits af7c2be, f859b03) — awaiting CDK deploy
 
 - **WP3** `perf(api)`: `min_compression_size=Size.kibibytes(1)` on the RestApi. Validated by full local `cdk synth` — template renders `MinimumCompressionSize: 1024`. Requires FULL deploy of FitnessDashboardApi (not hotswap).

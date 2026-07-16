@@ -30,6 +30,15 @@
 
 Total page-load API payload (index): ~726KB uncompressed across 8 calls; slowest call 3.14s.
 
+### Batch B prepared (commits af7c2be, f859b03) — awaiting CDK deploy
+
+- **WP3** `perf(api)`: `min_compression_size=Size.kibibytes(1)` on the RestApi. Validated by full local `cdk synth` — template renders `MinimumCompressionSize: 1024`. Requires FULL deploy of FitnessDashboardApi (not hotswap).
+- **WP9** `perf(collector)`: `sync_streams_14d` now fetches meta+laps for the entire window in ONE batched call (`athlete/{id}/activities/{ids}?intervals=true`) instead of one `activity/{id}?intervals=true` call per activity. Per-activity Intervals calls: 2N → N+1 (~47% fewer; 20-activity window: 40→21).
+  - **Design deviation from handover (justified):** handover proposed merging streams into `_fetch_laps` and deleting `_fetch_stream_data`. Verified against the Intervals OpenAPI spec (2026-07-16): NO endpoint returns streams together with activity/interval data, so that merge is impossible. The batch endpoint achieves the quota reduction instead. `_fetch_stream_data` retained (streams have a dedicated endpoint only).
+  - Shaping extracted to pure `_build_laps_and_meta()` shared by batch and fallback paths — **proven functionally identical** to the previous `_fetch_laps` output (50 meta fields + laps, exact JSON equality on synthetic input).
+  - Robust fallback: batch failure, missing id, or Strava-stub result (per spec) → per-activity `_fetch_laps` call, i.e. worst case = today's behaviour exactly. Early-exit for streamless activities preserved.
+  - Hotswap deploy acceptable (Lambda code only). Before-copies of all 9 current stream files captured for post-deploy shape diff.
+
 ### Batch A — DEPLOYED 16 July 2026, verified live
 
 **After-measurements (compressed transfer via CloudFront):**

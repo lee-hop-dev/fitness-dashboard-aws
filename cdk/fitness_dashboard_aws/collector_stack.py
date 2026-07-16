@@ -55,6 +55,11 @@ class CollectorStack(Stack):
         # grant_write_data only covers Put/Delete/Update — Scan requires explicit read grant
         dynamo_stack.activities_table.grant_read_data(collector_role)
 
+        # WP2: write_dashboard_json() queries all three tables to build the
+        # aggregated static dashboard.json — wellness and curves need read too
+        dynamo_stack.wellness_table.grant_read_data(collector_role)
+        dynamo_stack.curves_table.grant_read_data(collector_role)
+
         # Grant read access to secrets
         secrets_stack.intervals_secret.grant_read(collector_role)
         secrets_stack.strava_secret.grant_read(collector_role)

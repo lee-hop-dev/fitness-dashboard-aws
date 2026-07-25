@@ -1534,28 +1534,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Parse pace curves from Intervals - Running only (from original page logic)
       let paceBestsData = [];
       if (paceCurves90d && paceCurves90d.list && paceCurves90d.list.length > 0) {
-        console.log('  Raw pace curves:', paceCurves90d.list.length, 'curves');
-        console.log('  First curve type:', paceCurves90d.list[0].type);
-        
-        // Try to filter to running activities
-        let runningCurves = paceCurves90d.list.filter(curve => {
-          if (!curve.type) return false; // Only include if we know it's running
-          return curve.type === 'Run' || curve.type === 'VirtualRun' || curve.type === 'TrailRun';
-        });
-        
-        console.log('  Filtered running curves:', runningCurves.length);
-        
-        // If no running curves found, use first curve (assumes it's pace data)
-        if (runningCurves.length === 0) {
-          console.log('  No typed running curves, using first curve');
-          runningCurves = [paceCurves90d.list[0]];
-        }
-        
-        const curve = runningCurves[0];
+        // Select the 90-day curve by LABEL.
+        //
+        // The previous filter tested curve.type against 'Run'/'VirtualRun'/
+        // 'TrailRun' and could never match: on the pace-curve endpoint `type`
+        // is the CURVE type ('PACE'), not the sport, and `sport` is null on
+        // every entry. It therefore always fell through to list[0] and logged
+        // "Filtered running curves: 0" on every page load.
+        //
+        // list[0] happened to be correct — Intervals returns '90 days' first,
+        // 'All time' second — but relying on order means a reordering upstream
+        // would silently show all-time bests labelled as 90-day. Match the
+        // label instead, keeping list[0] as the fallback.
+        const curve = paceCurves90d.list.find(c => /90/.test(c.label || ''))
+                   || paceCurves90d.list[0];
+
         const distances = curve.distance || [];
         const times = curve.values || [];
-        
-        console.log('  Distances:', distances.length, 'Times:', times.length);
+
+        console.log('  Pace curve:', curve.label || '(unlabelled)', '—', distances.length, 'distances');
         
         paceBestsData = distances.map((distM, idx) => {
           let label;

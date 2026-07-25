@@ -30,6 +30,52 @@
 
 Total page-load API payload (index): ~726KB uncompressed across 8 calls; slowest call 3.14s.
 
+### Activity page — data/render fixes — 25 July 2026 — awaiting `deploy_frontend.sh`
+
+**Rollback tag:** `pre-activity-fixes-20260725`
+
+Audit method: `eslint no-undef` across every file in `docs/assets/js/` (each linted in its
+correct `sourceType`), then a headless Chromium sweep over six activities spanning Run,
+VirtualRide and Workout, checking every `<canvas>` for *visible-but-unpainted* rather than
+merely unpainted — a hidden card reads as zero ink and must not be counted as a defect.
+
+- **`fix(activity)`: stray `ctx.font` referencing out-of-scope loop variable.** The
+  `pctLabels` plugin's `afterDatasetDraw` set `ctx.font` using `i` *before* the `forEach`
+  that declares it. This is the long-standing `i is not defined` page error logged during
+  WP6a as pre-existing. It was not cosmetic: the throw occurred at the top of the hook, so
+  the `forEach` below never ran and **the percentage labels above the HR zone bars have
+  never rendered**. The line duplicated the correct per-bar assignment inside the loop;
+  deleting it restores the labels and changes nothing else.
+  - This was the **only** genuine undeclared identifier in the frontend. `segments.js`
+    `formatDuration` flags under `no-undef` but is a deliberate global supplied by
+    `cycling.html` / `running.html` before the script loads — false positive, left alone.
+- **`fix(activity)`: duration curve card left visible on HR-only activities.**
+  `buildPrimaryTrace` early-outs when an activity has neither `watts` nor `velocity_smooth`
+  and hides `power-row` — but `curve-row` is a **sibling** of `power-row` in `activity.html`,
+  not a child, so it stayed visible: an empty canvas under placeholder text
+  ("Power Curve / — W / peak effort vs 90-day"). Hits every `Workout`-type activity
+  (Hyrox, Cardio), which carry only `time` + `heartrate` (+`respiration`) streams.
+
+**Verification (headless Chromium, local serve with `data/*` proxied to CloudFront):**
+| Activity | Type | Before | After |
+|---|---|---|---|
+| i168751357 | Run | `i is not defined` | 0 errors, 7/7 visible painted |
+| i167532276 | VirtualRide | `i is not defined` | 0 errors, 8/8 visible painted |
+| i168097527 | Workout (Hyrox) | curve card blank | 0 errors, 2/2 visible painted |
+| i167688816 | Workout (Cardio) | curve card blank | 0 errors, 2/2 visible painted |
+| i166802710 | Run | — | 0 errors, all painted |
+| i166670542 | — | — | 0 errors, 8/8 visible painted |
+
+Cards with no underlying data (`chart-elevation`, `chart-primary`, `chart-curve`,
+`chart-cadence`, `chart-speed`) are now correctly suppressed on Workout activities.
+`chart-speed` remains hidden on runs by design — the speed chart is cycling-only.
+
+**Deploy:** `bash scripts/deploy_frontend.sh` (frontend only). Cache-bust
+`activity-page.js?v=20260725-1` covers both fixes.
+
+**Noted, not changed:** an anonymous `leaflet-zoom-animated` canvas reads as unpainted in the
+sweep on GPS activities — a thin polyline slips through pixel sampling, not a defect.
+
 ### WP7 — DEPLOYED and verified 25 July 2026
 
 - `deploy_frontend.sh` run; all 8 stale files purged from S3 by Step 3's `--delete`.

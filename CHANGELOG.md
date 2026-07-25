@@ -30,7 +30,22 @@
 
 Total page-load API payload (index): ~726KB uncompressed across 8 calls; slowest call 3.14s.
 
-### WP7 prepared — 25 July 2026 — awaiting `deploy_frontend.sh`
+### WP7 — DEPLOYED and verified 25 July 2026
+
+- `deploy_frontend.sh` run; all 8 stale files purged from S3 by Step 3's `--delete`.
+- `list-objects-v2 --prefix data/ --delimiter /` returns exactly the 6 expected keys:
+  `dashboard.json`, `hr_curves_90d.json`, `pace_curves_90d.json`, `power_curves_90d.json`,
+  `segments.json`, `upcoming_events.json`. Every Lambda-managed file intact — the exclusion
+  list correctly protected them from `--delete` as well as from upload.
+- New HEAD-based last-sync code confirmed live at the edge in `race-stream.html`.
+- Deleted paths now return the index.html fallback (`200 text/html`), not a true 404 —
+  expected WP6b behaviour, deliberately unchanged.
+
+**Performance programme status:** WP1–WP7 and WP9 complete and live. Remaining: WP6b
+(infrastructure 404 handling — deferred, needs explicit approval), WP10 (custom domain —
+independent, any time), WP8 (CloudFront price class — September 2026).
+
+### WP7 prepared — 25 July 2026
 
 **Rollback tag:** `pre-wp7-20260725`
 

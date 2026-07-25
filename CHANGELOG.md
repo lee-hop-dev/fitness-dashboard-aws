@@ -30,6 +30,65 @@
 
 Total page-load API payload (index): ~726KB uncompressed across 8 calls; slowest call 3.14s.
 
+### About page rebuild — 25 July 2026 — awaiting `deploy_frontend.sh`
+
+**Rollback tag:** `pre-about-redesign-20260725` · original preserved before edit.
+
+Brief: easier to read, easier to extract information from, better imagery.
+
+**Root cause of the long-deferred contrast complaint — measured, not guessed:**
+
+| Foreground | on page `#0a0b0c` | on card `#14161a` | on inset `#1b1e23` |
+|---|---|---|---|
+| `--fg`   | 16.82 | 15.46 | 14.27 |
+| `--fg-2` | 12.22 | 11.23 | 10.36 |
+| `--fg-3` |  7.69 |  7.07 |  6.52 |
+| `--fg-4` |  **3.91** | **3.60** | **3.32** |
+
+Body text was never the problem. `--fg-4` **fails AA on every surface**, and it was carrying
+every small label on the page — section eyebrows, stat labels, table headers, resource
+strings, tags. The text a reader scans first was the least legible text on the page.
+Promoted to `--fg-3` throughout. Retained on `.edge` strokes and `.tl-dot` borders, which are
+graphical objects and clear the 3:1 threshold under WCAG 1.4.11.
+
+Second cause: the card surface (`--bg-1` `#101113`) sat **1.04:1** above the page background,
+so card edges were invisible and six identical card grids read as a single wall. Page-local
+surface raised to `#14161a` (1.09:1) with a visible `rgba(255,255,255,0.11)` hairline — the
+border does most of the separating work.
+
+**What changed**
+- **Architecture diagram rebuilt** as a hand-drawn SVG with orthogonal routing, showing the
+  real topology and separating the daily write path from the read path. The read path is
+  drawn in accent to make the WP2 result visible: a normal page load touches CloudFront and
+  S3 only — no Lambda, no DynamoDB, no API Gateway.
+- **Every emoji replaced** with an inline SVG sprite — 17 symbols, 32 references, all verified
+  resolving and rendering with a non-zero bounding box.
+- **Colour carries meaning** — service categories coded consistently (compute / storage /
+  delivery / security / scheduling) with a legend, so the diagram becomes readable by colour.
+- **Nine service cards → a nine-row table.** Tabular data scans faster as a table.
+- **Dropped the 01–06 section numbering** — those sections are not a sequence, so the numbers
+  encoded nothing.
+- **Stale stat removed:** "278 activities synced" (frozen, would drift) replaced with
+  "0 API calls per page load" — verified true post-WP2.
+- **Light theme** given its own category colour values; the dark-theme lime measured 1.7:1 on
+  a white card.
+
+**Verification (headless Chromium):** zero page and console errors; all 32 icon references
+render; no horizontal overflow at 390px; keyboard focus ring present on tab; reduced-motion
+honoured for both the reveal animation and the budget ladder fill; light and dark themes
+both checked visually.
+
+**Trade-offs, stated plainly:** 10.8KB → 13.5KB gzipped for the diagram and icon sprite, and
+HTML is served `no-cache`, so that is a per-visit cost. Page height 6,712px → 7,052px —
+slightly longer, but denser per section.
+
+**Deploy:** `bash scripts/deploy_frontend.sh` (frontend only). `about.html` is HTML, served
+`no-cache` — no cache-bust bump needed, and the page has no external JS of its own.
+
+**Noted, not changed:** the shared sidebar nav still uses emoji glyphs (`📺`, `☀️`, and the
+geometric nav icons). It is identical markup across all nine pages, so replacing it is a
+separate change that should be made everywhere at once.
+
 ### Cycling / running / cardio page audit — DEPLOYED and verified 25 July 2026
 
 Deployed via `deploy_frontend.sh`. Lee confirmed the cardio page live reads

@@ -488,15 +488,23 @@
     setInterval(checkLiveStream, 5 * 60 * 1000);
   });
 
-  // Update last sync time
-  fetch('data/meta.json')
-    .then(r => r.json())
-    .then(d => {
-      const lastUpdate = new Date(d.last_update);
-      const now = new Date();
-      const diffHours = Math.floor((now - lastUpdate) / (1000 * 60 * 60));
-      const diffMins = Math.floor((now - lastUpdate) / (1000 * 60)) % 60;
-      let syncText = diffHours > 0 ? `${diffHours}h ${diffMins}m ago` : `${diffMins}m ago`;
+  // Update last sync time.
+  // Sourced from the Last-Modified header of the collector-written
+  // data/dashboard.json — a HEAD request, so no body is transferred.
+  // (Previously read data/meta.json, a V1-era static file frozen at
+  // 2026-03-31 whose key was `last_updated`, not the `last_update` read
+  // here — the widget rendered "NaNh NaNm ago". Removed in WP7.)
+  fetch('data/dashboard.json', { method: 'HEAD', cache: 'no-cache' })
+    .then(r => {
+      if (!r.ok) throw new Error(`dashboard.json ${r.status}`);
+      const header = r.headers.get('last-modified');
+      if (!header) throw new Error('no last-modified header');
+      const lastUpdate = new Date(header);
+      if (isNaN(lastUpdate)) throw new Error(`unparseable last-modified: ${header}`);
+      const diffMinsTotal = Math.floor((Date.now() - lastUpdate) / (1000 * 60));
+      const diffHours = Math.floor(diffMinsTotal / 60);
+      const diffMins = diffMinsTotal % 60;
+      const syncText = diffHours > 0 ? `${diffHours}h ${diffMins}m ago` : `${diffMins}m ago`;
       document.getElementById('last-sync').textContent = syncText;
     })
     .catch(() => {

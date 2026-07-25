@@ -82,7 +82,14 @@
 <script>
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    const { activities, wellness, weeklyTSS, ytd, meta, athlete } = await DATA.loadAll();
+    // 400-day window: this page derives YTD sessions/hours/TSS from the
+    // activities array itself (unlike cycling.html, which reads the
+    // pre-aggregated `ytd` object). loadAll() defaults to 90 days, which
+    // silently truncated YTD to activities since late April — 5 of 20
+    // sessions, 3.7h and 162 TSS were missing as at 25 July 2026.
+    // dashboard.json already carries 400 days, so this costs no extra
+    // network — the loader just filters less aggressively.
+    const { activities, wellness, weeklyTSS, ytd, meta, athlete } = await DATA.loadAll({ activityDays: 400 });
 
     // Cardio activity types from Intervals.icu API
     const cardioTypes = [

@@ -30,6 +30,51 @@
 
 Total page-load API payload (index): ~726KB uncompressed across 8 calls; slowest call 3.14s.
 
+### WP7 prepared — 25 July 2026 — awaiting `deploy_frontend.sh`
+
+**Rollback tag:** `pre-wp7-20260725`
+
+- **WP7** `chore(data)`: removed 7 V1-era static snapshots from `docs/data/`, all confirmed to
+  have **zero** references across `docs/`, `scripts/` and `cdk/` (`--include="*.html" --include="*.js"`
+  plus a full-tree sweep): `activities.json` (231KB), `wellness.json`, `weekly_tss.json`,
+  `ytd.json`, `athlete.json`, `heatmap_1y.json`, `heatmap_3y.json`.
+  - `heatmap_1y.json` / `heatmap_3y.json` were **not** in the handover's WP7 list — found during
+    the reference sweep, same provenance (frozen content, deployed 9 June, unreferenced since the
+    heatmap moved to `dashboard.json` in WP2).
+  - Live S3 state before the change: all 8 files (incl. `meta.json`) dated `2026-06-09T10:05:29Z`,
+    ~363KB total, content frozen at `2026-03-31` per `meta.json`.
+- **WP7** `fix(race-stream)`: `meta.json` was the only stale file with a live consumer —
+  `race-stream.html`'s "last sync" widget, which is linked from the nav on **every** page.
+  That widget was already broken two ways: it read `d.last_update` while the file's key is
+  `last_updated`, and the file had not moved since March. It rendered `NaNh NaNm ago` in
+  production. Now sourced from the `Last-Modified` header of the collector-written
+  `data/dashboard.json` via a **HEAD** request — no body transferred, no new Lambda work,
+  no S3 PUT, no cost. Guards added for non-200, missing header, and unparseable date;
+  the existing `.catch` → `'Unknown'` behaviour is preserved. `meta.json` then removed.
+  - Verified against live CloudFront before commit: `HEAD` → 200,
+    `last-modified: Sat, 25 Jul 2026 06:01:07 GMT`, renders `9h 6m ago`, **0 bytes** of body.
+  - No cache-bust bump needed: the block is inline in `race-stream.html`, and HTML is served
+    `no-cache, no-store, must-revalidate` by Step 1 of the deploy script.
+
+**Deploy:** `bash scripts/deploy_frontend.sh`. Step 3's `--delete` purges all 8 files from S3 —
+none of them appear in the exclusion list, and the 6 Lambda-managed files that *are* excluded are
+skipped for deletion as well as for upload, so they are untouched.
+
+**Verification after deploy:**
+- `aws s3api list-objects-v2 --bucket fitness-dashboard-frontend-656370357696 --prefix data/`
+  should list only `dashboard.json`, `segments.json`, `power_curves_90d.json`,
+  `pace_curves_90d.json`, `hr_curves_90d.json`, `upcoming_events.json` and `streams/*`.
+- `race-stream.html` "last sync" shows a real elapsed time, not `NaN`.
+- Every other page unchanged (nothing else referenced the deleted files).
+
+**Noted, out of scope:**
+- `data/segments.json` is **30 bytes** (`{"cycling":[],"running":[]}`) despite the collector
+  writing it at `06:00:56` today — the Epic 3 pre-requisite blocker appears to have regressed
+  or never fully resolved. Needs its own investigation.
+- `race-stream.html` loads `assets/css/main.css` and `assets/js/theme-toggle.js` **unversioned**
+  under the 1-year cache rule — the same latent stale-cache risk WP6a fixed for `data-loader.js`.
+  Not touched here (neither file changed); log for a future pass.
+
 ### WP2 prepared (commits 494d05b, fb1dfe4, f3f2018) — awaiting deploy sequence
 
 **Rollback tag:** `pre-wp2-20260716`
@@ -51,7 +96,23 @@ Total page-load API payload (index): ~726KB uncompressed across 8 calls; slowest
 - **Browser verification complete (16 July):** index loads via static path (console confirms), heatmap served from the file (313 activities, no API call), all charts render. `weekly_tss` deep-equal to live API (51/51 weeks). A twelve-zero Rowing series in the weekly load chart was investigated and is true data — no Rowing/VirtualRow activity in the last 12 weeks. **WP2 closed.**
 - Deferred item noted (pre-existing, not WP2): index pace-curve filter `Filtered running curves: 0` never matches typed running curves and always falls through to `list[0]` — works via fallback, log for later.
 
-### Batch B prepared (commits af7c2be, f859b03) — awaiting CDK deploy
+### Batch B — DEPLOYED (record backfilled 25 July 2026)
+
+The section below was left reading "awaiting CDK deploy" — the deploy did happen on
+16 July and was never recorded. Verified against live infrastructure on 25 July:
+
+- **WP3 live:** `aws apigateway get-rest-apis` → `minimumCompressionSize: 1024` on `j2zxz92vd4`.
+  `/activities?days=90&limit=1000` with `Accept-Encoding: gzip` returns **43,851 bytes**
+  against a 312,943-byte baseline — **−86%**. (Fallback path only post-WP2, but the ops
+  dashboard and trigger-sync polling benefit on every call.)
+- **WP9 live:** collector `LastModified 2026-07-16T16:38:05Z`. CloudWatch Logs
+  `filter-log-events --filter-pattern "Batch activity fetch"` shows the batch path on every
+  06:00 run from 17 July through 25 July: `requested 8, received 8` / `requested 9, received 9`.
+  **Zero** `batch returned a stub` fallback lines in nine days — the batch endpoint returns
+  full activities for every id in the window, so per-activity Intervals calls really are
+  2N → N+1 in production, not just in principle.
+
+### Batch B prepared (commits af7c2be, f859b03) — deployed 16 July, see above
 
 - **WP3** `perf(api)`: `min_compression_size=Size.kibibytes(1)` on the RestApi. Validated by full local `cdk synth` — template renders `MinimumCompressionSize: 1024`. Requires FULL deploy of FitnessDashboardApi (not hotswap).
 - **WP9** `perf(collector)`: `sync_streams_14d` now fetches meta+laps for the entire window in ONE batched call (`athlete/{id}/activities/{ids}?intervals=true`) instead of one `activity/{id}?intervals=true` call per activity. Per-activity Intervals calls: 2N → N+1 (~47% fewer; 20-activity window: 40→21).

@@ -1068,7 +1068,14 @@ async function buildPrimaryTrace(data, ftp, hrmax) {
   const isCyc = isCycling(sport), isRun = isRunning(sport);
 
   if (!s.watts?.length && !s.velocity_smooth?.length) {
+    // No power and no pace stream (e.g. Workout/Cardio activities carrying
+    // only time+heartrate) — neither the primary trace nor the duration
+    // curve has anything to plot. curve-row is a SIBLING of power-row, not
+    // a child, so it must be hidden explicitly or it renders an empty
+    // canvas under placeholder text.
     document.getElementById('power-row').style.display = 'none';
+    const curveRow = document.getElementById('curve-row');
+    if (curveRow) curveRow.style.display = 'none';
     return;
   }
 

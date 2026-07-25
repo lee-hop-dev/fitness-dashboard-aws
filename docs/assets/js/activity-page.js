@@ -2418,7 +2418,6 @@ function rlPatch(data) {
           const { ctx, data: d, scales: { x, y } } = chart;
           const ds = chart.getDatasetMeta(0);
           ctx.save();
-          ctx.font = `${i === dom ? '700' : '500'} 11px 'Geist Mono', monospace`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'bottom';
           ds.data.forEach((bar, i) => {

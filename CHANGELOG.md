@@ -30,7 +30,12 @@
 
 Total page-load API payload (index): ~726KB uncompressed across 8 calls; slowest call 3.14s.
 
-### Cycling / running / cardio page audit — 25 July 2026 — awaiting `deploy_frontend.sh`
+### Cycling / running / cardio page audit — DEPLOYED and verified 25 July 2026
+
+Deployed via `deploy_frontend.sh`. Lee confirmed the cardio page live reads
+**20 sessions / 15.6 hours / 847 TSS YTD** — matching the independent calculation over the
+full 400-day dataset exactly, and up from the truncated 15 / 11.9 / 685 the 90-day window
+was reporting.
 
 **Rollback tag:** `pre-page-audit-20260725`
 

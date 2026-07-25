@@ -83,9 +83,12 @@ skipped for deletion as well as for upload, so they are untouched.
 - Every other page unchanged (nothing else referenced the deleted files).
 
 **Noted, out of scope:**
-- `data/segments.json` is **30 bytes** (`{"cycling":[],"running":[]}`) despite the collector
-  writing it at `06:00:56` today — the Epic 3 pre-requisite blocker appears to have regressed
-  or never fully resolved. Needs its own investigation.
+- `data/segments.json` is **30 bytes** (`{"cycling":[],"running":[]}`). **This is correct
+  behaviour, NOT a bug — do not "fix" it.** `sync_segments()` only keeps efforts with
+  `pr_rank <= 3` on Strava-sourced cycling/running activities. Lee's riding is predominantly
+  Zwift/ZRL, so top-3 PR efforts on Strava segments are genuinely rare and an empty file is
+  the expected output. The collector writes it successfully every morning. Confirmed by Lee,
+  25 July 2026. (Flagged in error during WP7 — logged here to prevent it being re-raised.)
 - `race-stream.html` loads `assets/css/main.css` and `assets/js/theme-toggle.js` **unversioned**
   under the 1-year cache rule — the same latent stale-cache risk WP6a fixed for `data-loader.js`.
   Not touched here (neither file changed); log for a future pass.

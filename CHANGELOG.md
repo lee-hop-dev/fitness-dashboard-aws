@@ -30,7 +30,13 @@
 
 Total page-load API payload (index): ~726KB uncompressed across 8 calls; slowest call 3.14s.
 
-### Activity page — data/render fixes — 25 July 2026 — awaiting `deploy_frontend.sh`
+### Activity page — data/render fixes — DEPLOYED and verified 25 July 2026
+
+Deployed via `deploy_frontend.sh`; browser-verified by Lee. HR zone percentage labels now
+render (first time ever — see fix 1 below), and the duration curve card is correctly absent
+on HR-only Workout activities.
+
+The `i is not defined` error carried in the backlog since WP6a is now closed.
 
 **Rollback tag:** `pre-activity-fixes-20260725`
 

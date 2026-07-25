@@ -30,6 +30,62 @@
 
 Total page-load API payload (index): ~726KB uncompressed across 8 calls; slowest call 3.14s.
 
+### Cycling / running / cardio page audit — 25 July 2026 — awaiting `deploy_frontend.sh`
+
+**Rollback tag:** `pre-page-audit-20260725`
+
+Same method as the activity-page audit: `eslint no-undef` over every inline script (extracted
+and linted in its correct `sourceType`) plus `assets/js/*`, then a headless Chromium pass
+checking SVG/canvas content, unfilled placeholders and console output.
+
+**Two real bugs fixed:**
+
+- **`fix(index)`: pace-curve filter could never match.** The filter tested `curve.type`
+  against `'Run'`/`'VirtualRun'`/`'TrailRun'`, but on the pace-curve endpoint `type` is the
+  **curve** type (`'PACE'`), not the sport — `sport` is `null` on every entry. It logged
+  `Filtered running curves: 0` every load and always fell through to `list[0]`. That fallback
+  was correct *by luck* (Intervals returns `'90 days'` at index 0, `'All time'` at index 1);
+  an upstream reorder would have silently rendered all-time bests labelled as 90-day. Now
+  selected by label, `list[0]` retained as fallback. **Closes the item deferred at WP2 close.**
+- **`fix(cardio)`: YTD computed over a 90-day window.** `cardio.html` derives YTD
+  sessions/hours/TSS from the activities array itself (unlike `cycling.html`, which reads the
+  pre-aggregated `ytd` object) but called `DATA.loadAll()` with no arguments — and `loadAll`
+  defaults to `activityDays: 90`. **YTD cardio was under-reported by 5 of 20 sessions (25%),
+  3.7 hours and 162 TSS**; everything before 26 April was invisible. Now passes 400, matching
+  `running.html` and `rowing.html`. No extra network cost — `dashboard.json` already carries
+  400 days. Post-fix the page reads 20 / 15.6h / 847, matching an independent calculation over
+  the full dataset.
+
+**Curve payload ordering (all three, verified 25 July):** `power_curve`, `pace_curve` and
+`hr_curve` each return `[0] '90 days'`, `[1] 'All time'`. Every other call site
+(`index-page.js` power curve, `cycling.html` ×2) still indexes `list[0]` directly. Correct
+today, order-dependent in principle — logged, not changed, to keep this task minimal.
+
+**Investigated and confirmed NOT bugs** (recorded so they are not re-raised):
+- `cy-dist-bar` / `cy-hrs-bar` / `cy-tss-bar` and the running equivalents render as childless
+  divs — they are progress bars whose width is set in JS. Measured live at 58.5% / 36% / 42.4%
+  on cycling. Working correctly.
+- `pb-mar` / `pb-mar-pace` show `—` because `athlete.profile.pb_marathon` genuinely does not
+  exist in the Intervals payload. `pb_5k` (1196s), `pb_10k` (2505s) and `pb_half_marathon`
+  (6552s) are present and render 19:56 / 41:45 / 1:49:12. Note the PB fields live at
+  `athlete.profile.*`, **not** at the top level of the athlete payload.
+- Two `effort-time` tiles show `—` because `PACE_TARGETS` includes Half (21,097m) and Marathon
+  (42,195m) while the 90-day pace curve only extends to 12,000m. No 90-day best exists for
+  those distances. Whether to hide empty tiles is a design call, not a defect — flagged for Lee.
+- `renderSegments` flags under `no-undef` in both page modules; it is a deliberate global from
+  `segments.js` (classic script), same pattern as `formatDuration`. False positive.
+
+**Verification:** zero page errors and zero console errors on `index.html`, `cycling.html`,
+`running.html` and `cardio.html`. index 6/6 visible canvases painted; cycling and running
+6/6 SVG with content; cardio 40/40 stat values populated across 10 cards.
+
+**Deploy:** `bash scripts/deploy_frontend.sh` (frontend only). Cache-bust
+`index-page.js?v=20260725-1`. `cardio.html` is HTML — served `no-cache`, no bump needed.
+
+**Noted, not changed:** `cycling.html` and `running.html` still carry ~11KB inline module
+scripts each — WP1-style extraction never covered them. Same cacheability argument as WP1;
+worth a follow-up.
+
 ### Activity page — data/render fixes — DEPLOYED and verified 25 July 2026
 
 Deployed via `deploy_frontend.sh`; browser-verified by Lee. HR zone percentage labels now
